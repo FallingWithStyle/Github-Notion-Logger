@@ -8,7 +8,7 @@ dotenv.config();
 const app = express();
 app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf } }));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 
 function verifySignature(req) {
@@ -37,4 +37,4 @@ app.post('/webhook', async (req, res) => {
 });
 
 app.get('/', (req, res) => res.send('GitHub to Notion logger running.'));
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Listening on port ${PORT}`));
