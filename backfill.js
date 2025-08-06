@@ -122,6 +122,17 @@ async function backfillCommits() {
     process.exit(1);
   }
   
+  // Debug: Check if Notion environment variables are set
+  console.log('Environment check:');
+  console.log('- NOTION_API_KEY set:', !!process.env.NOTION_API_KEY);
+  console.log('- NOTION_DATABASE_ID set:', !!process.env.NOTION_DATABASE_ID);
+  if (process.env.NOTION_API_KEY) {
+    console.log('- NOTION_API_KEY starts with:', process.env.NOTION_API_KEY.substring(0, 10) + '...');
+  }
+  if (process.env.NOTION_DATABASE_ID) {
+    console.log('- NOTION_DATABASE_ID:', process.env.NOTION_DATABASE_ID);
+  }
+  
   try {
     let repositories = [];
     

@@ -1,31 +1,28 @@
 const { Client } = require('@notionhq/client');
+require('dotenv').config();
+
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
 const databaseId = process.env.NOTION_DATABASE_ID;
 
 async function logCommitsToNotion(commits, repo) {
   for (const commit of commits) {
+    // Extract just the repository name from the full path
+    const repoName = repo.split('/').pop();
+    
     await notion.pages.create({
       parent: { database_id: databaseId },
       properties: {
-        Name: {
-          title: [{ text: { content: commit.message.split('\n')[0] } }],
+        "Commits": {
+          rich_text: [{ text: { content: commit.message.split('\n')[0] } }],
         },
-        Repository: {
-          rich_text: [{ text: { content: repo } }],
+        "Project Name": {
+          title: [{ text: { content: repoName } }],
         },
-        URL: {
-          url: commit.url,
-        },
-        Author: {
-          rich_text: [{ text: { content: commit.author.name } }],
-        },
-        Timestamp: {
+        "Date": {
           date: { start: new Date(commit.timestamp).toISOString() },
-        },
-        "Estimated Time": {
-          time: null, // Leave blank for now
         }
+        // Removed "Estimated Time" since it's not useful for commit tracking
       }
     });
   }
