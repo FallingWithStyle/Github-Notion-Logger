@@ -1,0 +1,16 @@
+{
+  "name": "github-notion-logger",
+  "version": "1.0.0",
+  "description": "Logs GitHub commits to Notion using webhook events",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.4",
+    "body-parser": "^1.20.2",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  }
+}
