@@ -1,4 +1,5 @@
 const { Octokit } = require('@octokit/rest');
+const inquirer = require('inquirer');
 const { logCommitsToNotion } = require('./notion');
 require('dotenv').config();
 
@@ -15,24 +16,52 @@ async function getAllRepositories(owner) {
   
   try {
     while (true) {
-      const response = await octokit.repos.listForUser({
-        username: owner,
-        per_page: perPage,
-        page,
-        sort: 'updated',
-        direction: 'desc',
-      });
-      
-      if (response.data.length === 0) {
-        break;
-      }
-      
-      // Filter out forked repositories if desired
-      const nonForkRepos = response.data.filter(repo => !repo.fork);
-      repos.push(...nonForkRepos);
-      
-      if (response.data.length < perPage) {
-        break;
+      // Try to get all repos (including private ones) that the authenticated user has access to
+      let response;
+      try {
+        // First try to get repos for the authenticated user (includes private repos)
+        response = await octokit.repos.listForAuthenticatedUser({
+          per_page: perPage,
+          page,
+          sort: 'updated',
+          direction: 'desc',
+        });
+        
+        // Filter to only repos owned by the specified owner
+        const ownerRepos = response.data.filter(repo => 
+          repo.owner.login === owner || repo.owner.login.toLowerCase() === owner.toLowerCase()
+        );
+        
+        if (ownerRepos.length === 0 && response.data.length < perPage) {
+          break;
+        }
+        
+        // Filter out forked repositories if desired
+        const nonForkRepos = ownerRepos.filter(repo => !repo.fork);
+        repos.push(...nonForkRepos);
+        
+        if (response.data.length < perPage) {
+          break;
+        }
+        
+      } catch (error) {
+        // Fallback to public repos only if authenticated user method fails
+        console.log('Falling back to public repositories only...');
+        response = await octokit.repos.listForUser({
+          username: owner,
+          per_page: perPage,
+          page,
+          sort: 'updated',
+          direction: 'desc',
+        });
+        
+        // Filter out forked repositories if desired
+        const nonForkRepos = response.data.filter(repo => !repo.fork);
+        repos.push(...nonForkRepos);
+        
+        if (response.data.length < perPage) {
+          break;
+        }
       }
       
       page++;
@@ -108,6 +137,51 @@ async function getCommitsFromLast6Months(owner, repo) {
   }
 }
 
+async function selectRepositories(owner) {
+  console.log(`\nFetching repositories for ${owner}...`);
+  
+  try {
+    const allRepos = await getAllRepositories(owner);
+    
+    if (allRepos.length === 0) {
+      console.log('No repositories found.');
+      return [];
+    }
+    
+    // Create choices for the selection
+    const choices = [
+      { name: 'All repositories', value: 'all' },
+      ...allRepos.map(repo => ({
+        name: `${repo.name} ${repo.private ? '(private)' : '(public)'}`,
+        value: repo.name,
+        repo: repo
+      }))
+    ];
+    
+    const { selectedRepos } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'selectedRepos',
+        message: 'Select repositories to backfill:',
+        choices: choices,
+        pageSize: 20
+      }
+    ]);
+    
+    if (selectedRepos === 'all') {
+      return allRepos;
+    } else {
+      // Find the selected repo object
+      const selectedRepo = allRepos.find(repo => repo.name === selectedRepos);
+      return selectedRepo ? [selectedRepo] : [];
+    }
+    
+  } catch (error) {
+    console.error('Error selecting repositories:', error.message);
+    return [];
+  }
+}
+
 async function backfillCommits() {
   const owner = process.env.GITHUB_OWNER;
   const singleRepo = process.env.GITHUB_REPO;
@@ -141,9 +215,18 @@ async function backfillCommits() {
       console.log(`Processing single repository: ${owner}/${singleRepo}`);
       repositories = [{ name: singleRepo }];
     } else {
-      // All repositories mode
-      console.log(`Processing all repositories for ${owner}`);
-      repositories = await getAllRepositories(owner);
+      // Interactive selection mode
+      repositories = await selectRepositories(owner);
+      
+      if (repositories.length === 0) {
+        console.log('No repositories selected. Exiting.');
+        return;
+      }
+      
+      console.log(`\nSelected ${repositories.length} repository(ies) for processing:`);
+      repositories.forEach(repo => {
+        console.log(`- ${owner}/${repo.name} ${repo.private ? '(private)' : '(public)'}`);
+      });
     }
     
     let totalCommits = 0;
