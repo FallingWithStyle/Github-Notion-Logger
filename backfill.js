@@ -159,19 +159,25 @@ async function backfillCommits() {
           continue;
         }
         
-        console.log(`Logging ${commits.length} commits from ${repo.name} to Notion...`);
+        console.log(`Processing ${commits.length} commits from ${repo.name} to Notion...`);
         
         // Process commits in batches to avoid overwhelming the API
-        const batchSize = 10;
+        const batchSize = 50; // Increased from 10 for faster processing
+        let processedCount = 0;
+        let skippedCount = 0;
+        
         for (let i = 0; i < commits.length; i += batchSize) {
           const batch = commits.slice(i, i + batchSize);
-          await logCommitsToNotion(batch, `${owner}/${repo.name}`);
+          const result = await logCommitsToNotion(batch, `${owner}/${repo.name}`);
           
-          console.log(`Processed ${Math.min(i + batchSize, commits.length)} of ${commits.length} commits from ${repo.name}`);
+          processedCount += result?.processed || batch.length;
+          skippedCount += result?.skipped || 0;
           
-          // Add a small delay between batches
+          console.log(`Processed ${Math.min(i + batchSize, commits.length)} of ${commits.length} commits from ${repo.name} (${processedCount} new, ${skippedCount} skipped)`);
+          
+          // Reduced delay between batches for faster processing
           if (i + batchSize < commits.length) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 200));
           }
         }
         
@@ -179,8 +185,8 @@ async function backfillCommits() {
         
         // Add a delay between repositories
         if (repositories.indexOf(repo) < repositories.length - 1) {
-          console.log('Waiting 2 seconds before processing next repository...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          console.log('Waiting 1 second before processing next repository...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
       } catch (error) {
