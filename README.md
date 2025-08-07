@@ -71,6 +71,69 @@ A webhook-based service that logs GitHub commits to Notion database.
 - **GITHUB_OWNER**: Your GitHub username or organization name
 - **GITHUB_REPO**: (Optional) Specific repository name. If omitted, the backfill will process all your repositories
 
+## Deployment
+
+### Deploy to Fly.io (Recommended)
+
+This project includes a `fly.toml` configuration for easy deployment to Fly.io.
+
+1. **Install Fly CLI** (if not already installed):
+   ```bash
+   # macOS
+   brew install flyctl
+   
+   # Windows
+   powershell -Command "iwr https://fly.io/install.ps1 -useb | iex"
+   
+   # Linux
+   curl -L https://fly.io/install.sh | sh
+   ```
+
+2. **Login to Fly.io**:
+   ```bash
+   fly auth login
+   ```
+
+3. **Set up your app** (replace `your-app-name` with your desired app name):
+   ```bash
+   fly apps create your-app-name
+   ```
+
+4. **Set environment variables**:
+   ```bash
+   fly secrets set NOTION_API_KEY=your_notion_api_key
+   fly secrets set NOTION_DATABASE_ID=your_notion_database_id
+   fly secrets set GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
+   fly secrets set GITHUB_TOKEN=your_github_personal_access_token
+   fly secrets set GITHUB_OWNER=your_github_username_or_org
+   # Optional: fly secrets set GITHUB_REPO=your_repository_name
+   ```
+
+5. **Deploy the application**:
+   ```bash
+   fly deploy
+   ```
+
+6. **Get your webhook URL**:
+   ```bash
+   fly status
+   ```
+   Your webhook URL will be: `https://your-app-name.fly.dev/webhook`
+
+7. **Configure GitHub webhook**:
+   - Go to your GitHub repository → Settings → Webhooks
+   - Click "Add webhook"
+   - Set Payload URL to: `https://your-app-name.fly.dev/webhook`
+   - Set Content type to: `application/json`
+   - Set Secret to match your `GITHUB_WEBHOOK_SECRET`
+   - Select events: "Just the push event"
+   - Click "Add webhook"
+
+### Alternative Deployment Options
+
+- **Local development**: Run `npm start` for local testing
+- **Other cloud platforms**: The application can be deployed to any Node.js hosting platform (Heroku, Railway, etc.)
+
 ## Usage
 
 ### Webhook Mode (Real-time)
