@@ -33,6 +33,44 @@ A webhook-based service that logs GitHub commits to Notion database.
    GITHUB_REPO=your_repository_name  # Optional - omit to process all repos
    ```
 
+### Getting Required API Keys and Tokens
+
+#### GitHub Personal Access Token (GITHUB_TOKEN)
+1. Go to [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
+2. Click "Generate new token (classic)"
+3. Give it a descriptive name (e.g., "Notion Logger")
+4. Select the following scopes:
+   - `repo` (Full control of private repositories)
+   - `read:org` (if you need access to organization repositories)
+5. Click "Generate token"
+6. Copy the token immediately (you won't see it again)
+7. Add it to your `.env` file as `GITHUB_TOKEN=your_token_here`
+
+#### Notion API Key (NOTION_API_KEY)
+1. Go to [Notion Integrations](https://www.notion.so/my-integrations)
+2. Click "New integration"
+3. Give it a name (e.g., "GitHub Logger")
+4. Select the workspace where your database is located
+5. Click "Submit"
+6. Copy the "Internal Integration Token"
+7. Add it to your `.env` file as `NOTION_API_KEY=your_token_here`
+
+#### Notion Database ID (NOTION_DATABASE_ID)
+1. Open your Notion database in the browser
+2. Copy the URL - it will look like: `https://www.notion.so/workspace/Database-Name-1234567890abcdef1234567890abcdef`
+3. Extract the database ID (the last part before the `?`): `1234567890abcdef1234567890abcdef`
+4. Add it to your `.env` file as `NOTION_DATABASE_ID=your_database_id_here`
+5. **Important**: Share your database with your integration by clicking "Share" in the database and adding your integration
+
+#### GitHub Webhook Secret (GITHUB_WEBHOOK_SECRET) - For Webhook Mode
+1. Generate a random secret (you can use a password generator or run `openssl rand -hex 32`)
+2. Add it to your `.env` file as `GITHUB_WEBHOOK_SECRET=your_secret_here`
+3. You'll also need to configure this in your GitHub repository webhook settings
+
+#### GitHub Owner and Repository (GITHUB_OWNER, GITHUB_REPO)
+- **GITHUB_OWNER**: Your GitHub username or organization name
+- **GITHUB_REPO**: (Optional) Specific repository name. If omitted, the backfill will process all your repositories
+
 ## Usage
 
 ### Webhook Mode (Real-time)
