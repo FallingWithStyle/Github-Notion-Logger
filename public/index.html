@@ -79,6 +79,9 @@
             display: flex;
             gap: 20px;
             align-items: flex-start;
+            justify-content: center;
+            max-width: 1000px;
+            margin: 0 auto;
         }
         
         .visualizer {
@@ -121,13 +124,15 @@
         }
         
         .legend-emoji {
-            font-size: 16px;
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
         }
         
         .grid-container {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
             margin-bottom: 30px;
         }
         
@@ -135,8 +140,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            padding: 4px 0;
-            border-bottom: 1px solid #ecf0f1;
+            padding: 2px 0;
         }
         
         .date-label {
@@ -148,15 +152,19 @@
         
         .commit-squares {
             display: flex;
-            gap: 1px;
+            gap: 2px;
             flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
         }
         
         .commit-square {
-            font-size: 14px;
+            width: 14px;
+            height: 14px;
             cursor: pointer;
             transition: transform 0.2s ease;
             position: relative;
+            border-radius: 2px;
         }
         
         .commit-square:hover {
@@ -257,10 +265,15 @@
     </div>
 
     <script>
-        // Available colors for projects
-        const availableColors = ['🟩', '🟥', '🟪', '🟦', '🟨', '🟧', '🟫', '⬛', '⬜', '🟣', '🟢', '🔴', '🔵', '🟡', '🟠'];
+        // Available colors for projects (CSS colors)
+        const availableColors = [
+            '#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#34495e',
+            '#e91e63', '#2196f3', '#4caf50', '#ff9800', '#673ab7', '#ff5722', '#00bcd4', '#795548',
+            '#607d8b', '#f44336', '#3f51b5', '#009688', '#ffc107', '#9c27b0', '#ff5722', '#795548',
+            '#607d8b', '#f44336', '#3f51b5', '#009688', '#ffc107', '#9c27b0', '#ff5722', '#795548'
+        ];
         
-        // Project to emoji mapping (will be populated dynamically)
+        // Project to color mapping (will be populated dynamically)
         const projectColors = {};
         
         // Track color usage to assign least used colors to new projects
@@ -301,8 +314,8 @@
             return projectColors[projectName];
         }
 
-        // Get emoji for a project
-        function getProjectEmoji(projectName) {
+        // Get color for a project
+        function getProjectColor(projectName) {
             return assignColorToProject(projectName);
         }
 
@@ -330,33 +343,42 @@
             if (totalCommits === 0) return [];
             
             const squares = [];
-            const maxSquares = 10;
             
-            // Calculate proportional shares
-            Object.entries(projects).forEach(([projectName, commitCount]) => {
-                const proportion = commitCount / totalCommits;
-                const squareCount = Math.round(proportion * maxSquares);
+            // If fewer than 10 commits, show 1 box per commit
+            if (totalCommits < 10) {
+                Object.entries(projects).forEach(([projectName, commitCount]) => {
+                    for (let i = 0; i < commitCount; i++) {
+                        squares.push(projectName);
+                    }
+                });
+            } else {
+                // For 10+ commits, use proportional coloring with max 10 squares
+                const maxSquares = 10;
                 
-                for (let i = 0; i < squareCount; i++) {
-                    squares.push(projectName);
+                // Calculate proportional shares
+                Object.entries(projects).forEach(([projectName, commitCount]) => {
+                    const proportion = commitCount / totalCommits;
+                    const squareCount = Math.round(proportion * maxSquares);
+                    
+                    for (let i = 0; i < squareCount; i++) {
+                        squares.push(projectName);
+                    }
+                });
+                
+                // Ensure we don't exceed max squares
+                if (squares.length > maxSquares) {
+                    squares.splice(maxSquares);
                 }
-            });
-            
-            // Ensure we don't exceed max squares
-            if (squares.length > maxSquares) {
-                squares.splice(maxSquares);
-            }
-            
-            // If we have fewer than max squares, add some from the largest projects
-            if (squares.length < maxSquares) {
-                const sortedProjects = Object.entries(projects)
-                    .sort(([,a], [,b]) => b - a);
                 
-                let added = 0;
-                for (const [projectName] of sortedProjects) {
-                    if (squares.length >= maxSquares) break;
-                    squares.push(projectName);
-                    added++;
+                // If we have fewer than max squares, add some from the largest projects
+                if (squares.length < maxSquares) {
+                    const sortedProjects = Object.entries(projects)
+                        .sort(([,a], [,b]) => b - a);
+                    
+                    for (const [projectName] of sortedProjects) {
+                        if (squares.length >= maxSquares) break;
+                        squares.push(projectName);
+                    }
                 }
             }
             
@@ -365,9 +387,9 @@
 
         // Create a commit square element
         function createCommitSquare(projectName, index) {
-            const square = document.createElement('span');
+            const square = document.createElement('div');
             square.className = 'commit-square';
-            square.textContent = getProjectEmoji(projectName);
+            square.style.backgroundColor = getProjectColor(projectName);
             square.title = `${projectName} (square ${index + 1})`;
             
             // Add tooltip
@@ -427,9 +449,9 @@
                 const legendItem = document.createElement('div');
                 legendItem.className = 'legend-item';
                 
-                const emoji = document.createElement('span');
+                const emoji = document.createElement('div');
                 emoji.className = 'legend-emoji';
-                emoji.textContent = getProjectEmoji(project);
+                emoji.style.backgroundColor = getProjectColor(project);
                 
                 const name = document.createElement('span');
                 name.textContent = project;
