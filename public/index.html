@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commit Activity Visualizer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            margin: 0;
+        }
+        
+        .visualizer {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .day-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .date-label {
+            min-width: 100px;
+            font-weight: 500;
+            color: #34495e;
+            font-size: 14px;
+        }
+        
+        .commit-squares {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+        }
+        
+        .commit-square {
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            position: relative;
+        }
+        
+        .commit-square:hover {
+            transform: scale(1.2);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 5px;
+        }
+        
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #2c3e50;
+        }
+        
+        .commit-square:hover .tooltip {
+            opacity: 1;
+        }
+        
+        .legend {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .legend h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .legend-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-emoji {
+            font-size: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Commit Activity Visualizer</h1>
+        <p>Your coding activity across projects over time</p>
+    </div>
+    
+    <div class="visualizer">
+        <div id="grid-container" class="grid-container">
+            <div class="loading">Loading commit data...</div>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <h3>Project Legend</h3>
+        <div id="legend-items" class="legend-items">
+            <!-- Legend items will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Available colors for projects
+        const availableColors = ['🟩', '🟥', '🟪', '🟦', '🟨', '🟧', '🟫', '⬛', '⬜', '🟣', '🟢', '🔴', '🔵', '🟡', '🟠'];
+        
+        // Project to emoji mapping (will be populated dynamically)
+        const projectColors = {};
+        
+        // Track color usage to assign least used colors to new projects
+        const colorUsage = {};
+        
+        // Initialize color usage tracking
+        availableColors.forEach(color => {
+            colorUsage[color] = 0;
+        });
+
+        // Get the least used color
+        function getLeastUsedColor() {
+            let minUsage = Infinity;
+            let leastUsedColor = availableColors[0];
+            
+            availableColors.forEach(color => {
+                if (colorUsage[color] < minUsage) {
+                    minUsage = colorUsage[color];
+                    leastUsedColor = color;
+                }
+            });
+            
+            return leastUsedColor;
+        }
+
+        // Assign color to a new project
+        function assignColorToProject(projectName) {
+            if (!projectColors[projectName]) {
+                const color = getLeastUsedColor();
+                projectColors[projectName] = color;
+                colorUsage[color]++;
+            }
+            return projectColors[projectName];
+        }
+
+        // Get emoji for a project
+        function getProjectEmoji(projectName) {
+            return assignColorToProject(projectName);
+        }
+
+        // Create a commit square element
+        function createCommitSquare(projectName, index) {
+            const square = document.createElement('span');
+            square.className = 'commit-square';
+            square.textContent = getProjectEmoji(projectName);
+            square.title = `${projectName} (commit ${index + 1})`;
+            
+            // Add tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = `${projectName} (commit ${index + 1})`;
+            square.appendChild(tooltip);
+            
+            return square;
+        }
+
+        // Create a day row
+        function createDayRow(dayData) {
+            const row = document.createElement('div');
+            row.className = 'day-row';
+            
+            // Date label
+            const dateLabel = document.createElement('div');
+            dateLabel.className = 'date-label';
+            const date = new Date(dayData.date);
+            dateLabel.textContent = date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            row.appendChild(dateLabel);
+            
+            // Commit squares
+            const squaresContainer = document.createElement('div');
+            squaresContainer.className = 'commit-squares';
+            
+            // Create squares for each project
+            Object.entries(dayData.projects).forEach(([projectName, commitCount]) => {
+                for (let i = 0; i < commitCount; i++) {
+                    const square = createCommitSquare(projectName, i);
+                    squaresContainer.appendChild(square);
+                }
+            });
+            
+            row.appendChild(squaresContainer);
+            return row;
+        }
+
+        // Create legend
+        function createLegend() {
+            const legendContainer = document.getElementById('legend-items');
+            legendContainer.innerHTML = '';
+            
+            // Get unique projects from the data
+            const uniqueProjects = new Set();
+            commitData.forEach(day => {
+                Object.keys(day.projects).forEach(project => uniqueProjects.add(project));
+            });
+            
+            uniqueProjects.forEach(project => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                
+                const emoji = document.createElement('span');
+                emoji.className = 'legend-emoji';
+                emoji.textContent = getProjectEmoji(project);
+                
+                const name = document.createElement('span');
+                name.textContent = project;
+                
+                legendItem.appendChild(emoji);
+                legendItem.appendChild(name);
+                legendContainer.appendChild(legendItem);
+            });
+        }
+
+        // Load and display commit data
+        let commitData = [];
+
+        async function loadCommitData() {
+            try {
+                const response = await fetch('/commit-log.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                commitData = await response.json();
+                
+                const gridContainer = document.getElementById('grid-container');
+                gridContainer.innerHTML = '';
+                
+                // Create rows for each day
+                commitData.forEach(dayData => {
+                    const row = createDayRow(dayData);
+                    gridContainer.appendChild(row);
+                });
+                
+                // Create legend
+                createLegend();
+                
+            } catch (error) {
+                console.error('Error loading commit data:', error);
+                document.getElementById('grid-container').innerHTML = 
+                    '<div class="error">Error loading commit data. Please check that commit-log.json exists and is valid.</div>';
+            }
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadCommitData);
+    </script>
+</body>
+</html> 

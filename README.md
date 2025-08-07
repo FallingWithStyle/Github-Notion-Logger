@@ -1,11 +1,12 @@
 # Github-Notion-Logger
 
-A webhook-based service that logs GitHub commits to Notion database.
+A webhook-based service that logs GitHub commits to Notion database with a visual commit activity tracker.
 
 ## Features
 
 - **Webhook endpoint** to receive GitHub commit events in real-time
 - **Automatic logging** of commits to Notion database
+- **Visual commit activity tracker** - view your coding activity across projects over time
 - **One-time backfill script** to import historical commits from the last 6 months
 - **Duplicate detection** to prevent duplicate entries during backfill
 - **Deduplication tool** to clean existing duplicate entries
@@ -135,6 +136,37 @@ This project includes a `fly.toml` configuration for easy deployment to Fly.io.
 - **Other cloud platforms**: The application can be deployed to any Node.js hosting platform (Heroku, Railway, etc.)
 
 ## Usage
+
+### Web Interface - Commit Activity Visualizer
+
+The application now includes a visual commit activity tracker accessible at the root URL (`/`). This provides:
+
+- **Daily commit grid** showing your activity across multiple projects
+- **Color-coded squares** representing commits to different projects
+- **Interactive hover effects** showing project name and commit details
+- **Project legend** mapping colors to project names
+- **Responsive design** that works on desktop and mobile
+
+**To view your commit activity:**
+1. Start the server: `npm start`
+2. Open your browser to `http://localhost:8080`
+3. The visualizer will load commit data from `public/commit-log.json`
+
+**To update with real data:**
+```bash
+# Generate sample data
+node generate-commit-log.js
+
+# Or fetch real GitHub data (requires GitHub token)
+node generate-commit-log.js --github --username YOUR_USERNAME --token YOUR_TOKEN
+```
+
+**Color Assignment:**
+The visualizer automatically assigns colors to new projects using a smart algorithm that:
+- Uses 15 different emoji colors (🟩🟥🟪🟦🟨🟧🟫⬛⬜🟣🟢🔴🔵🟡🟠)
+- Assigns the least-used color to new projects for optimal distribution
+- Ensures no default/fallback colors are used
+- Shows color assignment info when generating data
 
 ### Webhook Mode (Real-time)
 Start the server to receive webhook events:

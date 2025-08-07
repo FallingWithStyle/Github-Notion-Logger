@@ -2,11 +2,15 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
+const path = require('path');
 const { logCommitsToNotion } = require('./notion');
 
 dotenv.config();
 const app = express();
 app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf } }));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 8080;
 const SECRET = process.env.GITHUB_WEBHOOK_SECRET;
@@ -36,5 +40,9 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => res.send('GitHub to Notion logger running.'));
+// Serve the commit visualizer page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.listen(PORT, '0.0.0.0', () => console.log(`Listening on port ${PORT}`));

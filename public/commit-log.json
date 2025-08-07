@@ -1,0 +1,90 @@
+[
+  {
+    "date": "2025-01-01",
+    "projects": {
+      "glyph": 3,
+      "friend-party": 2,
+      "audventr": 3
+    }
+  },
+  {
+    "date": "2025-01-02",
+    "projects": {
+      "glyph": 2,
+      "friend-party": 4,
+      "audventr": 2
+    }
+  },
+  {
+    "date": "2025-01-03",
+    "projects": {
+      "glyph": 1,
+      "friend-party": 3,
+      "audventr": 1,
+      "github-notion-logger": 2
+    }
+  },
+  {
+    "date": "2025-01-04",
+    "projects": {
+      "glyph": 5,
+      "friend-party": 1,
+      "audventr": 4
+    }
+  },
+  {
+    "date": "2025-01-05",
+    "projects": {
+      "glyph": 2,
+      "friend-party": 3,
+      "audventr": 2,
+      "github-notion-logger": 1
+    }
+  },
+  {
+    "date": "2025-01-06",
+    "projects": {
+      "glyph": 0,
+      "friend-party": 2,
+      "audventr": 1
+    }
+  },
+  {
+    "date": "2025-01-07",
+    "projects": {
+      "glyph": 4,
+      "friend-party": 1,
+      "audventr": 3,
+      "github-notion-logger": 2,
+      "new-project-a": 1,
+      "new-project-b": 2
+    }
+  },
+  {
+    "date": "2025-01-08",
+    "projects": {
+      "glyph": 1,
+      "friend-party": 2,
+      "new-project-c": 3,
+      "new-project-d": 1
+    }
+  },
+  {
+    "date": "2025-01-09",
+    "projects": {
+      "glyph": 2,
+      "friend-party": 1,
+      "new-project-e": 4,
+      "new-project-f": 2
+    }
+  },
+  {
+    "date": "2025-01-10",
+    "projects": {
+      "glyph": 3,
+      "friend-party": 2,
+      "new-project-g": 1,
+      "new-project-h": 3
+    }
+  }
+]
