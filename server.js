@@ -8,13 +8,58 @@ const { logCommitsToNotion } = require('./notion');
 
 dotenv.config();
 const app = express();
-app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf } }));
+
+// Add request timeout middleware
+const timeout = require('connect-timeout');
+
+// Set timeout to 30 seconds for all requests
+app.use(timeout('30s'));
+
+// Add error handling for timeout
+app.use((req, res, next) => {
+  if (!req.timedout) next();
+});
+
+app.use(bodyParser.json({ 
+  verify: (req, res, buf) => { 
+    req.rawBody = buf;
+  },
+  limit: '10mb' // Limit payload size
+}));
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.path} - Started`);
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`📤 ${new Date().toISOString()} - ${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
+  });
+  
+  next();
+});
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 8080;
 const SECRET = process.env.GITHUB_WEBHOOK_SECRET;
+
+// Validate required environment variables
+const requiredEnvVars = ['NOTION_API_KEY', 'NOTION_DATABASE_ID', 'GITHUB_WEBHOOK_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars);
+  console.error('Please set the following environment variables:');
+  missingEnvVars.forEach(varName => {
+    console.error(`  - ${varName}`);
+  });
+  process.exit(1);
+}
+
+console.log('✅ All required environment variables are set');
 
 // Available colors for projects (matching the frontend)
 const availableColors = ['🟩', '🟥', '🟪', '🟦', '🟨', '🟧', '🟫', '⬛', '⬜', '🟣', '🟢', '🔴', '🔵', '🟡', '🟠'];
@@ -57,13 +102,21 @@ function assignColorToProject(projectName, projectColors) {
 // Function to update commit log with new data
 async function updateCommitLog(newCommits, repoName) {
   try {
+    console.log(`📝 Updating commit log with ${newCommits.length} commits from ${repoName}...`);
+    
     const commitLogPath = path.join(__dirname, 'public', 'commit-log.json');
     let commitLog = [];
     
     // Read existing commit log if it exists
     if (fs.existsSync(commitLogPath)) {
-      const data = fs.readFileSync(commitLogPath, 'utf8');
-      commitLog = JSON.parse(data);
+      try {
+        const data = fs.readFileSync(commitLogPath, 'utf8');
+        commitLog = JSON.parse(data);
+        console.log(`📖 Loaded existing commit log with ${commitLog.length} days`);
+      } catch (error) {
+        console.error('❌ Error reading existing commit log:', error.message);
+        // Continue with empty commit log
+      }
     }
     
     // Group new commits by date
@@ -104,54 +157,125 @@ async function updateCommitLog(newCommits, repoName) {
     
   } catch (error) {
     console.error('❌ Error updating commit log:', error);
+    throw error; // Re-throw to be handled by caller
   }
 }
 
 function verifySignature(req) {
-  const signature = req.headers['x-hub-signature-256'];
-  const hmac = crypto.createHmac('sha256', SECRET);
-  const digest = 'sha256=' + hmac.update(req.rawBody).digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature || ''), Buffer.from(digest));
+  try {
+    const signature = req.headers['x-hub-signature-256'];
+    
+    if (!signature) {
+      console.log('❌ No signature provided in request');
+      return false;
+    }
+    
+    if (!SECRET) {
+      console.log('❌ No webhook secret configured');
+      return false;
+    }
+    
+    const hmac = crypto.createHmac('sha256', SECRET);
+    const digest = 'sha256=' + hmac.update(req.rawBody).digest('hex');
+    
+    const isValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
+    
+    if (!isValid) {
+      console.log('❌ Invalid signature provided');
+    }
+    
+    return isValid;
+  } catch (error) {
+    console.error('❌ Error verifying signature:', error.message);
+    return false;
+  }
 }
 
-app.post('/webhook', async (req, res) => {
-  if (!verifySignature(req)) {
-    return res.status(401).send('Invalid signature');
-  }
+// Add error handling wrapper for async routes
+function asyncHandler(fn) {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
 
-  const payload = req.body;
-  const commits = payload.commits || [];
-  const repo = payload.repository.full_name;
-
+app.post('/webhook', asyncHandler(async (req, res) => {
+  console.log('🔔 Received webhook request');
+  
   try {
-    // Log commits to Notion
-    const result = await logCommitsToNotion(commits, repo);
+    // Verify signature
+    if (!verifySignature(req)) {
+      console.log('❌ Webhook signature verification failed');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+    
+    console.log('✅ Webhook signature verified');
+    
+    const payload = req.body;
+    
+    // Validate payload structure
+    if (!payload) {
+      console.log('❌ No payload received');
+      return res.status(400).json({ error: 'No payload received' });
+    }
+    
+    if (!payload.repository || !payload.repository.full_name) {
+      console.log('❌ Invalid payload: missing repository information');
+      return res.status(400).json({ error: 'Invalid payload: missing repository information' });
+    }
+    
+    const commits = payload.commits || [];
+    const repo = payload.repository.full_name;
+    
+    console.log(`📦 Processing ${commits.length} commits from ${repo}`);
+    
+    // Log commits to Notion with timeout
+    const notionPromise = logCommitsToNotion(commits, repo);
+    const notionTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Notion API timeout')), 25000)
+    );
+    
+    const result = await Promise.race([notionPromise, notionTimeout]);
+    console.log(`✅ Notion logging completed: ${result.processed} processed, ${result.skipped} skipped`);
     
     // Also update the commit log for the visualizer
     if (commits.length > 0) {
-      await updateCommitLog(commits, repo.split('/').pop());
+      const updatePromise = updateCommitLog(commits, repo.split('/').pop());
+      const updateTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Commit log update timeout')), 10000)
+      );
+      
+      await Promise.race([updatePromise, updateTimeout]);
     }
     
-    res.status(200).send('OK');
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error logging to Notion');
+    console.log('✅ Webhook processing completed successfully');
+    res.status(200).json({ success: true, processed: result.processed, skipped: result.skipped });
+    
+  } catch (error) {
+    console.error('❌ Error processing webhook:', error);
+    res.status(500).json({ 
+      error: 'Error processing webhook',
+      message: error.message 
+    });
   }
-});
+}));
 
 // Endpoint to fetch data from Notion database
-app.get('/api/fetch-notion-data', async (req, res) => {
+app.get('/api/fetch-notion-data', asyncHandler(async (req, res) => {
   try {
+    console.log('🔄 Starting Notion data fetch...');
+    
     const { Client } = require('@notionhq/client');
     
     // Check if required environment variables are set
     if (!process.env.NOTION_API_KEY) {
+      console.log('❌ NOTION_API_KEY not set');
       return res.status(400).json({ 
         error: 'NOTION_API_KEY environment variable not set' 
       });
     }
     
     if (!process.env.NOTION_DATABASE_ID) {
+      console.log('❌ NOTION_DATABASE_ID not set');
       return res.status(400).json({ 
         error: 'NOTION_DATABASE_ID environment variable not set' 
       });
@@ -166,70 +290,87 @@ app.get('/api/fetch-notion-data', async (req, res) => {
     const commitData = {};
     let hasMore = true;
     let startCursor = undefined;
+    let pageCount = 0;
     
-    // Fetch all pages from the database
-    while (hasMore) {
-      const response = await notion.databases.query({
-        database_id: databaseId,
-        filter: {
-          property: "Date",
-          date: {
-            on_or_after: since
-          }
-        },
-        page_size: 100,
-        start_cursor: startCursor
-      });
-      
-      // Process each page
-      response.results.forEach(page => {
-        const projectName = page.properties["Project Name"]?.title?.[0]?.text?.content;
-        const date = page.properties["Date"]?.date?.start;
+    // Fetch all pages from the database with timeout
+    const fetchTimeout = setTimeout(() => {
+      console.log('❌ Notion fetch timeout');
+      throw new Error('Notion fetch timeout');
+    }, 60000); // 60 second timeout
+    
+    try {
+      while (hasMore) {
+        pageCount++;
+        console.log(`📄 Fetching page ${pageCount}...`);
         
-        if (projectName && date) {
-          const dateKey = date.split('T')[0];
+        const response = await notion.databases.query({
+          database_id: databaseId,
+          filter: {
+            property: "Date",
+            date: {
+              on_or_after: since
+            }
+          },
+          page_size: 100,
+          start_cursor: startCursor
+        });
+        
+        // Process each page
+        response.results.forEach(page => {
+          const projectName = page.properties["Project Name"]?.title?.[0]?.text?.content;
+          const date = page.properties["Date"]?.date?.start;
           
-          if (!commitData[dateKey]) {
-            commitData[dateKey] = {};
+          if (projectName && date) {
+            const dateKey = date.split('T')[0];
+            
+            if (!commitData[dateKey]) {
+              commitData[dateKey] = {};
+            }
+            
+            if (!commitData[dateKey][projectName]) {
+              commitData[dateKey][projectName] = 0;
+            }
+            
+            commitData[dateKey][projectName]++;
           }
-          
-          if (!commitData[dateKey][projectName]) {
-            commitData[dateKey][projectName] = 0;
-          }
-          
-          commitData[dateKey][projectName]++;
+        });
+        
+        hasMore = response.has_more;
+        startCursor = response.next_cursor;
+        
+        // Add a small delay to avoid rate limiting
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
+      }
+      
+      clearTimeout(fetchTimeout);
+      
+      // Convert to the expected format
+      const commitLog = Object.entries(commitData).map(([date, projects]) => ({
+        date,
+        projects
+      }));
+      
+      // Sort by date
+      commitLog.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      // Save to file
+      const commitLogPath = path.join(__dirname, 'public', 'commit-log.json');
+      fs.writeFileSync(commitLogPath, JSON.stringify(commitLog, null, 2));
+      
+      console.log(`✅ Fetched and saved ${commitLog.length} days of commit data from Notion`);
+      
+      res.json({ 
+        success: true, 
+        days: commitLog.length,
+        message: `Fetched ${commitLog.length} days of commit data from Notion database`
       });
       
-      hasMore = response.has_more;
-      startCursor = response.next_cursor;
-      
-      // Add a small delay to avoid rate limiting
-      if (hasMore) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+    } catch (error) {
+      clearTimeout(fetchTimeout);
+      throw error;
     }
-    
-    // Convert to the expected format
-    const commitLog = Object.entries(commitData).map(([date, projects]) => ({
-      date,
-      projects
-    }));
-    
-    // Sort by date
-    commitLog.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    // Save to file
-    const commitLogPath = path.join(__dirname, 'public', 'commit-log.json');
-    fs.writeFileSync(commitLogPath, JSON.stringify(commitLog, null, 2));
-    
-    console.log(`✅ Fetched and saved ${commitLog.length} days of commit data from Notion`);
-    
-    res.json({ 
-      success: true, 
-      days: commitLog.length,
-      message: `Fetched ${commitLog.length} days of commit data from Notion database`
-    });
     
   } catch (error) {
     console.error('❌ Error fetching Notion data:', error);
@@ -238,11 +379,60 @@ app.get('/api/fetch-notion-data', async (req, res) => {
       details: error.message 
     });
   }
-});
+}));
 
 // Serve the commit visualizer page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`Listening on port ${PORT}`));
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('❌ Unhandled error:', error);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: error.message 
+  });
+});
+
+// Handle 404 errors
+app.use((req, res) => {
+  console.log(`❌ 404 - ${req.method} ${req.path}`);
+  res.status(404).json({ error: 'Not found' });
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🛑 Received SIGTERM, shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 Received SIGINT, shutting down gracefully...');
+  process.exit(0);
+});
+
+// Unhandled promise rejection handler
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+// Uncaught exception handler
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server started on port ${PORT}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔑 Webhook secret configured: ${SECRET ? 'Yes' : 'No'}`);
+  console.log(`📝 Notion API key configured: ${process.env.NOTION_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`🗄️ Notion database ID configured: ${process.env.NOTION_DATABASE_ID ? 'Yes' : 'No'}`);
+});
+
+// Add server timeout
+server.timeout = 30000; // 30 seconds
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // 66 seconds
