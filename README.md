@@ -42,7 +42,7 @@ npm start
 ```
 
 ### Backfill Mode (One-time import)
-To import commits from the last 6 months:
+To import commits from the last 6 months (default) or a custom period:
 
 **For a single repository:**
 ```bash
@@ -56,8 +56,16 @@ node backfill.js
 ```
 (Leave `GITHUB_REPO` unset in your `.env` file)
 
+**Custom time period:**
+```bash
+node backfill.js --months 12
+# or
+node backfill.js -m 12
+```
+(Valid range: 1-72 months)
+
 This will:
-- Fetch all commits from the specified repository(s) from the last 6 months
+- Fetch all commits from the specified repository(s) from the last 6 months (default) or custom period
 - Transform them to match the webhook format
 - Log them to your Notion database in batches of 50 commits
 - Include progress logging and rate limiting to avoid API limits
@@ -91,8 +99,9 @@ This will:
   - Error handling and logging
 
 ### `backfill.js` - Historical Data Import
-- **Purpose**: One-time import of commits from the last 6 months
+- **Purpose**: One-time import of commits from the last 6 months (default) or custom period
 - **Modes**: Single repository or all repositories
+- **Parameters**: Optional `--months` or `-m` flag (1-72 months, defaults to 6)
 - **Features**:
   - Duplicate detection and skipping
   - Configurable batch processing (50 commits/batch)

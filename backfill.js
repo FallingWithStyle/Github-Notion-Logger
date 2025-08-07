@@ -76,11 +76,11 @@ async function getAllRepositories(owner) {
   }
 }
 
-async function getCommitsFromLast6Months(owner, repo) {
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+async function getCommitsFromLastNMonths(owner, repo, months = 6) {
+  const nMonthsAgo = new Date();
+  nMonthsAgo.setMonth(nMonthsAgo.getMonth() - months);
   
-  console.log(`Fetching commits from ${owner}/${repo} since ${sixMonthsAgo.toISOString()}`);
+  console.log(`Fetching commits from ${owner}/${repo} since ${nMonthsAgo.toISOString()}`);
   
   const commits = [];
   let page = 1;
@@ -95,7 +95,7 @@ async function getCommitsFromLast6Months(owner, repo) {
         repo,
         per_page: perPage,
         page,
-        since: sixMonthsAgo.toISOString(),
+        since: nMonthsAgo.toISOString(),
       });
       
       if (response.data.length === 0) {
@@ -129,7 +129,7 @@ async function getCommitsFromLast6Months(owner, repo) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    console.log(`Found ${commits.length} commits from the last 6 months`);
+    console.log(`Found ${commits.length} commits from the last ${months} months`);
     return commits;
   } catch (error) {
     console.error('Error fetching commits:', error.message);
@@ -182,7 +182,13 @@ async function selectRepositories(owner) {
   }
 }
 
-async function backfillCommits() {
+async function backfillCommits(months = 6) {
+  // Validate months parameter
+  if (months < 1 || months > 72) {
+    console.error('Months parameter must be between 1 and 72');
+    process.exit(1);
+  }
+  
   const owner = process.env.GITHUB_OWNER;
   const singleRepo = process.env.GITHUB_REPO;
   
@@ -206,6 +212,8 @@ async function backfillCommits() {
   if (process.env.NOTION_DATABASE_ID) {
     console.log('- NOTION_DATABASE_ID:', process.env.NOTION_DATABASE_ID);
   }
+  
+  console.log(`\nBackfilling commits from the last ${months} months...`);
   
   try {
     let repositories = [];
@@ -235,10 +243,10 @@ async function backfillCommits() {
       console.log(`\n=== Processing repository: ${owner}/${repo.name} ===`);
       
       try {
-        const commits = await getCommitsFromLast6Months(owner, repo.name);
+        const commits = await getCommitsFromLastNMonths(owner, repo.name, months);
         
         if (commits.length === 0) {
-          console.log(`No commits found in ${repo.name} for the last 6 months`);
+          console.log(`No commits found in ${repo.name} for the last ${months} months`);
           continue;
         }
         
@@ -291,7 +299,23 @@ async function backfillCommits() {
 
 // Run the backfill if this script is executed directly
 if (require.main === module) {
-  backfillCommits();
+  // Parse command line arguments for months parameter
+  const args = process.argv.slice(2);
+  let months = 6; // default value
+  
+  // Check for --months or -m argument
+  const monthsIndex = args.findIndex(arg => arg === '--months' || arg === '-m');
+  if (monthsIndex !== -1 && monthsIndex + 1 < args.length) {
+    const monthsValue = parseInt(args[monthsIndex + 1]);
+    if (!isNaN(monthsValue) && monthsValue >= 1 && monthsValue <= 72) {
+      months = monthsValue;
+    } else {
+      console.error('Invalid months value. Must be a number between 1 and 72.');
+      process.exit(1);
+    }
+  }
+  
+  backfillCommits(months);
 }
 
 module.exports = { backfillCommits }; 
