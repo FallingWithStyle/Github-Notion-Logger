@@ -86,7 +86,7 @@
         .grid-container {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
             margin-bottom: 30px;
         }
         
@@ -94,7 +94,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            padding: 8px 0;
+            padding: 4px 0;
             border-bottom: 1px solid #ecf0f1;
         }
         
@@ -107,12 +107,12 @@
         
         .commit-squares {
             display: flex;
-            gap: 2px;
+            gap: 1px;
             flex-wrap: wrap;
         }
         
         .commit-square {
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             transition: transform 0.2s ease;
             position: relative;
@@ -267,17 +267,56 @@
             return assignColorToProject(projectName);
         }
 
+        // Calculate proportional squares for a day
+        function calculateProportionalSquares(projects) {
+            const totalCommits = Object.values(projects).reduce((sum, count) => sum + count, 0);
+            if (totalCommits === 0) return [];
+            
+            const squares = [];
+            const maxSquares = 10;
+            
+            // Calculate proportional shares
+            Object.entries(projects).forEach(([projectName, commitCount]) => {
+                const proportion = commitCount / totalCommits;
+                const squareCount = Math.round(proportion * maxSquares);
+                
+                for (let i = 0; i < squareCount; i++) {
+                    squares.push(projectName);
+                }
+            });
+            
+            // Ensure we don't exceed max squares
+            if (squares.length > maxSquares) {
+                squares.splice(maxSquares);
+            }
+            
+            // If we have fewer than max squares, add some from the largest projects
+            if (squares.length < maxSquares) {
+                const sortedProjects = Object.entries(projects)
+                    .sort(([,a], [,b]) => b - a);
+                
+                let added = 0;
+                for (const [projectName] of sortedProjects) {
+                    if (squares.length >= maxSquares) break;
+                    squares.push(projectName);
+                    added++;
+                }
+            }
+            
+            return squares;
+        }
+
         // Create a commit square element
         function createCommitSquare(projectName, index) {
             const square = document.createElement('span');
             square.className = 'commit-square';
             square.textContent = getProjectEmoji(projectName);
-            square.title = `${projectName} (commit ${index + 1})`;
+            square.title = `${projectName} (square ${index + 1})`;
             
             // Add tooltip
             const tooltip = document.createElement('div');
             tooltip.className = 'tooltip';
-            tooltip.textContent = `${projectName} (commit ${index + 1})`;
+            tooltip.textContent = `${projectName} (square ${index + 1})`;
             square.appendChild(tooltip);
             
             return square;
@@ -303,12 +342,13 @@
             const squaresContainer = document.createElement('div');
             squaresContainer.className = 'commit-squares';
             
-            // Create squares for each project
-            Object.entries(dayData.projects).forEach(([projectName, commitCount]) => {
-                for (let i = 0; i < commitCount; i++) {
-                    const square = createCommitSquare(projectName, i);
-                    squaresContainer.appendChild(square);
-                }
+            // Calculate proportional squares
+            const squares = calculateProportionalSquares(dayData.projects);
+            
+            // Create squares
+            squares.forEach((projectName, index) => {
+                const square = createCommitSquare(projectName, index);
+                squaresContainer.appendChild(square);
             });
             
             row.appendChild(squaresContainer);

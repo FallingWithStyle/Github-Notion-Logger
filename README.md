@@ -169,6 +169,13 @@ The visualizer can automatically fetch data from your Notion database:
 - **Real-time Updates**: New commits from webhooks automatically update the visualizer
 - **Environment Variables**: Uses `NOTION_API_KEY` and `NOTION_DATABASE_ID` from your `.env` file
 
+**Proportional Representation:**
+Each day shows up to 10 squares representing your work distribution:
+- **Proportional Squares**: Squares represent the percentage of time spent on each project
+- **Maximum 10 Squares**: Each day is limited to 10 squares for consistent visualization
+- **Smart Rounding**: Rounds to nearest proportional representation (e.g., 50% = 5 squares)
+- **Compact Layout**: Reduced spacing between rows for better visual density
+
 **Color Assignment:**
 The visualizer automatically assigns colors to new projects using a smart algorithm that:
 - Uses 15 different emoji colors (🟩🟥🟪🟦🟨🟧🟫⬛⬜🟣🟢🔴🔵🟡🟠)

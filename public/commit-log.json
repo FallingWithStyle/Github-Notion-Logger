@@ -1,360 +1,56 @@
 [
   {
-    "date": "2025-05-31",
+    "date": "2025-01-01",
     "projects": {
-      "Avoros-Dungeon": 124
+      "Avoros-Dungeon": 50,
+      "Kitch": 30,
+      "Magic-Quill": 20
     }
   },
   {
-    "date": "2025-06-01",
+    "date": "2025-01-02",
     "projects": {
-      "Avoros-Dungeon": 85
+      "Avoros-Dungeon": 25,
+      "Kitch": 45,
+      "Magic-Quill": 30
     }
   },
   {
-    "date": "2025-06-02",
+    "date": "2025-01-03",
     "projects": {
-      "Avoros-Dungeon": 2
+      "Avoros-Dungeon": 10,
+      "Kitch": 60,
+      "Magic-Quill": 30
     }
   },
   {
-    "date": "2025-06-03",
+    "date": "2025-01-04",
     "projects": {
-      "Avoros-Dungeon": 17
-    }
-  },
-  {
-    "date": "2025-06-04",
-    "projects": {
-      "Avoros-Dungeon": 22
-    }
-  },
-  {
-    "date": "2025-06-05",
-    "projects": {
-      "Avoros-Dungeon": 82
-    }
-  },
-  {
-    "date": "2025-06-06",
-    "projects": {
-      "Avoros-Dungeon": 95
-    }
-  },
-  {
-    "date": "2025-06-07",
-    "projects": {
-      "Avoros-Dungeon": 107
-    }
-  },
-  {
-    "date": "2025-06-08",
-    "projects": {
-      "Avoros-Dungeon": 146
-    }
-  },
-  {
-    "date": "2025-06-09",
-    "projects": {
-      "Avoros-Dungeon": 79
-    }
-  },
-  {
-    "date": "2025-06-10",
-    "projects": {
-      "Avoros-Dungeon": 89
-    }
-  },
-  {
-    "date": "2025-06-11",
-    "projects": {
-      "Avoros-Dungeon": 67
-    }
-  },
-  {
-    "date": "2025-06-12",
-    "projects": {
-      "Avoros-Dungeon": 59
-    }
-  },
-  {
-    "date": "2025-06-13",
-    "projects": {
-      "Avoros-Dungeon": 80
-    }
-  },
-  {
-    "date": "2025-06-14",
-    "projects": {
-      "Avoros-Dungeon": 45
-    }
-  },
-  {
-    "date": "2025-06-15",
-    "projects": {
-      "Avoros-Dungeon": 48
-    }
-  },
-  {
-    "date": "2025-06-16",
-    "projects": {
-      "Avoros-Dungeon": 66
-    }
-  },
-  {
-    "date": "2025-06-17",
-    "projects": {
-      "Kitch": 12,
-      "Avoros-Dungeon": 12
-    }
-  },
-  {
-    "date": "2025-06-18",
-    "projects": {
-      "Kitch": 72
-    }
-  },
-  {
-    "date": "2025-06-19",
-    "projects": {
-      "Kitch": 44
-    }
-  },
-  {
-    "date": "2025-06-20",
-    "projects": {
-      "Kitch": 69
-    }
-  },
-  {
-    "date": "2025-06-21",
-    "projects": {
-      "Kitch": 106
-    }
-  },
-  {
-    "date": "2025-06-22",
-    "projects": {
-      "Kitch": 58,
-      "Avoros-Dungeon": 73
-    }
-  },
-  {
-    "date": "2025-06-23",
-    "projects": {
-      "Avoros-Dungeon": 54
-    }
-  },
-  {
-    "date": "2025-06-24",
-    "projects": {
-      "Avoros-Dungeon": 74
-    }
-  },
-  {
-    "date": "2025-06-25",
-    "projects": {
-      "familiar-things": 6
-    }
-  },
-  {
-    "date": "2025-06-27",
-    "projects": {
-      "Magic-Quill": 35
-    }
-  },
-  {
-    "date": "2025-06-28",
-    "projects": {
-      "Magic-Quill": 41,
-      "Kitch": 2
-    }
-  },
-  {
-    "date": "2025-07-02",
-    "projects": {
-      "Magic-Quill": 61
-    }
-  },
-  {
-    "date": "2025-07-03",
-    "projects": {
-      "Magic-Quill": 49
-    }
-  },
-  {
-    "date": "2025-07-11",
-    "projects": {
-      "Magic-Quill": 2,
-      "friend-party-app": 3
-    }
-  },
-  {
-    "date": "2025-07-12",
-    "projects": {
-      "friend-party-app": 3
-    }
-  },
-  {
-    "date": "2025-07-13",
-    "projects": {
-      "friend-party-app": 8
-    }
-  },
-  {
-    "date": "2025-07-14",
-    "projects": {
-      "friend-party-app": 3
-    }
-  },
-  {
-    "date": "2025-07-15",
-    "projects": {
-      "friend-party-app": 5
-    }
-  },
-  {
-    "date": "2025-07-16",
-    "projects": {
-      "Magic-Quill": 1,
-      "friend-party-app": 1
-    }
-  },
-  {
-    "date": "2025-07-17",
-    "projects": {
-      "Audventr": 10,
-      "Magic-Quill": 4
-    }
-  },
-  {
-    "date": "2025-07-18",
-    "projects": {
-      "Magic-Quill": 11
-    }
-  },
-  {
-    "date": "2025-07-19",
-    "projects": {
-      "Audventr": 3,
-      "Magic-Quill": 2
-    }
-  },
-  {
-    "date": "2025-07-20",
-    "projects": {
-      "Magic-Quill": 4
-    }
-  },
-  {
-    "date": "2025-07-21",
-    "projects": {
-      "Magic-Quill": 12
-    }
-  },
-  {
-    "date": "2025-07-22",
-    "projects": {
-      "Magic-Quill": 9
-    }
-  },
-  {
-    "date": "2025-07-23",
-    "projects": {
-      "Magic-Quill": 2
-    }
-  },
-  {
-    "date": "2025-07-24",
-    "projects": {
-      "Magic-Quill": 6
-    }
-  },
-  {
-    "date": "2025-07-25",
-    "projects": {
-      "Magic-Quill": 3
-    }
-  },
-  {
-    "date": "2025-07-26",
-    "projects": {
-      "Magic-Quill": 22
-    }
-  },
-  {
-    "date": "2025-07-27",
-    "projects": {
-      "Magic-Quill": 13
-    }
-  },
-  {
-    "date": "2025-07-28",
-    "projects": {
+      "Avoros-Dungeon": 80,
+      "Kitch": 10,
       "Magic-Quill": 10
     }
   },
   {
-    "date": "2025-07-30",
+    "date": "2025-01-05",
     "projects": {
-      "glyph-server": 7
+      "Avoros-Dungeon": 33,
+      "Kitch": 33,
+      "Magic-Quill": 34
     }
   },
   {
-    "date": "2025-07-31",
+    "date": "2025-01-06",
     "projects": {
-      "friend-party-app": 13,
-      "glyph-server": 10
+      "Avoros-Dungeon": 100
     }
   },
   {
-    "date": "2025-08-01",
+    "date": "2025-01-07",
     "projects": {
-      "friend-party-app": 2,
-      "glyph-server": 7,
-      "glyph-legal": 3
-    }
-  },
-  {
-    "date": "2025-08-02",
-    "projects": {
-      "Audventr-Wizard": 24,
-      "glyph-server": 9
-    }
-  },
-  {
-    "date": "2025-08-03",
-    "projects": {
-      "Audventr-Wizard": 4,
-      "glyph-server": 24,
-      "Kitch": 4
-    }
-  },
-  {
-    "date": "2025-08-04",
-    "projects": {
-      "glyph-server": 17,
-      "Kitch": 4
-    }
-  },
-  {
-    "date": "2025-08-05",
-    "projects": {
-      "glyph-server": 9,
-      "Kitch": 3
-    }
-  },
-  {
-    "date": "2025-08-06",
-    "projects": {
-      "Kitch": 15,
-      "Github-Notion-Logger": 11
-    }
-  },
-  {
-    "date": "2025-08-07",
-    "projects": {
-      "Github-Notion-Logger": 2
+      "Avoros-Dungeon": 40,
+      "Kitch": 40,
+      "Magic-Quill": 20
     }
   }
 ]
