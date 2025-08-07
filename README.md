@@ -157,9 +157,17 @@ The application now includes a visual commit activity tracker accessible at the 
 # Generate sample data
 node generate-commit-log.js
 
-# Or fetch real GitHub data (requires GitHub token)
-node generate-commit-log.js --github --username YOUR_USERNAME --token YOUR_TOKEN
+# Or fetch real data from Notion (requires environment variables)
+node generate-commit-log.js --notion
+node generate-commit-log.js --notion --since=2025-01-01
 ```
+
+**Notion Integration:**
+The visualizer can automatically fetch data from your Notion database:
+- **Web Interface**: Click "Fetch from Notion" button to load latest data
+- **Auto-refresh**: Enable auto-refresh to update every 30 seconds
+- **Real-time Updates**: New commits from webhooks automatically update the visualizer
+- **Environment Variables**: Uses `NOTION_API_KEY` and `NOTION_DATABASE_ID` from your `.env` file
 
 **Color Assignment:**
 The visualizer automatically assigns colors to new projects using a smart algorithm that:

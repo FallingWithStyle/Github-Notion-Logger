@@ -28,6 +28,53 @@
             margin: 0;
         }
         
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .btn.success {
+            background: #27ae60;
+        }
+        
+        .btn.success:hover {
+            background: #229954;
+        }
+        
+        .status {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
         .visualizer {
             background: white;
             border-radius: 12px;
@@ -154,6 +201,12 @@
     <div class="header">
         <h1>Commit Activity Visualizer</h1>
         <p>Your coding activity across projects over time</p>
+    </div>
+    
+    <div class="controls">
+        <button id="fetch-notion-btn" class="btn">🔄 Fetch from Notion</button>
+        <button id="auto-refresh-btn" class="btn">🔄 Auto-refresh</button>
+        <div id="status" class="status">Ready to load data</div>
     </div>
     
     <div class="visualizer">
@@ -292,6 +345,7 @@
 
         // Load and display commit data
         let commitData = [];
+        let autoRefreshInterval = null;
 
         async function loadCommitData() {
             try {
@@ -313,12 +367,77 @@
                 // Create legend
                 createLegend();
                 
+                updateStatus(`Loaded ${commitData.length} days of commit data`);
+                
             } catch (error) {
                 console.error('Error loading commit data:', error);
                 document.getElementById('grid-container').innerHTML = 
                     '<div class="error">Error loading commit data. Please check that commit-log.json exists and is valid.</div>';
+                updateStatus('Error loading data');
             }
         }
+
+        // Fetch data from Notion
+        async function fetchFromNotion() {
+            const btn = document.getElementById('fetch-notion-btn');
+            const originalText = btn.textContent;
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '🔄 Fetching...';
+                updateStatus('Fetching data from Notion...');
+                
+                const response = await fetch('/api/fetch-notion-data');
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(result.message);
+                    await loadCommitData();
+                    btn.classList.add('success');
+                    btn.textContent = '✅ Fetched!';
+                    setTimeout(() => {
+                        btn.classList.remove('success');
+                        btn.textContent = originalText;
+                    }, 2000);
+                } else {
+                    updateStatus(`Error: ${result.error}`);
+                }
+                
+            } catch (error) {
+                console.error('Error fetching from Notion:', error);
+                updateStatus('Error fetching from Notion');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('auto-refresh-btn');
+            
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                btn.textContent = '🔄 Auto-refresh';
+                btn.classList.remove('success');
+                updateStatus('Auto-refresh disabled');
+            } else {
+                autoRefreshInterval = setInterval(loadCommitData, 30000); // Refresh every 30 seconds
+                btn.textContent = '⏸️ Auto-refresh ON';
+                btn.classList.add('success');
+                updateStatus('Auto-refresh enabled (30s interval)');
+            }
+        }
+
+        // Update status message
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        // Event listeners
+        document.getElementById('fetch-notion-btn').addEventListener('click', fetchFromNotion);
+        document.getElementById('auto-refresh-btn').addEventListener('click', toggleAutoRefresh);
 
         // Load data when page loads
         document.addEventListener('DOMContentLoaded', loadCommitData);

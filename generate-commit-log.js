@@ -5,7 +5,7 @@ const path = require('path');
 const availableColors = ['🟩', '🟥', '🟪', '🟦', '🟨', '🟧', '🟫', '⬛', '⬜', '🟣', '🟢', '🔴', '🔵', '🟡', '🟠'];
 
 // Example function to generate commit log data
-// You can modify this to fetch real data from GitHub API or manually enter your data
+// You can modify this to fetch real data from Notion API or manually enter your data
 function generateCommitLog() {
     // This is sample data - replace with your actual commit data
     const commitLog = [
@@ -149,44 +149,71 @@ function saveCommitLog(commitLog, outputPath = 'public/commit-log.json') {
     }
 }
 
-// Function to fetch real GitHub data (requires GitHub API token)
-async function fetchGitHubCommits(username, token, since = '2025-01-01') {
-    const { Octokit } = require('@octokit/rest');
-    const octokit = new Octokit({ auth: token });
+// Function to fetch data from Notion database
+async function fetchFromNotion(since = '2025-01-01') {
+    const { Client } = require('@notionhq/client');
+    
+    // Check if required environment variables are set
+    if (!process.env.NOTION_API_KEY) {
+        console.error('❌ NOTION_API_KEY environment variable not set');
+        return null;
+    }
+    
+    if (!process.env.NOTION_DATABASE_ID) {
+        console.error('❌ NOTION_DATABASE_ID environment variable not set');
+        return null;
+    }
+    
+    const notion = new Client({ auth: process.env.NOTION_API_KEY });
+    const databaseId = process.env.NOTION_DATABASE_ID;
     
     try {
-        // Get user's repositories
-        const { data: repos } = await octokit.repos.listForUser({
-            username,
-            per_page: 100
-        });
+        console.log(`🔄 Fetching commits from Notion database since ${since}...`);
         
         const commitData = {};
+        let hasMore = true;
+        let startCursor = undefined;
         
-        // Fetch commits for each repository
-        for (const repo of repos) {
-            try {
-                const { data: commits } = await octokit.repos.listCommits({
-                    owner: username,
-                    repo: repo.name,
-                    since,
-                    per_page: 100
-                });
-                
-                // Group commits by date
-                commits.forEach(commit => {
-                    const date = commit.commit.author.date.split('T')[0];
-                    if (!commitData[date]) {
-                        commitData[date] = {};
+        // Fetch all pages from the database
+        while (hasMore) {
+            const response = await notion.databases.query({
+                database_id: databaseId,
+                filter: {
+                    property: "Date",
+                    date: {
+                        on_or_after: since
                     }
-                    if (!commitData[date][repo.name]) {
-                        commitData[date][repo.name] = 0;
-                    }
-                    commitData[date][repo.name]++;
-                });
+                },
+                page_size: 100,
+                start_cursor: startCursor
+            });
+            
+            // Process each page
+            response.results.forEach(page => {
+                const projectName = page.properties["Project Name"]?.title?.[0]?.text?.content;
+                const date = page.properties["Date"]?.date?.start;
                 
-            } catch (error) {
-                console.warn(`⚠️  Could not fetch commits for ${repo.name}:`, error.message);
+                if (projectName && date) {
+                    const dateKey = date.split('T')[0];
+                    
+                    if (!commitData[dateKey]) {
+                        commitData[dateKey] = {};
+                    }
+                    
+                    if (!commitData[dateKey][projectName]) {
+                        commitData[dateKey][projectName] = 0;
+                    }
+                    
+                    commitData[dateKey][projectName]++;
+                }
+            });
+            
+            hasMore = response.has_more;
+            startCursor = response.next_cursor;
+            
+            // Add a small delay to avoid rate limiting
+            if (hasMore) {
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
         }
         
@@ -196,10 +223,13 @@ async function fetchGitHubCommits(username, token, since = '2025-01-01') {
             projects
         }));
         
+        // Sort by date
+        commitLog.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
         return commitLog;
         
     } catch (error) {
-        console.error('❌ Error fetching GitHub data:', error);
+        console.error('❌ Error fetching Notion data:', error);
         return null;
     }
 }
@@ -208,25 +238,26 @@ async function fetchGitHubCommits(username, token, since = '2025-01-01') {
 if (require.main === module) {
     const args = process.argv.slice(2);
     
-    if (args.includes('--github') && args.includes('--username') && args.includes('--token')) {
-        const usernameIndex = args.indexOf('--username') + 1;
-        const tokenIndex = args.indexOf('--token') + 1;
-        const username = args[usernameIndex];
-        const token = args[tokenIndex];
+    if (args.includes('--notion')) {
+        const since = args.find(arg => arg.startsWith('--since='))?.split('=')[1] || '2025-01-01';
         
-        console.log(`🔄 Fetching GitHub commits for ${username}...`);
-        fetchGitHubCommits(username, token).then(commitLog => {
+        console.log('🔄 Fetching data from Notion...');
+        fetchFromNotion(since).then(commitLog => {
             if (commitLog) {
                 saveCommitLog(commitLog);
+                console.log(`✅ Fetched ${commitLog.length} days of commit data from Notion`);
+            } else {
+                console.log('❌ Failed to fetch data from Notion');
             }
         });
     } else {
         console.log('📝 Generating sample commit log...');
         const commitLog = generateCommitLog();
         saveCommitLog(commitLog);
-        console.log('\n💡 To fetch real GitHub data, run:');
-        console.log('   node generate-commit-log.js --github --username YOUR_USERNAME --token YOUR_TOKEN');
+        console.log('\n💡 To fetch real data from Notion, run:');
+        console.log('   node generate-commit-log.js --notion');
+        console.log('   node generate-commit-log.js --notion --since=2025-01-01');
     }
 }
 
-module.exports = { generateCommitLog, saveCommitLog, fetchGitHubCommits }; 
+module.exports = { generateCommitLog, saveCommitLog, fetchFromNotion }; 
