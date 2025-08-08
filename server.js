@@ -41,6 +41,29 @@ app.use((req, res, next) => {
 });
 
 // Serve static files from public directory
+// Provide dynamic commit log before static so it overrides bundled files
+// Configure persistent data directory (Fly.io volume at /data when mounted)
+const DATA_DIR = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data'));
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
+
+// Serve the most recent commit log from persistent storage
+app.get('/commit-log.json', (req, res) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    if (fs.existsSync(COMMIT_LOG_PATH)) {
+      const data = fs.readFileSync(COMMIT_LOG_PATH, 'utf8');
+      return res.type('application/json').send(data);
+    }
+    return res.json([]);
+  } catch (error) {
+    console.error('❌ Error reading commit log:', error.message);
+    return res.json([]);
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 8080;
@@ -104,7 +127,7 @@ async function updateCommitLog(newCommits, repoName) {
   try {
     console.log(`📝 Updating commit log with ${newCommits.length} commits from ${repoName}...`);
     
-    const commitLogPath = path.join(__dirname, 'public', 'commit-log.json');
+    const commitLogPath = COMMIT_LOG_PATH;
     let commitLog = [];
     
     // Read existing commit log if it exists
@@ -163,9 +186,9 @@ async function updateCommitLog(newCommits, repoName) {
 
 function verifySignature(req) {
   try {
-    const signature = req.headers['x-hub-signature-256'];
+    const signatureHeader = req.headers['x-hub-signature-256'];
     
-    if (!signature) {
+    if (!signatureHeader) {
       console.log('❌ No signature provided in request');
       return false;
     }
@@ -175,15 +198,40 @@ function verifySignature(req) {
       return false;
     }
     
+    // Normalize header and compute digest
+    const received = String(signatureHeader).trim();
+    if (!received.toLowerCase().startsWith('sha256=')) {
+      console.log('❌ Signature header missing sha256= prefix');
+      return false;
+    }
+    const receivedHex = received.slice('sha256='.length).toLowerCase();
+
     const hmac = crypto.createHmac('sha256', SECRET);
-    const digest = 'sha256=' + hmac.update(req.rawBody).digest('hex');
-    
-    const isValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
-    
+    const computedHex = hmac.update(req.rawBody).digest('hex');
+
+    // Compare bytes in constant time
+    const receivedBytes = Buffer.from(receivedHex, 'hex');
+    const computedBytes = Buffer.from(computedHex, 'hex');
+    if (receivedBytes.length !== computedBytes.length) {
+      console.log('❌ Invalid signature length (bytes)', {
+        receivedBytes: receivedBytes.length,
+        computedBytes: computedBytes.length,
+      });
+      console.log('🔍 Sig debug (prefixes only):', {
+        receivedPrefix: 'sha256=' + receivedHex.slice(0, 5),
+        computedPrefix: 'sha256=' + computedHex.slice(0, 5),
+      });
+      return false;
+    }
+
+    const isValid = crypto.timingSafeEqual(receivedBytes, computedBytes);
     if (!isValid) {
       console.log('❌ Invalid signature provided');
+      console.log('🔍 Sig debug (prefixes only):', {
+        receivedPrefix: 'sha256=' + receivedHex.slice(0, 5),
+        computedPrefix: 'sha256=' + computedHex.slice(0, 5),
+      });
     }
-    
     return isValid;
   } catch (error) {
     console.error('❌ Error verifying signature:', error.message);
@@ -200,62 +248,71 @@ function asyncHandler(fn) {
 
 app.post('/webhook', asyncHandler(async (req, res) => {
   console.log('🔔 Received webhook request');
-  
+
   try {
     // Verify signature
     if (!verifySignature(req)) {
       console.log('❌ Webhook signature verification failed');
       return res.status(401).json({ error: 'Invalid signature' });
     }
-    
+
     console.log('✅ Webhook signature verified');
-    
+
     const payload = req.body;
-    
+
     // Validate payload structure
     if (!payload) {
       console.log('❌ No payload received');
       return res.status(400).json({ error: 'No payload received' });
     }
-    
+
     if (!payload.repository || !payload.repository.full_name) {
       console.log('❌ Invalid payload: missing repository information');
       return res.status(400).json({ error: 'Invalid payload: missing repository information' });
     }
-    
+
     const commits = payload.commits || [];
     const repo = payload.repository.full_name;
-    
-    console.log(`📦 Processing ${commits.length} commits from ${repo}`);
-    
-    // Log commits to Notion with timeout
-    const notionPromise = logCommitsToNotion(commits, repo);
-    const notionTimeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Notion API timeout')), 25000)
-    );
-    
-    const result = await Promise.race([notionPromise, notionTimeout]);
-    console.log(`✅ Notion logging completed: ${result.processed} processed, ${result.skipped} skipped`);
-    
-    // Also update the commit log for the visualizer
-    if (commits.length > 0) {
-      const updatePromise = updateCommitLog(commits, repo.split('/').pop());
-      const updateTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Commit log update timeout')), 10000)
-      );
-      
-      await Promise.race([updatePromise, updateTimeout]);
-    }
-    
-    console.log('✅ Webhook processing completed successfully');
-    res.status(200).json({ success: true, processed: result.processed, skipped: result.skipped });
-    
+
+    // Acknowledge immediately to avoid GitHub webhook timeouts during cold starts
+    res.status(202).json({ accepted: true, commits: commits.length, repo });
+
+    // Process asynchronously after responding
+    setImmediate(async () => {
+      console.log(`📦 Background processing ${commits.length} commits from ${repo}`);
+      try {
+        const notionPromise = logCommitsToNotion(commits, repo);
+        const notionTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Notion API timeout')), 25000)
+        );
+
+        const result = await Promise.race([notionPromise, notionTimeout]);
+        console.log(`✅ Notion logging completed: ${result.processed} processed, ${result.skipped} skipped`);
+
+        if (commits.length > 0) {
+          const updatePromise = updateCommitLog(commits, repo.split('/').pop());
+          const updateTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Commit log update timeout')), 10000)
+          );
+
+          await Promise.race([updatePromise, updateTimeout]);
+        }
+
+        console.log('✅ Webhook background processing completed successfully');
+      } catch (error) {
+        console.error('❌ Error in webhook background processing:', error);
+      }
+    });
+
   } catch (error) {
     console.error('❌ Error processing webhook:', error);
-    res.status(500).json({ 
-      error: 'Error processing webhook',
-      message: error.message 
-    });
+    // If we hit an error before sending the 202 response, send a 500
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Error processing webhook',
+        message: error.message
+      });
+    }
   }
 }));
 
@@ -356,8 +413,7 @@ app.get('/api/fetch-notion-data', asyncHandler(async (req, res) => {
       commitLog.sort((a, b) => new Date(a.date) - new Date(b.date));
       
       // Save to file
-      const commitLogPath = path.join(__dirname, 'public', 'commit-log.json');
-      fs.writeFileSync(commitLogPath, JSON.stringify(commitLog, null, 2));
+      fs.writeFileSync(COMMIT_LOG_PATH, JSON.stringify(commitLog, null, 2));
       
       console.log(`✅ Fetched and saved ${commitLog.length} days of commit data from Notion`);
       

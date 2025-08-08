@@ -103,10 +103,16 @@ function generateCommitLog() {
 }
 
 // Function to save commit log to file
-function saveCommitLog(commitLog, outputPath = 'public/commit-log.json') {
+function saveCommitLog(commitLog, outputPath) {
+    // Prefer persisted data dir if available
+    const DATA_DIR = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data'));
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    const resolvedPath = outputPath || path.join(DATA_DIR, 'commit-log.json');
     try {
-        fs.writeFileSync(outputPath, JSON.stringify(commitLog, null, 2));
-        console.log(`✅ Commit log saved to ${outputPath}`);
+        fs.writeFileSync(resolvedPath, JSON.stringify(commitLog, null, 2));
+        console.log(`✅ Commit log saved to ${resolvedPath}`);
         
         // Show color assignment info
         console.log('\n🎨 Color Assignment Info:');
