@@ -156,6 +156,8 @@
             flex-wrap: wrap;
             justify-content: center;
             align-items: center;
+            /* Fill remaining space in the row so mobile grid can take full width */
+            flex: 1;
         }
         
         .commit-square {
@@ -230,6 +232,36 @@
             .legend {
                 width: 100%;
                 position: static;
+            }
+
+            /* Make each day's squares span the full available width as a 10-column grid */
+            .day-row {
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .date-label {
+                min-width: 80px;
+                font-size: 12px;
+            }
+
+            .commit-squares {
+                display: grid;
+                grid-template-columns: repeat(10, minmax(0, 1fr));
+                gap: 2px;
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .commit-square {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1 / 1;
+            }
+
+            /* Avoid hover zoom on mobile to keep grid tight */
+            .commit-square:hover {
+                transform: none;
             }
         }
     </style>
