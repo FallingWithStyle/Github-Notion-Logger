@@ -49,6 +49,40 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
 
+// Simple Server-Sent Events (SSE) hub to notify clients when data updates
+const sseClients = new Set();
+
+function broadcastEvent(eventName, payload) {
+  const dataString = JSON.stringify(payload || {});
+  for (const client of sseClients) {
+    try {
+      client.write(`event: ${eventName}\n`);
+      client.write(`data: ${dataString}\n\n`);
+    } catch (e) {
+      // Best-effort; connection might be closed
+    }
+  }
+}
+
+app.get('/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+  res.write(': connected\n\n');
+
+  // Heartbeat to keep connection alive behind proxies
+  const heartbeat = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch (_) {}
+  }, 25000);
+
+  sseClients.add(res);
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+  });
+});
+
 // Serve the most recent commit log from persistent storage
 app.get('/commit-log.json', (req, res) => {
   try {
@@ -145,14 +179,23 @@ async function updateCommitLog(newCommits, repoName) {
     // Group new commits by date
     const commitsByDate = {};
     newCommits.forEach(commit => {
-      const date = new Date(commit.date).toISOString().split('T')[0];
-      if (!commitsByDate[date]) {
-        commitsByDate[date] = {};
+      // Webhook commits provide `timestamp`; some sources may use `date`
+      const rawDate = commit.timestamp || commit.date;
+      if (!rawDate) {
+        return;
       }
-      if (!commitsByDate[date][repoName]) {
-        commitsByDate[date][repoName] = 0;
+      const parsed = new Date(rawDate);
+      if (isNaN(parsed.getTime())) {
+        return;
       }
-      commitsByDate[date][repoName]++;
+      const dateKey = parsed.toISOString().split('T')[0];
+      if (!commitsByDate[dateKey]) {
+        commitsByDate[dateKey] = {};
+      }
+      if (!commitsByDate[dateKey][repoName]) {
+        commitsByDate[dateKey][repoName] = 0;
+      }
+      commitsByDate[dateKey][repoName]++;
     });
     
     // Update commit log with new data
@@ -177,6 +220,7 @@ async function updateCommitLog(newCommits, repoName) {
     // Write updated commit log
     fs.writeFileSync(commitLogPath, JSON.stringify(commitLog, null, 2));
     console.log(`✅ Updated commit log with ${newCommits.length} new commits from ${repoName}`);
+    broadcastEvent('commit-log-updated', { source: 'webhook', updatedDays: Object.keys(commitsByDate).length });
     
   } catch (error) {
     console.error('❌ Error updating commit log:', error);
@@ -340,7 +384,35 @@ app.get('/api/fetch-notion-data', asyncHandler(async (req, res) => {
     
     const notion = new Client({ auth: process.env.NOTION_API_KEY });
     const databaseId = process.env.NOTION_DATABASE_ID;
-    const since = req.query.since || '2025-01-01';
+
+    // Support incremental mode: merge new range into existing commit log
+    const isIncremental = req.query.incremental === 'true' || req.query.incremental === '1';
+    const overlapDays = Math.max(0, parseInt(req.query.overlapDays || '1', 10) || 0);
+
+    let since = req.query.since || '2025-01-01';
+    let existingCommitLog = [];
+
+    if (isIncremental) {
+      try {
+        if (fs.existsSync(COMMIT_LOG_PATH)) {
+          const existing = JSON.parse(fs.readFileSync(COMMIT_LOG_PATH, 'utf8'));
+          if (Array.isArray(existing) && existing.length > 0) {
+            existingCommitLog = existing;
+            const lastDateStr = existing[existing.length - 1]?.date;
+            if (lastDateStr) {
+              const last = new Date(lastDateStr);
+              if (!isNaN(last.getTime())) {
+                // Start a bit earlier to bridge any timezone/out-of-order commits
+                last.setDate(last.getDate() - overlapDays);
+                since = last.toISOString().split('T')[0];
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not load existing commit log for incremental merge:', e.message);
+      }
+    }
     
     console.log(`🔄 Fetching commits from Notion database since ${since}...`);
     
@@ -404,23 +476,49 @@ app.get('/api/fetch-notion-data', asyncHandler(async (req, res) => {
       clearTimeout(fetchTimeout);
       
       // Convert to the expected format
-      const commitLog = Object.entries(commitData).map(([date, projects]) => ({
+      const fetchedLog = Object.entries(commitData).map(([date, projects]) => ({
         date,
         projects
       }));
-      
+
       // Sort by date
-      commitLog.sort((a, b) => new Date(a.date) - new Date(b.date));
-      
+      fetchedLog.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      let finalLog = fetchedLog;
+
+      if (isIncremental && existingCommitLog.length > 0) {
+        // Merge: index existing by date
+        const byDate = new Map(existingCommitLog.map(d => [d.date, { ...d }]));
+        for (const day of fetchedLog) {
+          const existing = byDate.get(day.date);
+          if (existing) {
+            // Merge project counts (add or overwrite with fetched values)
+            byDate.set(day.date, {
+              date: day.date,
+              projects: {
+                ...existing.projects,
+                ...day.projects,
+              }
+            });
+          } else {
+            byDate.set(day.date, { ...day });
+          }
+        }
+        finalLog = Array.from(byDate.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+      }
+
       // Save to file
-      fs.writeFileSync(COMMIT_LOG_PATH, JSON.stringify(commitLog, null, 2));
-      
-      console.log(`✅ Fetched and saved ${commitLog.length} days of commit data from Notion`);
-      
+      fs.writeFileSync(COMMIT_LOG_PATH, JSON.stringify(finalLog, null, 2));
+
+      console.log(`✅ Fetched and saved ${fetchedLog.length} days from Notion (${isIncremental ? 'merged' : 'full overwrite'})`);
+
+      // Notify clients to refresh
+      broadcastEvent('commit-log-updated', { source: 'notion', fetchedDays: fetchedLog.length, incremental: isIncremental });
+
       res.json({ 
         success: true, 
-        days: commitLog.length,
-        message: `Fetched ${commitLog.length} days of commit data from Notion database`
+        days: finalLog.length,
+        message: `Fetched ${fetchedLog.length} day(s) from Notion (${isIncremental ? 'merged' : 'full'})`
       });
       
     } catch (error) {

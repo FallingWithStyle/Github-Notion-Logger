@@ -242,6 +242,7 @@
     
     <div class="controls">
         <button id="fetch-notion-btn" class="btn">🔄 Fetch from Notion</button>
+        <button id="fetch-incremental-btn" class="btn">➕ Incremental Fetch</button>
         <button id="auto-refresh-btn" class="btn">🔄 Auto-refresh</button>
         <div id="status" class="status">Ready to load data</div>
     </div>
@@ -519,6 +520,7 @@
         // Load and display commit data
         let commitData = [];
         let autoRefreshInterval = null;
+        let sseConnected = false;
 
         async function loadCommitData() {
             try {
@@ -552,7 +554,7 @@
         }
 
         // Fetch data from Notion
-        async function fetchFromNotion() {
+        async function fetchFromNotion(params = {}) {
             const btn = document.getElementById('fetch-notion-btn');
             const originalText = btn.textContent;
             
@@ -561,7 +563,8 @@
                 btn.textContent = '🔄 Fetching...';
                 updateStatus('Fetching data from Notion...');
                 
-                const response = await fetch('/api/fetch-notion-data');
+                const search = new URLSearchParams(params).toString();
+                const response = await fetch('/api/fetch-notion-data' + (search ? `?${search}` : ''));
                 const result = await response.json();
                 
                 if (result.success) {
@@ -570,7 +573,7 @@
                     lastFetchTime = Date.now();
                     
                     updateStatus(result.message);
-                    await loadCommitData();
+                    // No need to force reload here; SSE will trigger refresh below
                     btn.classList.add('success');
                     btn.textContent = '✅ Fetched!';
                     setTimeout(() => {
@@ -588,6 +591,18 @@
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
+        }
+
+        // Incremental fetch based on last displayed date (with overlap)
+        async function fetchIncremental() {
+            if (!Array.isArray(commitData) || commitData.length === 0) {
+                // Fall back to full fetch
+                return fetchFromNotion();
+            }
+            const lastDate = commitData[commitData.length - 1]?.date;
+            const params = { incremental: 'true', overlapDays: '1' };
+            if (lastDate) params.since = lastDate; // server will subtract overlapDays
+            return fetchFromNotion(params);
         }
 
         // Toggle auto-refresh
@@ -614,13 +629,37 @@
         }
 
         // Event listeners
-        document.getElementById('fetch-notion-btn').addEventListener('click', fetchFromNotion);
+        document.getElementById('fetch-notion-btn').addEventListener('click', () => fetchFromNotion());
+        document.getElementById('fetch-incremental-btn').addEventListener('click', fetchIncremental);
         document.getElementById('auto-refresh-btn').addEventListener('click', toggleAutoRefresh);
+
+        // Connect to server-sent events to auto-refresh when data updates
+        function connectSSE() {
+            if (sseConnected) return;
+            try {
+                const evt = new EventSource('/events');
+                evt.addEventListener('commit-log-updated', async () => {
+                    await loadCommitData();
+                    updateStatus('Data updated');
+                });
+                evt.onerror = () => {
+                    // Try to reconnect after a delay
+                    setTimeout(() => {
+                        sseConnected = false;
+                        connectSSE();
+                    }, 3000);
+                };
+                evt.onopen = () => { sseConnected = true; };
+            } catch (e) {
+                // SSE not supported
+            }
+        }
 
         // Load data when page loads
         document.addEventListener('DOMContentLoaded', () => {
             loadCommitData();
             updateCacheInfo();
+            connectSSE();
         });
     </script>
 </body>
