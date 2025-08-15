@@ -212,6 +212,18 @@ node backfill.js -m 12
 ```
 (Valid range: 1-72 months)
 
+**Since last commit (incremental backfill):**
+```bash
+node backfill.js --last
+# or
+node backfill.js -l
+```
+This will:
+- Find the most recent commit date for each repository in your Notion database
+- Fetch only commits made since that date
+- Perfect for regular incremental updates without re-processing old data
+- Falls back to last 7 days if no commits are found in Notion
+
 This will:
 - Fetch all commits from the specified repository(s) from the last 6 months (default) or custom period
 - Transform them to match the webhook format
@@ -249,12 +261,15 @@ This will:
 ### `backfill.js` - Historical Data Import
 - **Purpose**: One-time import of commits from the last 6 months (default) or custom period
 - **Modes**: Single repository or all repositories
-- **Parameters**: Optional `--months` or `-m` flag (1-72 months, defaults to 6)
+- **Parameters**: 
+  - Optional `--months` or `-m` flag (1-72 months, defaults to 6)
+  - Optional `--last` or `-l` flag for incremental backfill since most recent commit
 - **Features**:
   - Duplicate detection and skipping
   - Configurable batch processing (50 commits/batch)
   - Progress tracking with statistics
   - Rate limiting for API safety
+  - Smart incremental updates using `-l` flag
 
 ### `deduplicate.js` - Database Cleanup
 - **Purpose**: Remove duplicate entries from existing database

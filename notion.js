@@ -264,4 +264,49 @@ async function logCommitsToNotion(commits, repo) {
   }
 }
 
-module.exports = { logCommitsToNotion };
+async function getMostRecentCommitDate(repoName) {
+  try {
+    console.log(`🔍 Finding most recent commit date for ${repoName}...`);
+    
+    // Query the database for the most recent commit for this repo
+    const response = await notion.databases.query({
+      database_id: databaseId,
+      filter: {
+        property: "Project Name",
+        title: {
+          equals: repoName.split('/').pop() // Extract just the repo name
+        }
+      },
+      sorts: [
+        {
+          property: "Date",
+          direction: "descending"
+        }
+      ],
+      page_size: 1
+    });
+    
+    if (response.results.length === 0) {
+      console.log(`📭 No commits found in Notion for ${repoName}`);
+      return null;
+    }
+    
+    const mostRecentPage = response.results[0];
+    const commitDate = mostRecentPage.properties.Date?.date?.start;
+    
+    if (!commitDate) {
+      console.log(`⚠️ Most recent commit for ${repoName} has no date property`);
+      return null;
+    }
+    
+    const date = new Date(commitDate);
+    console.log(`✅ Most recent commit date for ${repoName}: ${date.toISOString()}`);
+    return date;
+    
+  } catch (error) {
+    console.error(`❌ Error finding most recent commit date for ${repoName}:`, error.message);
+    return null;
+  }
+}
+
+module.exports = { logCommitsToNotion, getMostRecentCommitDate };

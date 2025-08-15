@@ -1,6 +1,6 @@
 const { Octokit } = require('@octokit/rest');
 const inquirer = require('inquirer');
-const { logCommitsToNotion } = require('./notion');
+const { logCommitsToNotion, getMostRecentCommitDate } = require('./notion');
 require('dotenv').config();
 
 const octokit = new Octokit({
@@ -137,6 +137,64 @@ async function getCommitsFromLastNMonths(owner, repo, months = 6) {
   }
 }
 
+async function getCommitsSinceDate(owner, repo, sinceDate) {
+  console.log(`Fetching commits from ${owner}/${repo} since ${sinceDate.toISOString()}`);
+  
+  const commits = [];
+  let page = 1;
+  const perPage = 100;
+  
+  try {
+    while (true) {
+      console.log(`Fetching page ${page}...`);
+      
+      const response = await octokit.repos.listCommits({
+        owner,
+        repo,
+        per_page: perPage,
+        page,
+        since: sinceDate.toISOString(),
+      });
+      
+      if (response.data.length === 0) {
+        break;
+      }
+      
+      // Transform GitHub API response to match webhook format
+      const transformedCommits = response.data.map(commit => ({
+        id: commit.sha,
+        message: commit.commit.message,
+        url: commit.html_url,
+        author: {
+          name: commit.commit.author.name,
+          email: commit.commit.author.email,
+        },
+        timestamp: commit.commit.author.date,
+        added: [],
+        removed: [],
+        modified: [],
+      }));
+      
+      commits.push(...transformedCommits);
+      
+      if (response.data.length < perPage) {
+        break;
+      }
+      
+      page++;
+      
+      // Add a small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    console.log(`Found ${commits.length} commits since ${sinceDate.toISOString()}`);
+    return commits;
+  } catch (error) {
+    console.error('Error fetching commits:', error.message);
+    throw error;
+  }
+}
+
 async function selectRepositories(owner) {
   console.log(`\nFetching repositories for ${owner}...`);
   
@@ -182,9 +240,15 @@ async function selectRepositories(owner) {
   }
 }
 
-async function backfillCommits(months = 6) {
-  // Validate months parameter
-  if (months < 1 || months > 72) {
+async function backfillCommits(months = 6, useLastCommit = false) {
+  const startTime = Date.now();
+  let totalRecordsSearched = 0;
+  let totalNewRecords = 0;
+  let totalSkippedRecords = 0;
+  let totalErrorRecords = 0;
+  
+  // Validate months parameter (only used when not using last commit mode)
+  if (!useLastCommit && (months < 1 || months > 72)) {
     console.error('Months parameter must be between 1 and 72');
     process.exit(1);
   }
@@ -213,7 +277,11 @@ async function backfillCommits(months = 6) {
     console.log('- NOTION_DATABASE_ID:', process.env.NOTION_DATABASE_ID);
   }
   
-  console.log(`\nBackfilling commits from the last ${months} months...`);
+  if (useLastCommit) {
+    console.log('\nBackfilling commits since the most recent item in Notion...');
+  } else {
+    console.log(`\nBackfilling commits from the last ${months} months...`);
+  }
   
   try {
     let repositories = [];
@@ -243,28 +311,52 @@ async function backfillCommits(months = 6) {
       console.log(`\n=== Processing repository: ${owner}/${repo.name} ===`);
       
       try {
-        const commits = await getCommitsFromLastNMonths(owner, repo.name, months);
+        let commits;
+        
+        if (useLastCommit) {
+          // Get the most recent commit date from Notion for this repo
+          const mostRecentDate = await getMostRecentCommitDate(`${owner}/${repo.name}`);
+          if (mostRecentDate) {
+            console.log(`Most recent commit in Notion for ${repo.name}: ${mostRecentDate.toISOString()}`);
+            commits = await getCommitsSinceDate(owner, repo.name, mostRecentDate);
+          } else {
+            console.log(`No commits found in Notion for ${repo.name}, fetching last 7 days as fallback`);
+            const fallbackDate = new Date();
+            fallbackDate.setDate(fallbackDate.getDate() - 7);
+            commits = await getCommitsSinceDate(owner, repo.name, fallbackDate);
+          }
+        } else {
+          // Use the traditional months-based approach
+          commits = await getCommitsFromLastNMonths(owner, repo.name, months);
+        }
         
         if (commits.length === 0) {
-          console.log(`No commits found in ${repo.name} for the last ${months} months`);
+          if (useLastCommit) {
+            console.log(`No new commits found in ${repo.name} since the most recent item in Notion`);
+          } else {
+            console.log(`No commits found in ${repo.name} for the last ${months} months`);
+          }
           continue;
         }
         
         console.log(`Processing ${commits.length} commits from ${repo.name} to Notion...`);
+        totalRecordsSearched += commits.length;
         
         // Process commits in batches to avoid overwhelming the API
         const batchSize = 50; // Increased from 10 for faster processing
         let processedCount = 0;
         let skippedCount = 0;
+        let errorCount = 0;
         
         for (let i = 0; i < commits.length; i += batchSize) {
           const batch = commits.slice(i, i + batchSize);
           const result = await logCommitsToNotion(batch, `${owner}/${repo.name}`);
           
-          processedCount += result?.processed || batch.length;
+          processedCount += result?.processed || 0;
           skippedCount += result?.skipped || 0;
+          errorCount += result?.errors || 0;
           
-          console.log(`Processed ${Math.min(i + batchSize, commits.length)} of ${commits.length} commits from ${repo.name} (${processedCount} new, ${skippedCount} skipped)`);
+          console.log(`Processed ${Math.min(i + batchSize, commits.length)} of ${commits.length} commits from ${repo.name} (${processedCount} new, ${skippedCount} skipped, ${errorCount} errors)`);
           
           // Reduced delay between batches for faster processing
           if (i + batchSize < commits.length) {
@@ -273,6 +365,9 @@ async function backfillCommits(months = 6) {
         }
         
         totalCommits += commits.length;
+        totalNewRecords += processedCount;
+        totalSkippedRecords += skippedCount;
+        totalErrorRecords += errorCount;
         
         // Add a delay between repositories
         if (repositories.indexOf(repo) < repositories.length - 1) {
@@ -287,12 +382,51 @@ async function backfillCommits(months = 6) {
       }
     }
     
+    const endTime = Date.now();
+    const executionTime = endTime - startTime;
+    const executionTimeSeconds = (executionTime / 1000).toFixed(2);
+    const executionTimeMinutes = (executionTime / 60000).toFixed(2);
+    
     console.log(`\n=== Backfill completed successfully! ===`);
     console.log(`Total commits processed: ${totalCommits}`);
     console.log(`Total repositories processed: ${repositories.length}`);
     
+    // Metrics Summary
+    console.log(`\n📊 METRICS SUMMARY:`);
+    console.log(`⏱️  Execution Time: ${executionTimeSeconds}s (${executionTimeMinutes}min)`);
+    console.log(`🔍 Records Searched: ${totalRecordsSearched.toLocaleString()}`);
+    console.log(`✅ New Records Added: ${totalNewRecords.toLocaleString()}`);
+    console.log(`⏭️  Records Skipped: ${totalSkippedRecords.toLocaleString()}`);
+    console.log(`❌ Records with Errors: ${totalErrorRecords.toLocaleString()}`);
+    
+    if (totalRecordsSearched > 0) {
+      const successRate = ((totalNewRecords / totalRecordsSearched) * 100).toFixed(1);
+      const skipRate = ((totalSkippedRecords / totalRecordsSearched) * 100).toFixed(1);
+      const errorRate = ((totalErrorRecords / totalRecordsSearched) * 100).toFixed(1);
+      
+      console.log(`📈 Success Rate: ${successRate}%`);
+      console.log(`⏭️  Skip Rate: ${skipRate}%`);
+      console.log(`⚠️  Error Rate: ${errorRate}%`);
+    }
+    
+    if (useLastCommit) {
+      console.log(`\n💡 Incremental backfill mode: Only processed commits since most recent items in Notion`);
+    } else {
+      console.log(`\n💡 Full backfill mode: Processed commits from the last ${months} months`);
+    }
+    
   } catch (error) {
+    const endTime = Date.now();
+    const executionTime = (endTime - startTime) / 1000;
+    
     console.error('Backfill failed:', error);
+    console.log(`\n📊 FAILED EXECUTION METRICS:`);
+    console.log(`⏱️  Execution Time: ${executionTime.toFixed(2)}s`);
+    console.log(`🔍 Records Searched: ${totalRecordsSearched.toLocaleString()}`);
+    console.log(`✅ New Records Added: ${totalNewRecords.toLocaleString()}`);
+    console.log(`⏭️  Records Skipped: ${totalSkippedRecords.toLocaleString()}`);
+    console.log(`❌ Records with Errors: ${totalErrorRecords.toLocaleString()}`);
+    
     process.exit(1);
   }
 }
@@ -302,20 +436,28 @@ if (require.main === module) {
   // Parse command line arguments for months parameter
   const args = process.argv.slice(2);
   let months = 6; // default value
+  let useLastCommit = false;
   
-  // Check for --months or -m argument
-  const monthsIndex = args.findIndex(arg => arg === '--months' || arg === '-m');
-  if (monthsIndex !== -1 && monthsIndex + 1 < args.length) {
-    const monthsValue = parseInt(args[monthsIndex + 1]);
-    if (!isNaN(monthsValue) && monthsValue >= 1 && monthsValue <= 72) {
-      months = monthsValue;
-    } else {
-      console.error('Invalid months value. Must be a number between 1 and 72.');
-      process.exit(1);
+  // Check for --last or -l argument
+  if (args.includes('--last') || args.includes('-l')) {
+    useLastCommit = true;
+  }
+  
+  // Check for --months or -m argument (only if not using last commit mode)
+  if (!useLastCommit) {
+    const monthsIndex = args.findIndex(arg => arg === '--months' || arg === '-m');
+    if (monthsIndex !== -1 && monthsIndex + 1 < args.length) {
+      const monthsValue = parseInt(args[monthsIndex + 1]);
+      if (!isNaN(monthsValue) && monthsValue >= 1 && monthsValue <= 72) {
+        months = monthsValue;
+      } else {
+        console.error('Invalid months value. Must be a number between 1 and 72.');
+        process.exit(1);
+      }
     }
   }
   
-  backfillCommits(months);
+  backfillCommits(months, useLastCommit);
 }
 
 module.exports = { backfillCommits }; 
