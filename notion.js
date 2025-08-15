@@ -20,6 +20,13 @@ const existingCommitsCache = new Map();
 const schemaCache = { checked: false, hasShaProperty: false };
 const SHA_PROPERTY_NAME = 'SHA';
 
+// Enhanced caching with TTL and batch operations
+const CACHE_CONFIG = {
+  ttl: 5 * 60 * 1000, // 5 minutes
+  maxSize: 100, // Max cached repos
+  batchSize: 200, // Batch size for Notion operations
+};
+
 async function ensureDatabaseSchemaLoaded() {
   if (schemaCache.checked) {
     return schemaCache;
@@ -54,10 +61,11 @@ async function ensureDatabaseSchemaLoaded() {
 }
 
 async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
-  // Check cache first
-  if (existingCommitsCache.has(repoName)) {
-    console.log(`📋 Using cached commits for ${repoName}`);
-    return existingCommitsCache.get(repoName);
+  // Check cache first with TTL
+  const cached = existingCommitsCache.get(repoName);
+  if (cached && Date.now() - cached.timestamp < CACHE_CONFIG.ttl) {
+    console.log(`📋 Using cached commits for ${repoName} (age: ${Math.round((Date.now() - cached.timestamp) / 1000)}s)`);
+    return cached.data;
   }
 
   console.log(`🔍 Fetching existing commits for ${repoName}...`);
@@ -69,7 +77,17 @@ async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
   // If we have SHA property and legacy dedup is disabled, only fetch SHA data
   if (schemaCache.hasShaProperty && skipLegacyDedup) {
     console.log(`🚀 SHA-only mode for ${repoName} - skipping legacy deduplication`);
-    return { existingCommits: new Set(), existingShas: new Set() };
+    const result = { existingCommits: new Set(), existingShas: new Set() };
+    
+    // Cache the result
+    if (existingCommitsCache.size >= CACHE_CONFIG.maxSize) {
+      // Remove oldest entry
+      const oldestKey = existingCommitsCache.keys().next().value;
+      existingCommitsCache.delete(oldestKey);
+    }
+    existingCommitsCache.set(repoName, { data: result, timestamp: Date.now() });
+    
+    return result;
   }
   
   let hasMore = true;
@@ -98,212 +116,197 @@ async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
             }
           },
           page_size: 100,
-          start_cursor: startCursor
+          start_cursor: startCursor,
         });
         
-        // Add commit identifiers to the sets for fast lookup
-        response.results.forEach(page => {
-          const commitMessage = page.properties.Commits?.rich_text?.[0]?.text?.content;
-          const date = page.properties.Date?.date?.start;
-          if (commitMessage && date) {
-            const key = `${commitMessage}|${date.split('T')[0]}`;
+        // Process the response
+        for (const page of response.results) {
+          const properties = page.properties;
+          
+          // Extract SHA if available
+          if (schemaCache.hasShaProperty && properties[SHA_PROPERTY_NAME]?.rich_text?.[0]?.plain_text) {
+            const sha = properties[SHA_PROPERTY_NAME].rich_text[0].plain_text;
+            existingShas.add(sha);
+          }
+          
+          // Legacy deduplication: message + date combination
+          if (!skipLegacyDedup && properties["Commit Message"]?.rich_text?.[0]?.plain_text && properties["Date"]?.date?.start) {
+            const message = properties["Commit Message"].rich_text[0].plain_text;
+            const date = properties["Date"].date.start;
+            const key = `${message}|${date}`;
             existingCommits.add(key);
           }
-          if (schemaCache.hasShaProperty) {
-            const sha = page.properties[SHA_PROPERTY_NAME]?.rich_text?.[0]?.text?.content;
-            if (sha) existingShas.add(sha);
-          }
-        });
+        }
         
         hasMore = response.has_more;
         startCursor = response.next_cursor;
         
-        // Add a small delay to avoid rate limiting
+        // Small delay between pages to be respectful
         if (hasMore) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
       
       clearTimeout(fetchTimeout);
       
-      // Cache the results
-      const payload = { existingCommits, existingShas };
-      existingCommitsCache.set(repoName, payload);
+      const result = { existingCommits, existingShas };
       
-      if (pageCount >= maxPages && hasMore) {
-        console.log(`⚠️ Limited to ${maxPages} pages for ${repoName} to prevent timeout (${existingShas.size} SHA matches, ${existingCommits.size} legacy matches)`);
-        console.log(`💡 SHA-based deduplication will still work for new commits`);
-      } else {
-        console.log(`✅ Found ${existingShas.size} SHA matches and ${existingCommits.size} legacy matches for ${repoName}`);
+      // Cache the result
+      if (existingCommitsCache.size >= CACHE_CONFIG.maxSize) {
+        // Remove oldest entry
+        const oldestKey = existingCommitsCache.keys().next().value;
+        existingCommitsCache.delete(oldestKey);
       }
+      existingCommitsCache.set(repoName, { data: result, timestamp: Date.now() });
       
-      return payload;
+      console.log(`✅ Cached ${existingCommits.size} legacy keys and ${existingShas.size} SHAs for ${repoName}`);
+      return result;
+      
     } catch (error) {
       clearTimeout(fetchTimeout);
       throw error;
     }
+    
   } catch (error) {
-    console.error(`❌ Error fetching existing commits for ${repoName}:`, error.message);
-    
-    // If we have SHA-based deduplication, we can still work with partial data
-    if (schemaCache.hasShaProperty && existingShas.size > 0) {
-      console.log(`⚠️ Using partial data for ${repoName} - SHA deduplication will still work`);
-      const payload = { existingCommits, existingShas };
-      existingCommitsCache.set(repoName, payload);
-      return payload;
-    }
-    
-    // Fallback to empty sets if we can't get any data
-    console.log(`⚠️ Falling back to empty duplicate cache for ${repoName}`);
+    console.warn(`⚠️ Error fetching existing commits for ${repoName}:`, error.message);
+    // Return empty sets on error to allow processing to continue
     return { existingCommits: new Set(), existingShas: new Set() };
   }
 }
 
-async function logCommitsToNotion(commits, repo) {
+async function logCommitsToNotion(commits, repoName) {
+  if (!commits || commits.length === 0) {
+    return { processed: 0, skipped: 0, errors: 0 };
+  }
+
+  console.log(`📝 Processing ${commits.length} commits for ${repoName}...`);
+  
+  // Get existing commits for deduplication
+  const existingData = await getExistingCommitsForRepo(repoName, commits.length > CACHE_CONFIG.batchSize);
+  const existingCommits = existingData.existingCommits;
+  const existingShas = existingData.existingShas;
+  
   let processed = 0;
   let skipped = 0;
   let errors = 0;
   
-  // Extract just the repository name from the full path
-  const repoName = repo.split('/').pop();
-  
-  console.log(`🚀 Starting to log ${commits.length} commits for ${repoName}...`);
-  
-  try {
-    // Try SHA-only mode first for large repositories
-    let { existingCommits, existingShas } = { existingCommits: new Set(), existingShas: new Set() };
+  // Process commits in optimized batches
+  const batchSize = CACHE_CONFIG.batchSize;
+  for (let i = 0; i < commits.length; i += batchSize) {
+    const batch = commits.slice(i, i + batchSize);
+    const batchResults = await processCommitBatch(batch, repoName, existingCommits, existingShas);
     
-    try {
-      // First attempt: SHA-only mode (fastest)
-      if (commits.length > 100) { // Large batch - use SHA-only mode
-        console.log(`📦 Large batch detected (${commits.length} commits) - using SHA-only deduplication for speed`);
-        const result = await getExistingCommitsForRepo(repoName, true); // skipLegacyDedup = true
-        existingShas = result.existingShas;
-      } else {
-        // Small batch - use full deduplication
-        const result = await getExistingCommitsForRepo(repoName, false);
-        existingCommits = result.existingCommits;
-        existingShas = result.existingShas;
-      }
-    } catch (error) {
-      console.log(`⚠️ Fallback to minimal deduplication for ${repoName}: ${error.message}`);
-      // Continue with empty sets - will still work but may create some duplicates
+    processed += batchResults.processed;
+    skipped += batchResults.skipped;
+    errors += batchResults.errors;
+    
+    // Small delay between batches
+    if (i + batchSize < commits.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  return { processed, skipped, errors };
+}
+
+// New optimized batch processing function
+async function processCommitBatch(commits, repoName, existingCommits, existingShas) {
+  let processed = 0;
+  let skipped = 0;
+  let errors = 0;
+  
+  // Pre-filter commits to avoid unnecessary processing
+  const commitsToProcess = [];
+  const skipReasons = [];
+  
+  for (const commit of commits) {
+    let shouldSkip = false;
+    let skipReason = '';
+    
+    // Check SHA first (most reliable)
+    if (existingShas.has(commit.id)) {
+      shouldSkip = true;
+      skipReason = 'SHA already exists';
+    }
+    // Check legacy deduplication
+    else if (existingCommits.has(`${commit.message}|${commit.timestamp}`)) {
+      shouldSkip = true;
+      skipReason = 'Message + date combination already exists';
     }
     
-    // Filter out duplicates and prepare new commits
-    const newCommits = [];
-    
-    for (const commit of commits) {
+    if (shouldSkip) {
+      skipped++;
+      skipReasons.push(`${commit.id.substring(0, 8)}: ${skipReason}`);
+    } else {
+      commitsToProcess.push(commit);
+    }
+  }
+  
+  if (commitsToProcess.length === 0) {
+    console.log(`⏭️  All ${commits.length} commits in batch already exist, skipping...`);
+    return { processed: 0, skipped, errors: 0 };
+  }
+  
+  console.log(`📝 Processing ${commitsToProcess.length} new commits (${skipped} skipped)`);
+  
+  // Process commits in parallel batches for better performance
+  const parallelBatches = [];
+  for (let i = 0; i < commitsToProcess.length; i += 10) { // Process 10 commits in parallel
+    parallelBatches.push(commitsToProcess.slice(i, i + 10));
+  }
+  
+  for (const parallelBatch of parallelBatches) {
+    const batchPromises = parallelBatch.map(async (commit) => {
       try {
-        const commitMessage = commit.message.split('\n')[0];
-        const commitDate = new Date(commit.timestamp).toISOString().split('T')[0];
-        const sha = commit.id || commit.sha || commit.hash || '';
-        const uniqueKey = `${commitMessage}|${commitDate}`;
-        
-        if (sha && existingShas.has(sha)) {
-          console.log(`⏭️ Skipping duplicate by SHA: ${sha} (${repoName})`);
-          skipped++;
-        } else if (existingCommits.has(uniqueKey)) {
-          console.log(`⏭️ Skipping duplicate: ${commitMessage} (${repoName})`);
-          skipped++;
-        } else {
-          newCommits.push({
-            message: commitMessage,
-            date: commit.timestamp,
-            repoName: repoName,
-            sha
-          });
-        }
+        await createCommitPage(commit, repoName);
+        return { success: true };
       } catch (error) {
-        console.error(`❌ Error processing commit:`, error.message);
+        console.error(`❌ Error creating page for commit ${commit.id}:`, error.message);
+        return { success: false, error: error.message };
+      }
+    });
+    
+    const batchResults = await Promise.allSettled(batchPromises);
+    
+    batchResults.forEach(result => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        processed++;
+      } else {
         errors++;
       }
+    });
+    
+    // Small delay between parallel batches
+    if (parallelBatches.indexOf(parallelBatch) < parallelBatches.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
-    
-    console.log(`📦 Processing ${newCommits.length} new commits for ${repoName}...`);
-    
-    if (newCommits.length === 0) {
-      console.log(`✅ No new commits to process for ${repoName}`);
-      return { processed, skipped, errors };
-    }
-    
-    // Create new commits in batches for better performance
-    const batchSize = 10; // Notion has rate limits, so we batch in smaller chunks
-    
-    for (let i = 0; i < newCommits.length; i += batchSize) {
-      const batch = newCommits.slice(i, i + batchSize);
-      console.log(`📝 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(newCommits.length / batchSize)} (${batch.length} commits)...`);
-      
-      // Create pages in parallel within the batch with timeout
-      const createPromises = batch.map(async (commit, index) => {
-        try {
-          const createTimeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Create page timeout')), 10000)
-          );
-          
-          const properties = {
-            "Commits": {
-              rich_text: [{ text: { content: commit.message } }],
-            },
-            "Project Name": {
-              title: [{ text: { content: commit.repoName } }],
-            },
-            "Date": {
-              date: { start: new Date(commit.date).toISOString() },
-            }
-          };
-          if (schemaCache.hasShaProperty && commit.sha) {
-            properties[SHA_PROPERTY_NAME] = {
-              rich_text: [{ text: { content: commit.sha } }]
-            };
-          }
-
-          const createPromise = notion.pages.create({
-            parent: { database_id: databaseId },
-            properties
-          });
-          
-          const result = await Promise.race([createPromise, createTimeout]);
-          console.log(`✅ Created page for commit: ${commit.message}`);
-          return { success: true, result, commit };
-        } catch (error) {
-          console.error(`❌ Error creating page for commit ${commit.message}:`, error.message);
-          return { success: false, error: error.message, commit };
-        }
-      });
-      
-      const results = await Promise.all(createPromises);
-      
-      // Process results
-      results.forEach((result, index) => {
-        if (result.success) {
-          processed++;
-          // Add successful commits to the cache to prevent future duplicates
-          const commit = result.commit;
-          const commitDate = new Date(commit.date).toISOString().split('T')[0];
-          const uniqueKey = `${commit.message}|${commitDate}`;
-          existingCommits.add(uniqueKey);
-          if (commit.sha) existingShas.add(commit.sha);
-        } else {
-          errors++;
-          console.error(`❌ Failed to create page for commit: ${result.commit.message}`);
-        }
-      });
-      
-      // Add a small delay between batches to respect rate limits
-      if (i + batchSize < newCommits.length) {
-        console.log(`⏳ Waiting 200ms before next batch...`);
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-    }
-    
-    console.log(`✅ Completed processing for ${repoName}: ${processed} processed, ${skipped} skipped, ${errors} errors`);
-    return { processed, skipped, errors };
-    
-  } catch (error) {
-    console.error(`❌ Error in logCommitsToNotion for ${repoName}:`, error);
-    throw error;
   }
+  
+  return { processed, skipped, errors };
+}
+
+async function createCommitPage(commit, repoName) {
+  const properties = {
+    "Commits": {
+      rich_text: [{ text: { content: commit.message } }],
+    },
+    "Project Name": {
+      title: [{ text: { content: repoName } }],
+    },
+    "Date": {
+      date: { start: new Date(commit.timestamp).toISOString() },
+    }
+  };
+  if (schemaCache.hasShaProperty && commit.id) {
+    properties[SHA_PROPERTY_NAME] = {
+      rich_text: [{ text: { content: commit.id } }]
+    };
+  }
+
+  await notion.pages.create({
+    parent: { database_id: databaseId },
+    properties
+  });
 }
 
 async function getMostRecentCommitDate(repoName) {

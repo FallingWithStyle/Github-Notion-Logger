@@ -1,11 +1,20 @@
 const { Octokit } = require('@octokit/rest');
 const inquirer = require('inquirer');
-const { logCommitsToNotion, getMostRecentCommitDate } = require('./notion');
+const { logCommitsToNotion, getMostRecentCommitDate, getExistingCommitsForRepo } = require('./notion');
 require('dotenv').config();
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 });
+
+// Rate limiting configuration
+const RATE_LIMIT_CONFIG = {
+  maxConcurrent: 3, // Process 3 repos concurrently
+  batchSize: 150,    // Increased from 50
+  delayBetweenBatches: 100, // Reduced from 200ms
+  delayBetweenRepos: 300,   // Reduced from 1000ms
+  delayBetweenApiCalls: 50, // Reduced from 100ms
+};
 
 async function getAllRepositories(owner) {
   console.log(`Fetching all repositories for ${owner}...`);
@@ -130,8 +139,8 @@ async function getCommitsFromLastNMonths(owner, repo, months = 6) {
       
       page++;
       
-      // Add a small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Reduced delay for faster processing
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.delayBetweenApiCalls));
     }
     
     console.log(`Found ${commits.length} commits from the last ${months} months`);
@@ -190,8 +199,8 @@ async function getCommitsSinceDate(owner, repo, sinceDate) {
       
       page++;
       
-      // Add a small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Reduced delay for faster processing
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.delayBetweenApiCalls));
     }
     
     console.log(`Found ${commits.length} commits since ${sinceDate.toISOString()}`);
@@ -245,6 +254,156 @@ async function selectRepositories(owner) {
     console.error('Error selecting repositories:', error.message);
     return [];
   }
+}
+
+// New optimized processing function
+async function processRepositoryBatch(owner, repositories, useLastCommit, months) {
+  const results = [];
+  let totalApiCalls = 0;
+  let totalRateLimitDelays = 0;
+  let totalRateLimitDelayTime = 0;
+  
+  // Process repositories in parallel with controlled concurrency
+  const chunks = [];
+  for (let i = 0; i < repositories.length; i += RATE_LIMIT_CONFIG.maxConcurrent) {
+    chunks.push(repositories.slice(i, i + RATE_LIMIT_CONFIG.maxConcurrent));
+  }
+  
+  for (const chunk of chunks) {
+    const chunkPromises = chunk.map(async (repo) => {
+      console.log(`\n=== Processing repository: ${owner}/${repo.name} ===`);
+      
+      try {
+        let commits;
+        
+        if (useLastCommit) {
+          const mostRecentDate = await getMostRecentCommitDate(`${owner}/${repo.name}`);
+          totalApiCalls++;
+          
+          if (mostRecentDate) {
+            console.log(`Most recent commit in Notion for ${repo.name}: ${mostRecentDate.toISOString()}`);
+            commits = await getCommitsSinceDate(owner, repo.name, mostRecentDate);
+            totalApiCalls += commits.apiCalls;
+          } else {
+            console.log(`No commits found in Notion for ${repo.name}, fetching last 7 days as fallback`);
+            const fallbackDate = new Date();
+            fallbackDate.setDate(fallbackDate.getDate() - 7);
+            commits = await getCommitsSinceDate(owner, repo.name, fallbackDate);
+            totalApiCalls += commits.apiCalls;
+          }
+        } else {
+          commits = await getCommitsFromLastNMonths(owner, repo.name, months);
+          totalApiCalls += commits.apiCalls;
+        }
+        
+        if (commits.commits.length === 0) {
+          return {
+            repo: repo.name,
+            commits: [],
+            processed: 0,
+            skipped: 0,
+            errors: 0,
+            apiCalls: commits.apiCalls,
+            rateLimitDelays: 0,
+            rateLimitDelayTime: 0
+          };
+        }
+        
+        console.log(`Processing ${commits.commits.length} commits from ${repo.name} to Notion...`);
+        
+        // Process commits in larger batches for better performance
+        const batchSize = RATE_LIMIT_CONFIG.batchSize;
+        let processedCount = 0;
+        let skippedCount = 0;
+        let errorCount = 0;
+        let repoRateLimitDelays = 0;
+        let repoRateLimitDelayTime = 0;
+        
+        for (let i = 0; i < commits.commits.length; i += batchSize) {
+          const batch = commits.commits.slice(i, i + batchSize);
+          const result = await logCommitsToNotion(batch, `${owner}/${repo.name}`);
+          
+          processedCount += result?.processed || 0;
+          skippedCount += result?.skipped || 0;
+          errorCount += result?.errors || 0;
+          
+          console.log(`Processed ${Math.min(i + batchSize, commits.commits.length)} of ${commits.commits.length} commits from ${repo.name} (${processedCount} new, ${skippedCount} skipped, ${errorCount} errors)`);
+          
+          // Reduced delay between batches
+          if (i + batchSize < commits.commits.length) {
+            repoRateLimitDelays++;
+            repoRateLimitDelayTime += RATE_LIMIT_CONFIG.delayBetweenBatches;
+            await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.delayBetweenBatches));
+          }
+        }
+        
+        return {
+          repo: repo.name,
+          commits: commits.commits,
+          processed: processedCount,
+          skipped: skippedCount,
+          errors: errorCount,
+          apiCalls: commits.apiCalls,
+          rateLimitDelays: repoRateLimitDelays,
+          rateLimitDelayTime: repoRateLimitDelayTime
+        };
+        
+      } catch (error) {
+        console.error(`Error processing repository ${repo.name}:`, error.message);
+        return {
+          repo: repo.name,
+          commits: [],
+          processed: 0,
+          skipped: 0,
+          errors: 1,
+          apiCalls: 0,
+          rateLimitDelays: 0,
+          rateLimitDelayTime: 0,
+          error: error.message
+        };
+      }
+    });
+    
+    // Process chunk in parallel
+    const chunkResults = await Promise.allSettled(chunkPromises);
+    
+    // Collect results and handle any failures
+    chunkResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+        totalRateLimitDelays += result.value.rateLimitDelays;
+        totalRateLimitDelayTime += result.value.rateLimitDelayTime;
+      } else {
+        console.error(`Repository processing failed:`, result.reason);
+        results.push({
+          repo: chunk[index]?.name || 'unknown',
+          commits: [],
+          processed: 0,
+          skipped: 0,
+          errors: 1,
+          apiCalls: 0,
+          rateLimitDelays: 0,
+          rateLimitDelayTime: 0,
+          error: result.reason.message
+        });
+      }
+    });
+    
+    // Small delay between chunks to be respectful to APIs
+    if (chunks.indexOf(chunk) < chunks.length - 1) {
+      console.log(`Waiting ${RATE_LIMIT_CONFIG.delayBetweenRepos}ms before processing next batch of repositories...`);
+      totalRateLimitDelays++;
+      totalRateLimitDelayTime += RATE_LIMIT_CONFIG.delayBetweenRepos;
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.delayBetweenRepos));
+    }
+  }
+  
+  return {
+    results,
+    totalApiCalls,
+    totalRateLimitDelays,
+    totalRateLimitDelayTime
+  };
 }
 
 async function backfillCommits(months = 6, useLastCommit = false) {
@@ -319,88 +478,21 @@ async function backfillCommits(months = 6, useLastCommit = false) {
     
     let totalCommits = 0;
     
-    for (const repo of repositories) {
-      console.log(`\n=== Processing repository: ${owner}/${repo.name} ===`);
-      
-      try {
-        let commits;
-        
-        if (useLastCommit) {
-          // Get the most recent commit date from Notion for this repo
-          const mostRecentDate = await getMostRecentCommitDate(`${owner}/${repo.name}`);
-          totalApiCalls++; // Notion API call
-          if (mostRecentDate) {
-            console.log(`Most recent commit in Notion for ${repo.name}: ${mostRecentDate.toISOString()}`);
-            commits = await getCommitsSinceDate(owner, repo.name, mostRecentDate);
-            totalApiCalls += commits.apiCalls;
-          } else {
-            console.log(`No commits found in Notion for ${repo.name}, fetching last 7 days as fallback`);
-            const fallbackDate = new Date();
-            fallbackDate.setDate(fallbackDate.getDate() - 7);
-            commits = await getCommitsSinceDate(owner, repo.name, fallbackDate);
-            totalApiCalls += commits.apiCalls;
-          }
-        } else {
-          // Use the traditional months-based approach
-          commits = await getCommitsFromLastNMonths(owner, repo.name, months);
-          totalApiCalls += commits.apiCalls;
-        }
-        
-        if (commits.commits.length === 0) {
-          if (useLastCommit) {
-            console.log(`No new commits found in ${repo.name} since the most recent item in Notion`);
-          } else {
-            console.log(`No commits found in ${repo.name} for the last ${months} months`);
-          }
-          continue;
-        }
-        
-        console.log(`Processing ${commits.commits.length} commits from ${repo.name} to Notion...`);
-        totalRecordsSearched += commits.commits.length;
-        
-        // Process commits in batches to avoid overwhelming the API
-        const batchSize = 50; // Increased from 10 for faster processing
-        let processedCount = 0;
-        let skippedCount = 0;
-        let errorCount = 0;
-        
-        for (let i = 0; i < commits.commits.length; i += batchSize) {
-          const batch = commits.commits.slice(i, i + batchSize);
-          const result = await logCommitsToNotion(batch, `${owner}/${repo.name}`);
-          
-          processedCount += result?.processed || 0;
-          skippedCount += result?.skipped || 0;
-          errorCount += result?.errors || 0;
-          
-          console.log(`Processed ${Math.min(i + batchSize, commits.commits.length)} of ${commits.commits.length} commits from ${repo.name} (${processedCount} new, ${skippedCount} skipped, ${errorCount} errors)`);
-          
-          // Reduced delay between batches for faster processing
-          if (i + batchSize < commits.commits.length) {
-            totalRateLimitDelays++;
-            totalRateLimitDelayTime += 200;
-            await new Promise(resolve => setTimeout(resolve, 200));
-          }
-        }
-        
-        totalCommits += commits.commits.length;
-        totalNewRecords += processedCount;
-        totalSkippedRecords += skippedCount;
-        totalErrorRecords += errorCount;
-        
-        // Add a delay between repositories
-        if (repositories.indexOf(repo) < repositories.length - 1) {
-          console.log('Waiting 1 second before processing next repository...');
-          totalRateLimitDelays++;
-          totalRateLimitDelayTime += 1000;
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
-      } catch (error) {
-        console.error(`Error processing repository ${repo.name}:`, error.message);
-        // Continue with other repositories even if one fails
-        continue;
-      }
-    }
+    // Use the new optimized processing function
+    const processingResult = await processRepositoryBatch(owner, repositories, useLastCommit, months);
+    
+    // Aggregate results
+    processingResult.results.forEach(result => {
+      totalCommits += result.commits.length;
+      totalNewRecords += result.processed;
+      totalSkippedRecords += result.skipped;
+      totalErrorRecords += result.errors;
+      totalRecordsSearched += result.commits.length;
+    });
+    
+    totalApiCalls += processingResult.totalApiCalls;
+    totalRateLimitDelays += processingResult.totalRateLimitDelays;
+    totalRateLimitDelayTime += processingResult.totalRateLimitDelayTime;
     
     const endTime = Date.now();
     const executionTime = endTime - startTime;
@@ -537,4 +629,4 @@ Note: SHA-only mode is automatically enabled for large batches (>100 commits)
   backfillCommits(months, useLastCommit);
 }
 
-module.exports = { backfillCommits }; 
+module.exports = { backfillCommits };
