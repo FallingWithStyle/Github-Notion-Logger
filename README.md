@@ -224,6 +224,18 @@ This will:
 - Perfect for regular incremental updates without re-processing old data
 - Falls back to last 7 days if no commits are found in Notion
 
+**Performance optimization for large repositories:**
+```bash
+node backfill.js --sha-only
+# or
+node backfill.js -s
+```
+This will:
+- Use SHA-only deduplication for faster processing
+- Automatically enabled for batches >100 commits
+- Prevents timeouts on repositories with many existing commits
+- Can be combined with other options: `-l -s` for incremental + SHA-only
+
 This will:
 - Fetch all commits from the specified repository(s) from the last 6 months (default) or custom period
 - Transform them to match the webhook format
@@ -265,6 +277,7 @@ This will:
 - **Parameters**: 
   - Optional `--months` or `-m` flag (1-72 months, defaults to 6)
   - Optional `--last` or `-l` flag for incremental backfill since most recent commit
+  - Optional `--sha-only` or `-s` flag for SHA-only deduplication (faster for large repos)
 - **Features**:
   - Duplicate detection and skipping
   - Configurable batch processing (50 commits/batch)

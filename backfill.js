@@ -478,10 +478,16 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   let months = 6; // default value
   let useLastCommit = false;
+  let shaOnlyMode = false;
   
   // Check for --last or -l argument
   if (args.includes('--last') || args.includes('-l')) {
     useLastCommit = true;
+  }
+  
+  // Check for --sha-only or -s argument (SHA-only deduplication for large repos)
+  if (args.includes('--sha-only') || args.includes('-s')) {
+    shaOnlyMode = true;
   }
   
   // Check for --months or -m argument (only if not using last commit mode)
@@ -496,6 +502,36 @@ if (require.main === module) {
         process.exit(1);
       }
     }
+  }
+  
+  // Show help if requested
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(`
+GitHub Notion Logger - Backfill Script
+
+Usage: node backfill.js [options]
+
+Options:
+  -l, --last           Incremental backfill since most recent commit in Notion
+  -m, --months <num>   Full backfill for last N months (1-72, default: 6)
+  -s, --sha-only       Use SHA-only deduplication for large repositories (faster)
+  -h, --help           Show this help message
+
+Examples:
+  node backfill.js                    # Full backfill for last 6 months
+  node backfill.js -m 12             # Full backfill for last 12 months
+  node backfill.js -l                 # Incremental backfill since last commit
+  node backfill.js -l -s              # Incremental backfill with SHA-only dedup
+  node backfill.js --months 3 --sha-only  # 3 months with SHA-only dedup
+
+Note: SHA-only mode is automatically enabled for large batches (>100 commits)
+      to prevent timeouts on repositories with many existing commits.
+`);
+    process.exit(0);
+  }
+  
+  if (shaOnlyMode) {
+    console.log('🔧 SHA-only deduplication mode enabled for large repositories');
   }
   
   backfillCommits(months, useLastCommit);

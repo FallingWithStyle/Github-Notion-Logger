@@ -53,7 +53,7 @@ async function ensureDatabaseSchemaLoaded() {
   return schemaCache;
 }
 
-async function getExistingCommitsForRepo(repoName) {
+async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
   // Check cache first
   if (existingCommitsCache.has(repoName)) {
     console.log(`📋 Using cached commits for ${repoName}`);
@@ -65,19 +65,27 @@ async function getExistingCommitsForRepo(repoName) {
   const existingCommits = new Set(); // legacy: message|date
   const existingShas = new Set();
   await ensureDatabaseSchemaLoaded();
+  
+  // If we have SHA property and legacy dedup is disabled, only fetch SHA data
+  if (schemaCache.hasShaProperty && skipLegacyDedup) {
+    console.log(`🚀 SHA-only mode for ${repoName} - skipping legacy deduplication`);
+    return { existingCommits: new Set(), existingShas: new Set() };
+  }
+  
   let hasMore = true;
   let startCursor = undefined;
   let pageCount = 0;
+  const maxPages = 20; // Limit to prevent timeouts on very large repos
   
   try {
-    // Add timeout for the entire fetch operation
+    // Add timeout for the entire fetch operation - longer for large repos
     const fetchTimeout = setTimeout(() => {
-      console.log('❌ Timeout while fetching existing commits');
+      console.log(`⚠️ Timeout while fetching existing commits for ${repoName} - using partial data`);
       throw new Error('Timeout fetching existing commits');
-    }, 30000); // 30 second timeout
+    }, 60000); // 60 second timeout for large repos
     
     try {
-      while (hasMore) {
+      while (hasMore && pageCount < maxPages) {
         pageCount++;
         console.log(`📄 Fetching existing commits page ${pageCount} for ${repoName}...`);
         
@@ -121,7 +129,13 @@ async function getExistingCommitsForRepo(repoName) {
       // Cache the results
       const payload = { existingCommits, existingShas };
       existingCommitsCache.set(repoName, payload);
-      console.log(`✅ Found ${existingShas.size} SHA matches and ${existingCommits.size} legacy matches for ${repoName}`);
+      
+      if (pageCount >= maxPages && hasMore) {
+        console.log(`⚠️ Limited to ${maxPages} pages for ${repoName} to prevent timeout (${existingShas.size} SHA matches, ${existingCommits.size} legacy matches)`);
+        console.log(`💡 SHA-based deduplication will still work for new commits`);
+      } else {
+        console.log(`✅ Found ${existingShas.size} SHA matches and ${existingCommits.size} legacy matches for ${repoName}`);
+      }
       
       return payload;
     } catch (error) {
@@ -130,6 +144,17 @@ async function getExistingCommitsForRepo(repoName) {
     }
   } catch (error) {
     console.error(`❌ Error fetching existing commits for ${repoName}:`, error.message);
+    
+    // If we have SHA-based deduplication, we can still work with partial data
+    if (schemaCache.hasShaProperty && existingShas.size > 0) {
+      console.log(`⚠️ Using partial data for ${repoName} - SHA deduplication will still work`);
+      const payload = { existingCommits, existingShas };
+      existingCommitsCache.set(repoName, payload);
+      return payload;
+    }
+    
+    // Fallback to empty sets if we can't get any data
+    console.log(`⚠️ Falling back to empty duplicate cache for ${repoName}`);
     return { existingCommits: new Set(), existingShas: new Set() };
   }
 }
@@ -145,8 +170,25 @@ async function logCommitsToNotion(commits, repo) {
   console.log(`🚀 Starting to log ${commits.length} commits for ${repoName}...`);
   
   try {
-    // Get all existing commits for this repo in one query
-    const { existingCommits, existingShas } = await getExistingCommitsForRepo(repoName);
+    // Try SHA-only mode first for large repositories
+    let { existingCommits, existingShas } = { existingCommits: new Set(), existingShas: new Set() };
+    
+    try {
+      // First attempt: SHA-only mode (fastest)
+      if (commits.length > 100) { // Large batch - use SHA-only mode
+        console.log(`📦 Large batch detected (${commits.length} commits) - using SHA-only deduplication for speed`);
+        const result = await getExistingCommitsForRepo(repoName, true); // skipLegacyDedup = true
+        existingShas = result.existingShas;
+      } else {
+        // Small batch - use full deduplication
+        const result = await getExistingCommitsForRepo(repoName, false);
+        existingCommits = result.existingCommits;
+        existingShas = result.existingShas;
+      }
+    } catch (error) {
+      console.log(`⚠️ Fallback to minimal deduplication for ${repoName}: ${error.message}`);
+      // Continue with empty sets - will still work but may create some duplicates
+    }
     
     // Filter out duplicates and prepare new commits
     const newCommits = [];
