@@ -233,6 +233,7 @@ This will:
 - Continue processing other repos if one fails
 - **Automatically detect and skip duplicates** to prevent duplicate entries
 - Show detailed statistics (new vs skipped commits)
+- **Provide comprehensive metrics** including execution time, API calls, and performance insights
 
 ### Deduplication Mode (Clean existing database)
 To remove duplicate entries from your existing database:
@@ -270,6 +271,7 @@ This will:
   - Progress tracking with statistics
   - Rate limiting for API safety
   - Smart incremental updates using `-l` flag
+  - **Comprehensive metrics and performance insights**
 
 ### `deduplicate.js` - Database Cleanup
 - **Purpose**: Remove duplicate entries from existing database
