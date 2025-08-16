@@ -291,7 +291,7 @@ async function createCommitPage(commit, repoName) {
       rich_text: [{ text: { content: commit.message } }],
     },
     "Project Name": {
-      title: [{ text: { content: repoName } }],
+      title: [{ text: { content: repoName.split('/').pop() } }],
     },
     "Date": {
       date: { start: new Date(commit.timestamp).toISOString() },

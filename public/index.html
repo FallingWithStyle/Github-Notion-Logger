@@ -403,6 +403,14 @@
             return assignColorToProject(projectName);
         }
 
+        // Normalize project names by removing owner prefix
+        // This handles cases where some projects are stored with "Owner/Project-Name" format
+        // and others are stored without it, preventing duplicate entries in the legend
+        function normalizeProjectName(projectName) {
+            // Remove any owner prefix (e.g., "FallingWithStyle/Project-Name" -> "Project-Name")
+            return projectName.replace(/^[^\/]+\//, '');
+        }
+
         // Check if cache is valid
         function isCacheValid() {
             return cachedData && lastFetchTime && (Date.now() - lastFetchTime < CACHE_DURATION);
@@ -431,8 +439,9 @@
             // If fewer than 10 commits, show 1 box per commit
             if (totalCommits < 10) {
                 Object.entries(projects).forEach(([projectName, commitCount]) => {
+                    const normalizedName = normalizeProjectName(projectName);
                     for (let i = 0; i < commitCount; i++) {
-                        squares.push(projectName);
+                        squares.push(normalizedName);
                     }
                 });
             } else {
@@ -443,9 +452,10 @@
                 Object.entries(projects).forEach(([projectName, commitCount]) => {
                     const proportion = commitCount / totalCommits;
                     const squareCount = Math.round(proportion * maxSquares);
+                    const normalizedName = normalizeProjectName(projectName);
                     
                     for (let i = 0; i < squareCount; i++) {
-                        squares.push(projectName);
+                        squares.push(normalizedName);
                     }
                 });
                 
@@ -461,7 +471,8 @@
                     
                     for (const [projectName] of sortedProjects) {
                         if (squares.length >= maxSquares) break;
-                        squares.push(projectName);
+                        const normalizedName = normalizeProjectName(projectName);
+                        squares.push(normalizedName);
                     }
                 }
             }
@@ -471,15 +482,16 @@
 
         // Create a commit square element
         function createCommitSquare(projectName, index) {
+            const normalizedName = normalizeProjectName(projectName);
             const square = document.createElement('div');
             square.className = 'commit-square';
-            square.style.backgroundColor = getProjectColor(projectName);
-            square.title = `${projectName} (square ${index + 1})`;
+            square.style.backgroundColor = getProjectColor(normalizedName);
+            square.title = `${normalizedName} (square ${index + 1})`;
             
             // Add tooltip
             const tooltip = document.createElement('div');
             tooltip.className = 'tooltip';
-            tooltip.textContent = `${projectName} (square ${index + 1})`;
+            tooltip.textContent = `${normalizedName} (square ${index + 1})`;
             square.appendChild(tooltip);
             
             return square;
@@ -523,10 +535,12 @@
             const legendContainer = document.getElementById('legend-items');
             legendContainer.innerHTML = '';
             
-            // Get unique projects from the data
+            // Get unique projects from the data and normalize them
             const uniqueProjects = new Set();
             commitData.forEach(day => {
-                Object.keys(day.projects).forEach(project => uniqueProjects.add(project));
+                Object.keys(day.projects).forEach(project => {
+                    uniqueProjects.add(normalizeProjectName(project));
+                });
             });
             
             // Convert to array and reverse to show newest projects first
