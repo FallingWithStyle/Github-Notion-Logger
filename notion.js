@@ -15,6 +15,9 @@ if (!process.env.NOTION_DATABASE_ID) {
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const databaseId = process.env.NOTION_DATABASE_ID;
 
+// Weekly planning database ID (will be created if doesn't exist)
+let weeklyPlanningDatabaseId = null;
+
 // Cache for existing commits to avoid repeated queries
 const existingCommitsCache = new Map();
 const schemaCache = { checked: false, hasShaProperty: false };
@@ -26,6 +29,189 @@ const CACHE_CONFIG = {
   maxSize: 100, // Max cached repos
   batchSize: 200, // Batch size for Notion operations
 };
+
+// Weekly planning database schema
+const WEEKLY_PLANNING_SCHEMA = {
+  "Project Name": { title: {} },
+  "Week Start": { date: {} },
+  "Current Inspiration": { number: {} },
+  "Practical Value": { number: {} },
+  "Urgency": { number: {} },
+  "Category": { select: {} },
+  "Notes": { rich_text: {} },
+  "Created": { date: {} },
+  "Last Updated": { date: {} }
+};
+
+// Ensure weekly planning database exists
+async function ensureWeeklyPlanningDatabase() {
+  if (weeklyPlanningDatabaseId) {
+    return weeklyPlanningDatabaseId;
+  }
+
+  try {
+    // Check if database already exists by searching for it
+    const response = await notion.search({
+      query: "Weekly Project Planning",
+      filter: {
+        property: "object",
+        value: "database"
+      }
+    });
+
+    // If database exists, use it
+    if (response.results.length > 0) {
+      weeklyPlanningDatabaseId = response.results[0].id;
+      console.log(`📊 Found existing weekly planning database: ${weeklyPlanningDatabaseId}`);
+      return weeklyPlanningDatabaseId;
+    }
+
+    // Create new database
+    console.log('🔧 Creating new weekly planning database...');
+    const newDatabase = await notion.databases.create({
+      parent: { type: "page_id", page_id: process.env.NOTION_PARENT_PAGE_ID || databaseId },
+      title: [{ type: "text", text: { content: "Weekly Project Planning" } }],
+      properties: WEEKLY_PLANNING_SCHEMA,
+      description: [{ type: "text", text: { content: "Weekly project prioritization and planning data" } }]
+    });
+
+    weeklyPlanningDatabaseId = newDatabase.id;
+    console.log(`✅ Created weekly planning database: ${weeklyPlanningDatabaseId}`);
+    return weeklyPlanningDatabaseId;
+  } catch (error) {
+    console.error('❌ Error ensuring weekly planning database:', error);
+    throw error;
+  }
+}
+
+// Add weekly planning entry to Notion
+async function addWeeklyPlanningEntry(projectData) {
+  try {
+    await ensureWeeklyPlanningDatabase();
+    
+    const { projectName, weekStart, inspiration, value, urgency, category, notes } = projectData;
+    
+    const entry = {
+      parent: { database_id: weeklyPlanningDatabaseId },
+      properties: {
+        "Project Name": {
+          title: [{ type: "text", text: { content: projectName } }]
+        },
+        "Week Start": {
+          date: { start: weekStart }
+        },
+        "Current Inspiration": {
+          number: parseInt(inspiration) || null
+        },
+        "Practical Value": {
+          number: parseInt(value) || null
+        },
+        "Urgency": {
+          number: parseInt(urgency) || null
+        },
+        "Category": {
+          select: category ? { name: category } : null
+        },
+        "Notes": {
+          rich_text: notes ? [{ type: "text", text: { content: notes } }] : []
+        },
+        "Created": {
+          date: { start: new Date().toISOString() }
+        },
+        "Last Updated": {
+          date: { start: new Date().toISOString() }
+        }
+      }
+    };
+
+    const result = await notion.pages.create(entry);
+    console.log(`✅ Added weekly planning entry for ${projectName} (week of ${weekStart})`);
+    return result;
+  } catch (error) {
+    console.error('❌ Error adding weekly planning entry:', error);
+    throw error;
+  }
+}
+
+// Get weekly planning data from Notion
+async function getWeeklyPlanningData(weekStart = null) {
+  try {
+    await ensureWeeklyPlanningDatabase();
+    
+    let filter = {};
+    if (weekStart) {
+      filter = {
+        property: "Week Start",
+        date: {
+          equals: weekStart
+        }
+      };
+    }
+
+    const response = await notion.databases.query({
+      database_id: weeklyPlanningDatabaseId,
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      sorts: [
+        { property: "Week Start", direction: "descending" },
+        { property: "Project Name", direction: "ascending" }
+      ]
+    });
+
+    const planningData = response.results.map(page => ({
+      id: page.id,
+      projectName: page.properties["Project Name"]?.title?.[0]?.text?.content || "",
+      weekStart: page.properties["Week Start"]?.date?.start || "",
+      inspiration: page.properties["Current Inspiration"]?.number || null,
+      value: page.properties["Practical Value"]?.number || null,
+      urgency: page.properties["Urgency"]?.number || null,
+      category: page.properties["Category"]?.select?.name || "",
+      notes: page.properties["Notes"]?.rich_text?.[0]?.text?.content || "",
+      created: page.properties["Created"]?.date?.start || "",
+      lastUpdated: page.properties["Last Updated"]?.date?.start || ""
+    }));
+
+    console.log(`📊 Retrieved ${planningData.length} weekly planning entries`);
+    return planningData;
+  } catch (error) {
+    console.error('❌ Error getting weekly planning data:', error);
+    throw error;
+  }
+}
+
+// Update existing weekly planning entry
+async function updateWeeklyPlanningEntry(entryId, updates) {
+  try {
+    const properties = {};
+    
+    if (updates.inspiration !== undefined) {
+      properties["Current Inspiration"] = { number: parseInt(updates.inspiration) || null };
+    }
+    if (updates.value !== undefined) {
+      properties["Practical Value"] = { number: parseInt(updates.value) || null };
+    }
+    if (updates.urgency !== undefined) {
+      properties["Urgency"] = { number: parseInt(updates.urgency) || null };
+    }
+    if (updates.category !== undefined) {
+      properties["Category"] = { select: updates.category ? { name: updates.category } : null };
+    }
+    if (updates.notes !== undefined) {
+      properties["Notes"] = { rich_text: updates.notes ? [{ type: "text", text: { content: updates.notes } }] : [] };
+    }
+    
+    properties["Last Updated"] = { date: { start: new Date().toISOString() } };
+
+    await notion.pages.update({
+      page_id: entryId,
+      properties
+    });
+
+    console.log(`✅ Updated weekly planning entry: ${entryId}`);
+  } catch (error) {
+    console.error('❌ Error updating weekly planning entry:', error);
+    throw error;
+  }
+}
 
 async function ensureDatabaseSchemaLoaded() {
   if (schemaCache.checked) {
@@ -354,4 +540,11 @@ async function getMostRecentCommitDate(repoName) {
   }
 }
 
-module.exports = { logCommitsToNotion, getMostRecentCommitDate };
+module.exports = { 
+  logCommitsToNotion, 
+  getMostRecentCommitDate,
+  addWeeklyPlanningEntry,
+  getWeeklyPlanningData,
+  updateWeeklyPlanningEntry,
+  ensureWeeklyPlanningDatabase
+};

@@ -32,17 +32,38 @@ The app now includes a weekly planning feature at `/week` that helps you:
 1. Navigate to `/week` in your browser
 2. Review your project activity from the last 28 days
 3. Assign categories to projects (or create new ones)
-4. Answer reflection questions for each project
+4. Rate each project on three dimensions:
+   - **Current Inspiration** (1-5, changes weekly)
+   - **Practical Value** (1-5, generally stays the same)
+   - **Urgency** (1-5, generally stays the same)
 5. Generate your weekly plan
-6. Save the plan for future reference
+6. Save the plan locally and/or sync to Notion
+
+### Notion Integration
+
+The weekly planning data can be automatically synced to a dedicated Notion database:
+
+- **Automatic Database Creation**: Creates a "Weekly Project Planning" database if it doesn't exist
+- **Structured Data**: Stores ratings, categories, and timestamps for each project
+- **Historical Tracking**: Maintains weekly planning history for trend analysis
+- **Easy Access**: View your planning data directly in Notion alongside commit logs
+
+The Notion database includes:
+- Project Name, Week Start Date, Category
+- Current Inspiration Rating (1-5)
+- Practical Value Rating (1-5) 
+- Urgency Rating (1-5)
+- Notes and timestamps
 
 ## API Endpoints
 
 - `POST /webhook` - GitHub webhook endpoint for real-time commit logging
 - `GET /api/fetch-notion-data` - Fetch and sync data from Notion database
 - `GET /api/weekly-data` - Get 28-day project activity data for weekly planning
-- `POST /api/weekly-plan` - Save a weekly plan
+- `POST /api/weekly-plan` - Save a weekly plan locally
 - `GET /api/weekly-plans` - Retrieve all saved weekly plans
+- `POST /api/weekly-plan/sync-notion` - Sync weekly plan data to Notion database
+- `GET /api/weekly-plan/notion` - Retrieve weekly planning data from Notion
 - `GET /` - Main activity visualizer page
 - `GET /week` - Weekly project planning page
 
@@ -61,6 +82,7 @@ The app now includes a weekly planning feature at `/week` that helps you:
    ```
    NOTION_API_KEY=your_notion_api_key
    NOTION_DATABASE_ID=your_notion_database_id
+   NOTION_PARENT_PAGE_ID=your_notion_parent_page_id  # Optional - for weekly planning database
    GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
    GITHUB_TOKEN=your_github_personal_access_token
    GITHUB_OWNER=your_github_username_or_org
@@ -95,6 +117,13 @@ The app now includes a weekly planning feature at `/week` that helps you:
 3. Extract the database ID (the last part before the `?`): `1234567890abcdef1234567890abcdef`
 4. Add it to your `.env` file as `NOTION_DATABASE_ID=your_database_id_here`
 5. **Important**: Share your database with your integration by clicking "Share" in the database and adding your integration
+
+#### Notion Parent Page ID (NOTION_PARENT_PAGE_ID) - For Weekly Planning Database
+1. Open your Notion workspace in the browser
+2. Navigate to the "Weekly Planning" page
+3. Copy the page ID from the URL - it will look like: `https://www.notion.so/workspace/Weekly-Planning-1234567890abcdef1234567890abcdef`
+4. Extract the page ID (the last part before the `?`): `1234567890abcdef1234567890abcdef`
+5. Add it to your `.env` file as `NOTION_PARENT_PAGE_ID=your_parent_page_id_here`
 
 #### GitHub Webhook Secret (GITHUB_WEBHOOK_SECRET) - For Webhook Mode
 1. Generate a random secret (you can use a password generator or run `openssl rand -hex 32`)
@@ -137,6 +166,7 @@ This project includes a `fly.toml` configuration for easy deployment to Fly.io.
    ```bash
    fly secrets set NOTION_API_KEY=your_notion_api_key
    fly secrets set NOTION_DATABASE_ID=your_notion_database_id
+   fly secrets set NOTION_PARENT_PAGE_ID=your_notion_parent_page_id
    fly secrets set GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
    fly secrets set GITHUB_TOKEN=your_github_personal_access_token
    fly secrets set GITHUB_OWNER=your_github_username_or_org

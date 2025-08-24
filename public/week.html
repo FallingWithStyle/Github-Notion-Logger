@@ -357,6 +357,7 @@
         <button id="refresh-btn" class="btn">🔄 Refresh Data</button>
         <button id="generate-plan-btn" class="btn" disabled>📋 Generate Weekly Plan</button>
         <button id="save-plan-btn" class="btn" disabled>💾 Save Plan</button>
+        <button id="sync-notion-btn" class="btn" disabled>🔄 Sync to Notion</button>
         <button id="load-plans-btn" class="btn">📂 Load Previous Plans</button>
         <div class="status" id="status">Ready to load project data</div>
     </div>
@@ -715,8 +716,9 @@
             planContent.innerHTML = planHTML;
             document.getElementById('weekly-plan').classList.remove('hidden');
             document.getElementById('save-plan-btn').disabled = false;
+            document.getElementById('sync-notion-btn').disabled = false;
             
-            updateStatus('Weekly plan generated! Review and save as needed.');
+            updateStatus('Weekly plan generated! Review, save, and sync to Notion as needed.');
         }
         
         // Save weekly plan
@@ -759,6 +761,49 @@
             } catch (error) {
                 console.error('Error saving weekly plan:', error);
                 showError(`Failed to save plan: ${error.message}`);
+            }
+        }
+        
+        // Sync weekly plan to Notion
+        async function syncToNotion() {
+            try {
+                const weekStart = new Date().toISOString().split('T')[0];
+                const planData = {
+                    projects: projectData,
+                    userAnswers,
+                    categories,
+                    generatedAt: new Date().toISOString()
+                };
+                
+                const response = await fetch('/api/weekly-plan/sync-notion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ planData, weekStart })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`✅ Synced ${result.summary.success} projects to Notion! ${result.summary.errors > 0 ? `${result.summary.errors} errors.` : ''}`);
+                    document.getElementById('sync-notion-btn').classList.add('success');
+                    document.getElementById('sync-notion-btn').textContent = '✅ Synced!';
+                    setTimeout(() => {
+                        document.getElementById('sync-notion-btn').classList.remove('success');
+                        document.getElementById('sync-notion-btn').textContent = '🔄 Sync to Notion';
+                    }, 3000);
+                } else {
+                    throw new Error(result.error || 'Failed to sync to Notion');
+                }
+                
+            } catch (error) {
+                console.error('Error syncing to Notion:', error);
+                showError(`Failed to sync to Notion: ${error.message}`);
             }
         }
         
@@ -830,6 +875,7 @@
         document.getElementById('refresh-btn').addEventListener('click', loadWeeklyData);
         document.getElementById('generate-plan-btn').addEventListener('click', generateWeeklyPlan);
         document.getElementById('save-plan-btn').addEventListener('click', saveWeeklyPlan);
+        document.getElementById('sync-notion-btn').addEventListener('click', syncToNotion);
         document.getElementById('load-plans-btn').addEventListener('click', loadPreviousPlans);
         
         // Load data when page loads

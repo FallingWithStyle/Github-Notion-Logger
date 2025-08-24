@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
-const { logCommitsToNotion } = require('./notion');
+const { logCommitsToNotion, addWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry } = require('./notion');
 
 dotenv.config();
 const app = express();
@@ -706,6 +706,102 @@ app.get('/api/weekly-plans', asyncHandler(async (req, res) => {
     console.error('❌ Error fetching weekly plans:', error);
     res.status(500).json({ 
       error: 'Error fetching weekly plans',
+      details: error.message 
+    });
+  }
+}));
+
+// API endpoint to sync weekly plan to Notion
+app.post('/api/weekly-plan/sync-notion', asyncHandler(async (req, res) => {
+  try {
+    const { planData, weekStart } = req.body;
+    
+    if (!planData || !weekStart) {
+      return res.status(400).json({ error: 'Missing plan data or week start date' });
+    }
+    
+    console.log(`🔄 Syncing weekly plan to Notion for week starting ${weekStart}...`);
+    
+    const syncResults = [];
+    const { projects, userAnswers, categories } = planData;
+    
+    // Sync each project's planning data to Notion
+    for (const project of projects) {
+      const answers = userAnswers[project.name] || {};
+      
+      if (answers.inspiration || answers.value || answers.urgency) {
+        try {
+          const notionEntry = await addWeeklyPlanningEntry({
+            projectName: project.name,
+            weekStart,
+            inspiration: answers.inspiration,
+            value: answers.value,
+            urgency: answers.urgency,
+            category: project.category,
+            notes: `Weekly planning data for ${project.name}`
+          });
+          
+          syncResults.push({
+            project: project.name,
+            status: 'success',
+            notionId: notionEntry.id
+          });
+          
+        } catch (error) {
+          console.error(`❌ Failed to sync ${project.name} to Notion:`, error.message);
+          syncResults.push({
+            project: project.name,
+            status: 'error',
+            error: error.message
+          });
+        }
+      }
+    }
+    
+    const successCount = syncResults.filter(r => r.status === 'success').length;
+    const errorCount = syncResults.filter(r => r.status === 'error').length;
+    
+    console.log(`✅ Synced ${successCount} projects to Notion (${errorCount} errors)`);
+    
+    res.json({
+      success: true,
+      message: `Synced ${successCount} projects to Notion`,
+      results: syncResults,
+      summary: {
+        total: projects.length,
+        success: successCount,
+        errors: errorCount
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error syncing weekly plan to Notion:', error);
+    res.status(500).json({ 
+      error: 'Error syncing to Notion',
+      details: error.message 
+    });
+  }
+}));
+
+// API endpoint to get weekly planning data from Notion
+app.get('/api/weekly-plan/notion', asyncHandler(async (req, res) => {
+  try {
+    const { weekStart } = req.query;
+    
+    console.log(`📊 Fetching weekly planning data from Notion${weekStart ? ` for week ${weekStart}` : ''}...`);
+    
+    const notionData = await getWeeklyPlanningData(weekStart);
+    
+    res.json({
+      success: true,
+      data: notionData,
+      count: notionData.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching weekly planning data from Notion:', error);
+    res.status(500).json({ 
+      error: 'Error fetching from Notion',
       details: error.message 
     });
   }
