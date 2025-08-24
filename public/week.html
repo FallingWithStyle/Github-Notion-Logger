@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 1400px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f8f9fa;
@@ -99,100 +99,116 @@
             color: #7f8c8d;
         }
         
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
         .project-card {
             background: white;
             border-radius: 12px;
-            padding: 20px;
+            padding: 30px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-left: 4px solid #3498db;
+            margin-bottom: 20px;
+            text-align: center;
         }
         
         .project-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
         }
         
         .project-emoji {
-            font-size: 24px;
-            width: 32px;
-            height: 32px;
+            font-size: 32px;
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
+            border-radius: 8px;
         }
         
-        .project-info h3 {
-            margin: 0 0 5px 0;
+        .project-info h2 {
+            margin: 0 0 8px 0;
             color: #2c3e50;
+            font-size: 24px;
         }
         
         .project-stats {
             display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            font-size: 14px;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            font-size: 16px;
             color: #7f8c8d;
         }
         
         .stat {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
         
         .category-selector {
-            margin-bottom: 15px;
+            margin-bottom: 30px;
         }
         
         .category-selector label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: 500;
             color: #2c3e50;
+            font-size: 16px;
         }
         
         .category-selector select,
         .category-selector input {
             width: 100%;
-            padding: 8px 12px;
+            max-width: 300px;
+            padding: 12px 16px;
             border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            margin: 0 auto;
+            display: block;
         }
         
-        .reflection-questions {
-            margin-bottom: 20px;
+        .questions {
+            margin-bottom: 30px;
         }
         
         .question {
-            margin-bottom: 15px;
+            margin-bottom: 25px;
+            text-align: left;
         }
         
         .question label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: 500;
             color: #2c3e50;
+            font-size: 16px;
         }
         
         .question textarea {
             width: 100%;
-            padding: 8px 12px;
+            padding: 12px 16px;
             border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            min-height: 60px;
+            border-radius: 8px;
+            font-size: 16px;
+            min-height: 80px;
             resize: vertical;
+        }
+        
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        
+        .progress-indicator {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
         }
         
         .weekly-plan {
@@ -241,24 +257,20 @@
             color: #2c3e50;
         }
         
-        .plan-commitments {
+        .plan-details {
             margin-top: 10px;
         }
         
-        .plan-commitments h5 {
+        .plan-details h5 {
             margin: 0 0 8px 0;
             color: #7f8c8d;
             font-size: 14px;
         }
         
-        .plan-commitments ul {
-            margin: 0;
-            padding-left: 20px;
+        .plan-details p {
+            margin: 0 0 8px 0;
             color: #2c3e50;
-        }
-        
-        .plan-commitments li {
-            margin-bottom: 5px;
+            font-size: 14px;
         }
         
         .loading {
@@ -279,12 +291,19 @@
         .hidden {
             display: none;
         }
+        
+        .completion-message {
+            text-align: center;
+            padding: 40px;
+            color: #27ae60;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>📅 Weekly Project Planning</h1>
-        <p>Review your last 28 days of activity and plan for the week ahead</p>
+        <p>Review your projects one by one and plan for the week ahead</p>
     </div>
     
     <div class="nav-links">
@@ -306,7 +325,15 @@
     
     <div id="error" class="error hidden"></div>
     
-    <div id="projects-container" class="projects-grid hidden"></div>
+    <div id="progress-indicator" class="progress-indicator hidden"></div>
+    
+    <div id="project-container" class="project-card hidden"></div>
+    
+    <div id="completion-message" class="completion-message hidden">
+        <h2>🎉 All Projects Reviewed!</h2>
+        <p>You've completed the weekly review for all projects.</p>
+        <p>Click "Generate Weekly Plan" to see your summary.</p>
+    </div>
     
     <div id="weekly-plan" class="weekly-plan hidden">
         <h2>📋 Your Weekly Project Plan</h2>
@@ -318,6 +345,7 @@
         let projectColors = {};
         let categories = [];
         let userAnswers = {};
+        let currentProjectIndex = 0;
         
         // Load weekly data
         async function loadWeeklyData() {
@@ -342,18 +370,19 @@
                         document.getElementById('generate-plan-btn').disabled = true;
                         
                         // Show message with link to main page
-                        const container = document.getElementById('projects-container');
+                        const container = document.getElementById('project-container');
                         container.innerHTML = `
-                            <div style="grid-column: 1 / -1; text-align: center; color: #7f8c8d;">
+                            <div style="text-align: center; color: #7f8c8d;">
                                 <p>No project activity found in the last 28 days.</p>
                                 <p>Visit the <a href="/" style="color: #3498db;">Activity View</a> to fetch data from Notion first.</p>
                             </div>
                         `;
                         container.classList.remove('hidden');
                     } else {
-                        renderProjects();
-                        updateStatus(`Loaded ${projectData.length} projects from the last 28 days`);
-                        document.getElementById('generate-plan-btn').disabled = false;
+                        currentProjectIndex = 0;
+                        showCurrentProject();
+                        updateStatus(`Loaded ${projectData.length} projects. Review them one by one.`);
+                        document.getElementById('generate-plan-btn').disabled = true;
                     }
                 } else {
                     throw new Error(result.error || 'Failed to load data');
@@ -368,37 +397,23 @@
             }
         }
         
-        // Render projects grid
-        function renderProjects() {
-            const container = document.getElementById('projects-container');
-            container.innerHTML = '';
-            
-            if (projectData.length === 0) {
-                container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #7f8c8d;">No project activity found in the last 28 days</p>';
+        // Show current project
+        function showCurrentProject() {
+            if (currentProjectIndex >= projectData.length) {
+                showCompletionMessage();
                 return;
             }
             
-            projectData.forEach(project => {
-                const projectCard = createProjectCard(project);
-                container.appendChild(projectCard);
-            });
-            
-            container.classList.remove('hidden');
-        }
-        
-        // Create project card
-        function createProjectCard(project) {
-            const card = document.createElement('div');
-            card.className = 'project-card';
-            card.style.borderLeftColor = getProjectColor(project.name);
+            const project = projectData[currentProjectIndex];
+            const container = document.getElementById('project-container');
             
             const lastActivity = project.lastActivity ? new Date(project.lastActivity).toLocaleDateString() : 'Unknown';
             
-            card.innerHTML = `
+            container.innerHTML = `
                 <div class="project-header">
                     <div class="project-emoji">${getProjectColor(project.name)}</div>
                     <div class="project-info">
-                        <h3>${project.name}</h3>
+                        <h2>${project.name}</h2>
                     </div>
                 </div>
                 
@@ -425,25 +440,64 @@
                     </div>
                 </div>
                 
-                <div class="reflection-questions">
+                <div class="questions">
                     <div class="question">
-                        <label for="working-${project.name}">What's working well for this project?</label>
-                        <textarea id="working-${project.name}" placeholder="Describe what's going well..." onchange="updateAnswer('${project.name}', 'working', this.value)">${getAnswer(project.name, 'working')}</textarea>
+                        <label for="inspiration-${project.name}">Current Inspiration (changes weekly):</label>
+                        <textarea id="inspiration-${project.name}" placeholder="What's inspiring you about this project right now?" onchange="updateAnswer('${project.name}', 'inspiration', this.value)">${getAnswer(project.name, 'inspiration')}</textarea>
                     </div>
                     
                     <div class="question">
-                        <label for="improve-${project.name}">What should be improved or stopped?</label>
-                        <textarea id="improve-${project.name}" placeholder="Describe what needs improvement..." onchange="updateAnswer('${project.name}', 'improve', this.value)"></textarea>
+                        <label for="value-${project.name}">Practical Value (generally stays the same):</label>
+                        <textarea id="value-${project.name}" placeholder="What practical value does this project provide?" onchange="updateAnswer('${project.name}', 'value', this.value)">${getAnswer(project.name, 'value')}</textarea>
                     </div>
                     
                     <div class="question">
-                        <label for="start-${project.name}">What should be started or added next?</label>
-                        <textarea id="start-${project.name}" placeholder="Describe what to start next..." onchange="updateAnswer('${project.name}', 'start', this.value)"></textarea>
+                        <label for="urgency-${project.name}">Urgency (generally stays the same):</label>
+                        <textarea id="urgency-${project.name}" placeholder="How urgent is this project right now?" onchange="updateAnswer('${project.name}', 'urgency', this.value)">${getAnswer(project.name, 'urgency')}</textarea>
                     </div>
+                </div>
+                
+                <div class="navigation-buttons">
+                    <button class="btn" onclick="previousProject()" ${currentProjectIndex === 0 ? 'disabled' : ''}>← Previous</button>
+                    <button class="btn" onclick="nextProject()">${currentProjectIndex === projectData.length - 1 ? 'Finish' : 'Next →'}</button>
                 </div>
             `;
             
-            return card;
+            container.classList.remove('hidden');
+            updateProgressIndicator();
+        }
+        
+        // Show completion message
+        function showCompletionMessage() {
+            document.getElementById('project-container').classList.add('hidden');
+            document.getElementById('completion-message').classList.remove('hidden');
+            document.getElementById('generate-plan-btn').disabled = false;
+            updateStatus('All projects reviewed! Generate your weekly plan.');
+        }
+        
+        // Update progress indicator
+        function updateProgressIndicator() {
+            const progressEl = document.getElementById('progress-indicator');
+            progressEl.innerHTML = `Project ${currentProjectIndex + 1} of ${projectData.length}`;
+            progressEl.classList.remove('hidden');
+        }
+        
+        // Navigate to next project
+        function nextProject() {
+            if (currentProjectIndex < projectData.length - 1) {
+                currentProjectIndex++;
+                showCurrentProject();
+            } else {
+                showCompletionMessage();
+            }
+        }
+        
+        // Navigate to previous project
+        function previousProject() {
+            if (currentProjectIndex > 0) {
+                currentProjectIndex--;
+                showCurrentProject();
+            }
         }
         
         // Get project color
@@ -475,17 +529,15 @@
                 categories.push(categoryName.trim());
                 updateCategory(projectName, categoryName.trim());
                 
-                // Update all category selectors
-                projectData.forEach(project => {
-                    const selector = document.getElementById(`category-${project.name}`);
-                    if (selector) {
-                        selector.innerHTML = `
-                            <option value="">Select a category...</option>
-                            ${categories.map(cat => `<option value="${cat}" ${project.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}
-                            <option value="__new__">+ Create new category</option>
-                        `;
-                    }
-                });
+                // Update category selector
+                const selector = document.getElementById(`category-${projectName}`);
+                if (selector) {
+                    selector.innerHTML = `
+                        <option value="">Select a category...</option>
+                        ${categories.map(cat => `<option value="${cat}" ${projectData.find(p => p.name === projectName)?.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}
+                        <option value="__new__">+ Create new category</option>
+                    `;
+                }
             }
         }
         
@@ -525,13 +577,19 @@
                         ${projects.map(project => `
                             <div class="plan-project">
                                 <h4>${getProjectColor(project.name)} ${project.name}</h4>
-                                <div class="plan-commitments">
-                                    <h5>This Week's Commitments:</h5>
-                                    <ul>
-                                        ${getAnswer(project.name, 'working') ? `<li>Continue: ${getAnswer(project.name, 'working')}</li>` : ''}
-                                        ${getAnswer(project.name, 'improve') ? `<li>Improve: ${getAnswer(project.name, 'improve')}</li>` : ''}
-                                        ${getAnswer(project.name, 'start') ? `<li>Start: ${getAnswer(project.name, 'start')}</li>` : ''}
-                                    </ul>
+                                <div class="plan-details">
+                                    ${getAnswer(project.name, 'inspiration') ? `
+                                        <h5>Current Inspiration:</h5>
+                                        <p>${getAnswer(project.name, 'inspiration')}</p>
+                                    ` : ''}
+                                    ${getAnswer(project.name, 'value') ? `
+                                        <h5>Practical Value:</h5>
+                                        <p>${getAnswer(project.name, 'value')}</p>
+                                    ` : ''}
+                                    ${getAnswer(project.name, 'urgency') ? `
+                                        <h5>Urgency:</h5>
+                                        <p>${getAnswer(project.name, 'urgency')}</p>
+                                    ` : ''}
                                 </div>
                             </div>
                         `).join('')}
@@ -541,8 +599,9 @@
             
             planContent.innerHTML = planHTML;
             document.getElementById('weekly-plan').classList.remove('hidden');
+            document.getElementById('save-plan-btn').disabled = false;
             
-            updateStatus('Weekly plan generated! Review and adjust as needed.');
+            updateStatus('Weekly plan generated! Review and save as needed.');
         }
         
         // Save weekly plan
@@ -609,7 +668,7 @@
                         
                         plansHTML += `
                             <div class="plan-category" style="margin-bottom: 20px;">
-                                <h4>Week of ${planDate} (Created: ${createdDate})</h3>
+                                <h4>Week of ${planDate} (Created: ${createdDate})</h4>
                                 <div style="font-size: 14px; color: #7f8c8d; margin-bottom: 10px;">
                                     Plan ID: ${plan.id}
                                 </div>
