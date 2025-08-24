@@ -372,11 +372,12 @@
     
     <div id="project-container" class="project-card hidden"></div>
     
-    <div id="completion-message" class="completion-message hidden">
-        <h2>🎉 All Projects Reviewed!</h2>
-        <p>You've completed the weekly review for all projects.</p>
-        <p>Click "Generate Weekly Plan" to see your summary.</p>
-    </div>
+            <div id="completion-message" class="completion-message hidden">
+            <h2>🎉 All Projects Reviewed!</h2>
+            <p>You've completed the weekly review for all projects.</p>
+            <p id="completion-status">Click "Generate Weekly Plan" to see your summary.</p>
+            <button id="go-back-btn" class="btn" onclick="goBackToIncomplete()" style="margin-top: 15px;">← Go Back to Incomplete</button>
+        </div>
     
     <div id="weekly-plan" class="weekly-plan hidden">
         <h2>📋 Your Weekly Project Plan</h2>
@@ -389,6 +390,38 @@
         let categories = [];
         let userAnswers = {};
         let currentProjectIndex = 0;
+        
+        // Load saved data from localStorage
+        function loadSavedData() {
+            try {
+                const saved = localStorage.getItem('weeklyPlanningData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    userAnswers = data.userAnswers || {};
+                    categories = data.categories || [];
+                    currentProjectIndex = data.currentProjectIndex || 0;
+                    console.log('📥 Loaded saved data from localStorage');
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not load saved data:', error);
+            }
+        }
+        
+        // Save data to localStorage
+        function saveData() {
+            try {
+                const dataToSave = {
+                    userAnswers,
+                    categories,
+                    currentProjectIndex,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('weeklyPlanningData', JSON.stringify(dataToSave));
+                console.log('💾 Saved data to localStorage');
+            } catch (error) {
+                console.warn('⚠️ Could not save data:', error);
+            }
+        }
         
         // Load weekly data
         async function loadWeeklyData() {
@@ -550,8 +583,39 @@
         function showCompletionMessage() {
             document.getElementById('project-container').classList.add('hidden');
             document.getElementById('completion-message').classList.remove('hidden');
-            document.getElementById('generate-plan-btn').disabled = false;
-            updateStatus('All projects reviewed! Generate your weekly plan.');
+            
+            // Check if all projects have been rated
+            const unratedProjects = projectData.filter(project => {
+                const answers = userAnswers[project.name] || {};
+                return !answers.inspiration || !answers.value || !answers.urgency;
+            });
+            
+            if (unratedProjects.length === 0) {
+                document.getElementById('generate-plan-btn').disabled = false;
+                document.getElementById('go-back-btn').style.display = 'none';
+                document.getElementById('completion-status').textContent = 'Click "Generate Weekly Plan" to see your summary.';
+                updateStatus('All projects reviewed and rated! Generate your weekly plan.');
+            } else {
+                document.getElementById('generate-plan-btn').disabled = true;
+                document.getElementById('go-back-btn').style.display = 'inline-block';
+                document.getElementById('completion-status').textContent = `${unratedProjects.length} projects still need ratings. Go back and complete them.`;
+                updateStatus(`All projects reviewed, but ${unratedProjects.length} still need ratings. Go back and complete them.`);
+            }
+        }
+        
+        // Go back to incomplete projects
+        function goBackToIncomplete() {
+            // Find first incomplete project
+            for (let i = 0; i < projectData.length; i++) {
+                const project = projectData[i];
+                const answers = userAnswers[project.name] || {};
+                if (!answers.inspiration || !answers.value || !answers.urgency) {
+                    currentProjectIndex = i;
+                    document.getElementById('completion-message').classList.add('hidden');
+                    showCurrentProject();
+                    return;
+                }
+            }
         }
         
         // Update progress indicator
@@ -559,6 +623,24 @@
             const progressEl = document.getElementById('progress-indicator');
             progressEl.innerHTML = `Project ${currentProjectIndex + 1} of ${projectData.length}`;
             progressEl.classList.remove('hidden');
+            
+            // Check if current project is fully rated
+            const currentProject = projectData[currentProjectIndex];
+            if (currentProject) {
+                const answers = userAnswers[currentProject.name] || {};
+                const isRated = answers.inspiration && answers.value && answers.urgency;
+                
+                // Update navigation button text
+                const nextButton = document.querySelector('.navigation-buttons .btn:last-child');
+                if (nextButton) {
+                    if (currentProjectIndex === projectData.length - 1) {
+                        nextButton.textContent = isRated ? 'Finish' : 'Complete Ratings First';
+                    } else {
+                        nextButton.textContent = isRated ? 'Next →' : 'Rate All Questions First';
+                    }
+                    nextButton.disabled = !isRated;
+                }
+            }
         }
         
         // Navigate to next project
@@ -636,6 +718,7 @@
                 if (!categories.includes(category)) {
                     categories.push(category);
                 }
+                saveData();
             }
         }
         
@@ -663,6 +746,7 @@
                 userAnswers[projectName] = {};
             }
             userAnswers[projectName][question] = answer;
+            saveData();
         }
         
         // Get user answer
@@ -672,6 +756,18 @@
         
         // Generate weekly plan
         function generateWeeklyPlan() {
+            // Check if all projects have been rated
+            const unratedProjects = projectData.filter(project => {
+                const answers = userAnswers[project.name] || {};
+                return !answers.inspiration || !answers.value || !answers.urgency;
+            });
+            
+            if (unratedProjects.length > 0) {
+                const projectNames = unratedProjects.map(p => p.name).join(', ');
+                showError(`Please rate all projects before generating plan. Missing ratings for: ${projectNames}`);
+                return;
+            }
+            
             const planContent = document.getElementById('plan-content');
             
             // Group projects by category
@@ -879,7 +975,10 @@
         document.getElementById('load-plans-btn').addEventListener('click', loadPreviousPlans);
         
         // Load data when page loads
-        document.addEventListener('DOMContentLoaded', loadWeeklyData);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedData(); // Load saved data first
+            loadWeeklyData(); // Then load project data
+        });
     </script>
 </body>
 </html>
