@@ -7,11 +7,44 @@ A webhook-based service that logs GitHub commits to Notion database with a visua
 - **Webhook endpoint** to receive GitHub commit events in real-time
 - **Automatic logging** of commits to Notion database
 - **Visual commit activity tracker** - view your coding activity across projects over time
+- **Weekly project planning** - review 28-day activity and create actionable weekly plans
 - **One-time backfill script** to import historical commits from the last 6 months
 - **Duplicate detection** to prevent duplicate entries during backfill
 - **Deduplication tool** to clean existing duplicate entries
 - **Speed optimizations** with configurable batch processing
 - **Progress tracking** with detailed statistics
+
+## Weekly Project Planning
+
+The app now includes a weekly planning feature at `/week` that helps you:
+
+- **Review Activity**: See your commit activity across all projects from the last 28 days
+- **Categorize Projects**: Organize projects into categories for better planning
+- **Reflect & Plan**: Answer three key questions for each project:
+  - What's working well?
+  - What should be improved or stopped?
+  - What should be started or added next?
+- **Generate Plans**: Create actionable weekly plans grouped by category
+- **Save & Review**: Store plans for later review and track progress over time
+
+### Using Weekly Planning
+
+1. Navigate to `/week` in your browser
+2. Review your project activity from the last 28 days
+3. Assign categories to projects (or create new ones)
+4. Answer reflection questions for each project
+5. Generate your weekly plan
+6. Save the plan for future reference
+
+## API Endpoints
+
+- `POST /webhook` - GitHub webhook endpoint for real-time commit logging
+- `GET /api/fetch-notion-data` - Fetch and sync data from Notion database
+- `GET /api/weekly-data` - Get 28-day project activity data for weekly planning
+- `POST /api/weekly-plan` - Save a weekly plan
+- `GET /api/weekly-plans` - Retrieve all saved weekly plans
+- `GET /` - Main activity visualizer page
+- `GET /week` - Weekly project planning page
 
 ## Setup
 

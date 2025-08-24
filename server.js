@@ -540,6 +540,177 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Serve the weekly planning page
+app.get('/week', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'week.html'));
+});
+
+// API endpoint to get 28-day project data for weekly planning
+app.get('/api/weekly-data', asyncHandler(async (req, res) => {
+  try {
+    console.log('📊 Fetching 28-day data for weekly planning...');
+    
+    // Read existing commit log
+    let commitLog = [];
+    if (fs.existsSync(COMMIT_LOG_PATH)) {
+      try {
+        const data = fs.readFileSync(COMMIT_LOG_PATH, 'utf8');
+        commitLog = JSON.parse(data);
+      } catch (error) {
+        console.error('❌ Error reading commit log:', error.message);
+        return res.status(500).json({ error: 'Failed to read commit log' });
+      }
+    }
+    
+    // Calculate date range (28 days ago from today)
+    const today = new Date();
+    const twentyEightDaysAgo = new Date(today);
+    twentyEightDaysAgo.setDate(today.getDate() - 28);
+    const startDate = twentyEightDaysAgo.toISOString().split('T')[0];
+    
+    // Filter data to last 28 days
+    const recentData = commitLog.filter(day => day.date >= startDate);
+    
+    // Aggregate data by project
+    const projectData = {};
+    const projectColors = {};
+    
+    recentData.forEach(day => {
+      Object.entries(day.projects).forEach(([projectName, commitCount]) => {
+        if (!projectData[projectName]) {
+          projectData[projectName] = {
+            name: projectName,
+            totalCommits: 0,
+            activityDates: [],
+            lastActivity: null,
+            category: null
+          };
+        }
+        
+        projectData[projectName].totalCommits += commitCount;
+        projectData[projectName].activityDates.push(day.date);
+        
+        const activityDate = new Date(day.date);
+        if (!projectData[projectName].lastActivity || activityDate > new Date(projectData[projectName].lastActivity)) {
+          projectData[projectName].lastActivity = day.date;
+        }
+      });
+    });
+    
+    // Assign colors to projects
+    Object.keys(projectData).forEach(projectName => {
+      projectColors[projectName] = assignColorToProject(projectName, projectColors);
+    });
+    
+    // Get unique categories from existing data (if any)
+    const categories = new Set();
+    Object.values(projectData).forEach(project => {
+      if (project.category) {
+        categories.add(project.category);
+      }
+    });
+    
+    res.json({
+      success: true,
+      projects: Object.values(projectData),
+      projectColors,
+      categories: Array.from(categories),
+      dateRange: {
+        start: startDate,
+        end: today.toISOString().split('T')[0]
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching weekly data:', error);
+    res.status(500).json({ 
+      error: 'Error fetching weekly data',
+      details: error.message 
+    });
+  }
+}));
+
+// API endpoint to save weekly plan
+app.post('/api/weekly-plan', asyncHandler(async (req, res) => {
+  try {
+    const { planData, weekStart } = req.body;
+    
+    if (!planData || !weekStart) {
+      return res.status(400).json({ error: 'Missing plan data or week start date' });
+    }
+    
+    const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+    let weeklyPlans = [];
+    
+    // Read existing weekly plans
+    if (fs.existsSync(weeklyPlansPath)) {
+      try {
+        const data = fs.readFileSync(weeklyPlansPath, 'utf8');
+        weeklyPlans = JSON.parse(data);
+      } catch (error) {
+        console.warn('⚠️ Could not read existing weekly plans, starting fresh');
+      }
+    }
+    
+    // Add new plan
+    const newPlan = {
+      id: Date.now().toString(),
+      weekStart,
+      createdAt: new Date().toISOString(),
+      planData
+    };
+    
+    weeklyPlans.push(newPlan);
+    
+    // Write updated plans
+    fs.writeFileSync(weeklyPlansPath, JSON.stringify(weeklyPlans, null, 2));
+    
+    console.log(`✅ Saved weekly plan for week starting ${weekStart}`);
+    
+    res.json({
+      success: true,
+      planId: newPlan.id,
+      message: 'Weekly plan saved successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error saving weekly plan:', error);
+    res.status(500).json({ 
+      error: 'Error saving weekly plan',
+      details: error.message 
+    });
+  }
+}));
+
+// API endpoint to get weekly plans
+app.get('/api/weekly-plans', asyncHandler(async (req, res) => {
+  try {
+    const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+    let weeklyPlans = [];
+    
+    if (fs.existsSync(weeklyPlansPath)) {
+      try {
+        const data = fs.readFileSync(weeklyPlansPath, 'utf8');
+        weeklyPlans = JSON.parse(data);
+      } catch (error) {
+        console.warn('⚠️ Could not read weekly plans:', error.message);
+      }
+    }
+    
+    res.json({
+      success: true,
+      plans: weeklyPlans
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching weekly plans:', error);
+    res.status(500).json({ 
+      error: 'Error fetching weekly plans',
+      details: error.message 
+    });
+  }
+}));
+
 // Global error handler
 app.use((error, req, res, next) => {
   console.error('❌ Unhandled error:', error);
