@@ -446,7 +446,19 @@
                 if (result.success) {
                     projectData = result.projects;
                     projectColors = result.projectColors;
-                    categories = result.categories;
+                    
+                    // Merge saved categories with server categories
+                    const savedCategories = categories || [];
+                    const serverCategories = result.categories || [];
+                    categories = [...new Set([...savedCategories, ...serverCategories])];
+                    
+                    // Apply saved categories to project data
+                    projectData.forEach(project => {
+                        const savedProject = userAnswers[project.name];
+                        if (savedProject && savedProject.category) {
+                            project.category = savedProject.category;
+                        }
+                    });
                     
                     if (projectData.length === 0) {
                         updateStatus('No project activity found in the last 28 days. Try fetching data from Notion first.');
@@ -725,6 +737,13 @@
                 if (!categories.includes(category)) {
                     categories.push(category);
                 }
+                
+                // Also save category in userAnswers for persistence
+                if (!userAnswers[projectName]) {
+                    userAnswers[projectName] = {};
+                }
+                userAnswers[projectName].category = category;
+                
                 saveData();
             }
         }
@@ -732,18 +751,36 @@
         // Create new category
         function createNewCategory(projectName, categoryName) {
             if (categoryName.trim()) {
-                categories.push(categoryName.trim());
-                updateCategory(projectName, categoryName.trim());
+                const newCategory = categoryName.trim();
+                categories.push(newCategory);
+                
+                // Update the project's category
+                const project = projectData.find(p => p.name === projectName);
+                if (project) {
+                    project.category = newCategory;
+                }
+                
+                // Save in userAnswers for persistence
+                if (!userAnswers[projectName]) {
+                    userAnswers[projectName] = {};
+                }
+                userAnswers[projectName].category = newCategory;
                 
                 // Update category selector
                 const selector = document.getElementById(`category-${projectName}`);
                 if (selector) {
                     selector.innerHTML = `
                         <option value="">Select a category...</option>
-                        ${categories.map(cat => `<option value="${cat}" ${projectData.find(p => p.name === projectName)?.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}
+                        ${categories.map(cat => `<option value="${cat}" ${cat === newCategory ? 'selected' : ''}>${cat}</option>`).join('')}
                         <option value="__new__">+ Create new category</option>
                     `;
                 }
+                
+                // Hide the new category input
+                document.getElementById(`new-category-${projectName}`).classList.add('hidden');
+                
+                // Save all data
+                saveData();
             }
         }
         
