@@ -198,6 +198,48 @@
             resize: vertical;
         }
         
+        .rating-bubbles {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        
+        .rating-bubble {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+            color: #7f8c8d;
+        }
+        
+        .rating-bubble:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+            color: #3498db;
+        }
+        
+        .rating-bubble.selected {
+            border-color: #3498db;
+            background: #3498db;
+            color: white;
+        }
+        
+        .rating-labels {
+            display: flex;
+            justify-content: space-between;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
         .navigation-buttons {
             display: flex;
             justify-content: space-between;
@@ -442,18 +484,48 @@
                 
                 <div class="questions">
                     <div class="question">
-                        <label for="inspiration-${project.name}">Current Inspiration (changes weekly):</label>
-                        <textarea id="inspiration-${project.name}" placeholder="What's inspiring you about this project right now?" onchange="updateAnswer('${project.name}', 'inspiration', this.value)">${getAnswer(project.name, 'inspiration')}</textarea>
+                        <label>Current Inspiration (changes weekly):</label>
+                        <div class="rating-bubbles" data-question="inspiration" data-project="${project.name}">
+                            <div class="rating-bubble" data-rating="1">1</div>
+                            <div class="rating-bubble" data-rating="2">2</div>
+                            <div class="rating-bubble" data-rating="3">3</div>
+                            <div class="rating-bubble" data-rating="4">4</div>
+                            <div class="rating-bubble" data-rating="5">5</div>
+                        </div>
+                        <div class="rating-labels">
+                            <span>Low</span>
+                            <span>High</span>
+                        </div>
                     </div>
                     
                     <div class="question">
-                        <label for="value-${project.name}">Practical Value (generally stays the same):</label>
-                        <textarea id="value-${project.name}" placeholder="What practical value does this project provide?" onchange="updateAnswer('${project.name}', 'value', this.value)">${getAnswer(project.name, 'value')}</textarea>
+                        <label>Practical Value (generally stays the same):</label>
+                        <div class="rating-bubbles" data-question="value" data-project="${project.name}">
+                            <div class="rating-bubble" data-rating="1">1</div>
+                            <div class="rating-bubble" data-rating="2">2</div>
+                            <div class="rating-bubble" data-rating="3">3</div>
+                            <div class="rating-bubble" data-rating="4">4</div>
+                            <div class="rating-bubble" data-rating="5">5</div>
+                        </div>
+                        <div class="rating-labels">
+                            <span>Low</span>
+                            <span>High</span>
+                        </div>
                     </div>
                     
                     <div class="question">
-                        <label for="urgency-${project.name}">Urgency (generally stays the same):</label>
-                        <textarea id="urgency-${project.name}" placeholder="How urgent is this project right now?" onchange="updateAnswer('${project.name}', 'urgency', this.value)">${getAnswer(project.name, 'urgency')}</textarea>
+                        <label>Urgency (generally stays the same):</label>
+                        <div class="rating-bubbles" data-question="urgency" data-project="${project.name}">
+                            <div class="rating-bubble" data-rating="1">1</div>
+                            <div class="rating-bubble" data-rating="2">2</div>
+                            <div class="rating-bubble" data-rating="3">3</div>
+                            <div class="rating-bubble" data-rating="4">4</div>
+                            <div class="rating-bubble" data-rating="5">5</div>
+                        </div>
+                        <div class="rating-labels">
+                            <span>Low</span>
+                            <span>High</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -465,6 +537,12 @@
             
             container.classList.remove('hidden');
             updateProgressIndicator();
+            
+            // Set up rating bubble event listeners
+            setupRatingBubbles();
+            
+            // Highlight previously selected ratings
+            highlightSelectedRatings();
         }
         
         // Show completion message
@@ -498,6 +576,43 @@
                 currentProjectIndex--;
                 showCurrentProject();
             }
+        }
+        
+        // Set up rating bubble event listeners
+        function setupRatingBubbles() {
+            const ratingBubbles = document.querySelectorAll('.rating-bubble');
+            ratingBubbles.forEach(bubble => {
+                bubble.addEventListener('click', function() {
+                    const rating = this.dataset.rating;
+                    const question = this.parentElement.dataset.question;
+                    const project = this.parentElement.dataset.project;
+                    
+                    // Remove selected class from all bubbles in this group
+                    this.parentElement.querySelectorAll('.rating-bubble').forEach(b => b.classList.remove('selected'));
+                    
+                    // Add selected class to clicked bubble
+                    this.classList.add('selected');
+                    
+                    // Update answer
+                    updateAnswer(project, question, rating);
+                });
+            });
+        }
+        
+        // Highlight previously selected ratings
+        function highlightSelectedRatings() {
+            const currentProject = projectData[currentProjectIndex];
+            if (!currentProject) return;
+            
+            ['inspiration', 'value', 'urgency'].forEach(question => {
+                const answer = getAnswer(currentProject.name, question);
+                if (answer) {
+                    const bubble = document.querySelector(`[data-question="${question}"][data-project="${currentProject.name}"] .rating-bubble[data-rating="${answer}"]`);
+                    if (bubble) {
+                        bubble.classList.add('selected');
+                    }
+                }
+            });
         }
         
         // Get project color
@@ -580,15 +695,15 @@
                                 <div class="plan-details">
                                     ${getAnswer(project.name, 'inspiration') ? `
                                         <h5>Current Inspiration:</h5>
-                                        <p>${getAnswer(project.name, 'inspiration')}</p>
+                                        <p>Rating: ${getAnswer(project.name, 'inspiration')}/5</p>
                                     ` : ''}
                                     ${getAnswer(project.name, 'value') ? `
                                         <h5>Practical Value:</h5>
-                                        <p>${getAnswer(project.name, 'value')}</p>
+                                        <p>Rating: ${getAnswer(project.name, 'value')}/5</p>
                                     ` : ''}
                                     ${getAnswer(project.name, 'urgency') ? `
                                         <h5>Urgency:</h5>
-                                        <p>${getAnswer(project.name, 'urgency')}</p>
+                                        <p>Rating: ${getAnswer(project.name, 'urgency')}/5</p>
                                     ` : ''}
                                 </div>
                             </div>
