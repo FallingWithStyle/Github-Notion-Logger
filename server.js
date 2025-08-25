@@ -655,12 +655,18 @@ app.post('/api/weekly-plan', asyncHandler(async (req, res) => {
       }
     }
     
+    // Migrate old 3-1-5 scale data to new 2-1-5 scale if needed
+    const migratedPlanData = {
+      ...planData,
+      userAnswers: migrateOldUserAnswers(planData.userAnswers)
+    };
+    
     // Add new plan
     const newPlan = {
       id: Date.now().toString(),
       weekStart,
       createdAt: new Date().toISOString(),
-      planData
+      planData: migratedPlanData
     };
     
     weeklyPlans.push(newPlan);
@@ -700,9 +706,18 @@ app.get('/api/weekly-plans', asyncHandler(async (req, res) => {
       }
     }
     
+    // Migrate old data to new format before returning
+    const migratedPlans = weeklyPlans.map(plan => ({
+      ...plan,
+      planData: {
+        ...plan.planData,
+        userAnswers: migrateOldUserAnswers(plan.planData.userAnswers)
+      }
+    }));
+    
     res.json({
       success: true,
-      plans: weeklyPlans
+      plans: migratedPlans
     });
     
   } catch (error) {
@@ -728,9 +743,12 @@ app.post('/api/weekly-plan/sync-notion', asyncHandler(async (req, res) => {
     const syncResults = [];
     const { projects, userAnswers, categories } = planData;
     
+    // Migrate old 3-1-5 scale data to new 2-1-5 scale if needed
+    const migratedUserAnswers = migrateOldUserAnswers(userAnswers);
+    
     // Sync each project's planning data to Notion
     for (const project of projects) {
-      const answers = userAnswers[project.name] || {};
+      const answers = migratedUserAnswers[project.name] || {};
       
       console.log(`🔄 Processing project: ${project.name}`);
       console.log(`   - Head rating: ${answers.head}`);
@@ -791,6 +809,35 @@ app.post('/api/weekly-plan/sync-notion', asyncHandler(async (req, res) => {
     });
   }
 }));
+
+// Migrate old 3-1-5 scale user answers to new 2-1-5 scale
+function migrateOldUserAnswers(userAnswers) {
+  const migrated = {};
+  
+  Object.entries(userAnswers).forEach(([projectName, answers]) => {
+    migrated[projectName] = { ...answers };
+    
+    // If old 3-1-5 scale properties exist, migrate them to new 2-1-5 scale
+    if (answers.working && !answers.head) {
+      // Convert "working" (3-1-5) to "head" (2-1-5)
+      // Map: 3→2, 1→1, 5→5 (same scale, different property name)
+      migrated[projectName].head = answers.working;
+      console.log(`🔄 Migrated ${projectName}: working(${answers.working}) → head(${answers.working})`);
+    }
+    
+    if (answers.improve && !answers.heart) {
+      // Convert "improve" (3-1-5) to "heart" (2-1-5)
+      // Map: 3→2, 1→1, 5→5 (same scale, different property name)
+      migrated[projectName].heart = answers.improve;
+      console.log(`🔄 Migrated ${projectName}: improve(${answers.improve}) → heart(${answers.improve})`);
+    }
+    
+    // Note: "start" property from old 3-1-5 scale is not used in new 2-1-5 scale
+    // It was about what to start next, which is now covered by the status field
+  });
+  
+  return migrated;
+}
 
 // API endpoint to get weekly planning data from Notion
 app.get('/api/weekly-plan/notion', asyncHandler(async (req, res) => {
