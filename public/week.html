@@ -435,6 +435,17 @@
             border-radius: 4px;
         }
         
+        .tie-break-info {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+            padding: 4px 8px;
+            background: rgba(255, 215, 0, 0.2);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+        }
+        
         .category-breakdown {
             background: white;
             border-radius: 12px;
@@ -500,12 +511,22 @@
             margin-top: 10px;
         }
         
-        .priority-score, .head-score, .heart-score {
+        .priority-score, .base-score, .head-score, .heart-score {
             background: #e9ecef;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
             font-weight: 500;
+        }
+        
+        .tie-break-badge {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #ffeaa7;
         }
         
         .plan-category.focus-category .priority-score,
@@ -1177,18 +1198,43 @@
             
             const planContent = document.getElementById('plan-content');
             
-            // Calculate priority scores and prepare projects for analysis
+            // Calculate enhanced priority scores with tie-breaking factors
             const projectsWithScores = projectData.map(project => {
                 const answers = userAnswers[project.name] || {};
                 const headScore = parseInt(answers.head) || 0;
                 const heartScore = parseInt(answers.heart) || 0;
-                const priorityScore = headScore + heartScore;
+                const basePriorityScore = headScore + heartScore;
+                
+                // Tie-breaking factors
+                let tieBreakBonus = 0;
+                
+                // Status bonus: active projects get priority
+                if (project.status === 'active') tieBreakBonus += 1.0;
+                else if (project.status === 'planning') tieBreakBonus += 0.5;
+                
+                // Recency bonus: projects updated recently get small boost
+                if (project.lastUpdated) {
+                    const daysSinceUpdate = (Date.now() - new Date(project.lastUpdated).getTime()) / (1000 * 60 * 60 * 24);
+                    if (daysSinceUpdate <= 7) tieBreakBonus += 0.5; // Updated within week
+                    else if (daysSinceUpdate <= 30) tieBreakBonus += 0.2; // Updated within month
+                }
+                
+                // Category balance: projects from underrepresented categories get small boost
+                const categoryCount = projectData.filter(p => p.category === project.category).length;
+                if (categoryCount <= 2) tieBreakBonus += 0.3; // Small categories get boost
+                
+                // Progress bonus: projects with recent activity get small boost
+                if (project.commitCount && project.commitCount > 0) tieBreakBonus += 0.2;
+                
+                const enhancedPriorityScore = basePriorityScore + tieBreakBonus;
                 
                 return {
                     ...project,
                     headScore,
                     heartScore,
-                    priorityScore,
+                    basePriorityScore,
+                    tieBreakBonus: parseFloat(tieBreakBonus.toFixed(2)),
+                    priorityScore: parseFloat(enhancedPriorityScore.toFixed(2)),
                     category: project.category || 'Uncategorized',
                     status: project.status || 'unknown'
                 };
@@ -1254,6 +1300,7 @@
                             <h5>🎯 Main Focus: ${recommendations.mainFocus.name}</h5>
                             <p>Priority Score: ${recommendations.mainFocus.priorityScore}/10 | Status: ${getStatusDisplay(recommendations.mainFocus.status)}</p>
                             <p>${recommendations.mainFocus.headScore}/5 Head + ${recommendations.mainFocus.heartScore}/5 Heart</p>
+                            ${recommendations.mainFocus.tieBreakBonus > 0 ? `<p class="tie-break-info">Tie-break bonus: +${recommendations.mainFocus.tieBreakBonus}</p>` : ''}
                             <p class="focus-note">Active or planning projects only - ready for immediate work</p>
                         </div>
                         
@@ -1261,6 +1308,7 @@
                             <h5>⚡ Side Focus: ${recommendations.sideFocus.name}</h5>
                             <p>Priority Score: ${recommendations.sideFocus.priorityScore}/10 | Status: ${getStatusDisplay(recommendations.sideFocus.status)}</p>
                             <p>${recommendations.sideFocus.headScore}/5 Head + ${recommendations.sideFocus.heartScore}/5 Heart</p>
+                            ${recommendations.sideFocus.tieBreakBonus > 0 ? `<p class="tie-break-info">Tie-break bonus: +${recommendations.sideFocus.tieBreakBonus}</p>` : ''}
                             <p class="focus-note">Active or planning projects only - secondary priority</p>
                         </div>
                         
@@ -1268,6 +1316,7 @@
                             <h5>🌟 Tangent Project: ${recommendations.tangent.name}</h5>
                             <p>Priority Score: ${recommendations.tangent.priorityScore}/10 | Status: ${getStatusDisplay(recommendations.tangent.status)}</p>
                             <p>${recommendations.tangent.headScore}/5 Head + ${recommendations.tangent.heartScore}/5 Heart</p>
+                            ${recommendations.tangent.tieBreakBonus > 0 ? `<p class="tie-break-info">Tie-break bonus: +${recommendations.tangent.tieBreakBonus}</p>` : ''}
                             <p class="tangent-note">High interest project to explore when you have spare time</p>
                         </div>
                     </div>
@@ -1299,6 +1348,8 @@
                                 <h5>${getProjectColor(project.name)} ${project.name}</h5>
                                 <div class="project-scores">
                                     <span class="priority-score">Priority: ${project.priorityScore}/10</span>
+                                    <span class="base-score">Base: ${project.basePriorityScore}/10</span>
+                                    ${project.tieBreakBonus > 0 ? `<span class="tie-break-badge">+${project.tieBreakBonus}</span>` : ''}
                                     <span class="head-score">Head: ${project.headScore}/5</span>
                                     <span class="heart-score">Heart: ${project.heartScore}/5</span>
                                     <span class="status-badge status-${project.status}">${getStatusDisplay(project.status)}</span>
