@@ -379,6 +379,7 @@
         .btn.spinning {
             position: relative;
             pointer-events: none;
+            overflow: hidden;
         }
         
         .btn.spinning::before {
@@ -386,13 +387,14 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 16px;
-            height: 16px;
-            margin: -8px 0 0 -8px;
-            border: 2px solid transparent;
-            border-top: 2px solid currentColor;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #ffffff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            z-index: 1;
         }
         
         @keyframes spin {
@@ -401,7 +403,13 @@
         }
         
         .btn.spinning .sync-text {
-            opacity: 0;
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
+        
+        /* Ensure the spinning animation is visible */
+        .btn.spinning:not(:disabled)::before {
+            display: block;
         }
     </style>
 </head>
@@ -1109,7 +1117,9 @@
             
             try {
                 // Start spinning animation
+                console.log('🔄 Adding spinning class to button');
                 syncBtn.classList.add('spinning');
+                console.log('🔄 Button classes after adding spinning:', syncBtn.className);
                 syncBtn.disabled = true;
                 updateStatus('🔄 Syncing to Notion...');
                 
@@ -1137,7 +1147,9 @@
                 
                 if (result.success) {
                     updateStatus(`✅ Synced ${result.summary.success} projects to Notion! ${result.summary.errors > 0 ? `${result.summary.errors} errors.` : ''}`);
+                    console.log('🔄 Removing spinning class from button');
                     syncBtn.classList.remove('spinning');
+                    console.log('🔄 Button classes after removing spinning:', syncBtn.className);
                     syncBtn.classList.add('success');
                     syncText.textContent = '✅ Synced!';
                     setTimeout(() => {
