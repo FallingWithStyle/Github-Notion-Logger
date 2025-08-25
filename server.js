@@ -732,17 +732,23 @@ app.post('/api/weekly-plan/sync-notion', asyncHandler(async (req, res) => {
     for (const project of projects) {
       const answers = userAnswers[project.name] || {};
       
+      console.log(`🔄 Processing project: ${project.name}`);
+      console.log(`   - Head rating: ${answers.head}`);
+      console.log(`   - Heart rating: ${answers.heart}`);
+      console.log(`   - Category: ${project.category}`);
+      console.log(`   - Status: ${project.status}`);
+      
       if (answers.head || answers.heart) {
         try {
-                              const notionEntry = await addWeeklyPlanningEntry({
-                        projectName: project.name,
-                        weekStart,
-                        head: answers.head,
-                        heart: answers.heart,
-                        category: project.category,
-                        status: project.status,
-                        notes: `Weekly planning data for ${project.name}`
-                    });
+          const notionEntry = await addWeeklyPlanningEntry({
+            projectName: project.name,
+            weekStart,
+            head: answers.head,
+            heart: answers.heart,
+            category: project.category,
+            status: project.status,
+            notes: `Weekly planning data for ${project.name}`
+          });
           
           syncResults.push({
             project: project.name,

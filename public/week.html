@@ -492,6 +492,10 @@
                         }
                     });
                     
+                    // Debug logging to see what's being loaded
+                    console.log('📥 Loaded project data:', projectData);
+                    console.log('📥 Loaded user answers:', userAnswers);
+                    
                     if (projectData.length === 0) {
                         updateStatus('No project activity found in the last 28 days. Try fetching data from Notion first.');
                         document.getElementById('generate-plan-btn').disabled = true;
@@ -572,13 +576,13 @@
                         <label for="status-${project.name}">Status:</label>
                         <select id="status-${project.name}" onchange="updateStatus('${project.name}', this.value)">
                             <option value="">Select a status...</option>
-                            <option value="idea" ${project.status === 'idea' ? 'selected' : ''}>💡 Idea - Just a spark or rough concept</option>
-                            <option value="parking-lot" ${project.status === 'parking-lot' ? 'selected' : ''}>🅿️ Parking Lot - Not in current cycle</option>
-                            <option value="planning" ${project.status === 'planning' ? 'selected' : ''}>📝 Planning - Actively shaping into something concrete</option>
-                            <option value="active" ${project.status === 'active' ? 'selected' : ''}>🚀 Active - Currently being worked on</option>
-                            <option value="paused" ${project.status === 'paused' ? 'selected' : ''}>⏸️ Paused - Work stopped, likely to resume later</option>
-                            <option value="released" ${project.status === 'released' ? 'selected' : ''}>🌍 Released - Publicly launched in some form</option>
-                            <option value="done" ${project.status === 'done' ? 'selected' : ''}>✅ Done/Retired - Completed or abandoned</option>
+                            <option value="idea" ${(project.status === 'idea' || getAnswer(project.name, 'status') === 'idea') ? 'selected' : ''}>💡 Idea - Just a spark or rough concept</option>
+                            <option value="parking-lot" ${(project.status === 'parking-lot' || getAnswer(project.name, 'status') === 'parking-lot') ? 'selected' : ''}>🅿️ Parking Lot - Not in current cycle</option>
+                            <option value="planning" ${(project.status === 'planning' || getAnswer(project.name, 'status') === 'planning') ? 'selected' : ''}>📝 Planning - Actively shaping into something concrete</option>
+                            <option value="active" ${(project.status === 'active' || getAnswer(project.name, 'status') === 'active') ? 'selected' : ''}>🚀 Active - Currently being worked on</option>
+                            <option value="paused" ${(project.status === 'paused' || getAnswer(project.name, 'status') === 'paused') ? 'selected' : ''}>⏸️ Paused - Work stopped, likely to resume later</option>
+                            <option value="released" ${(project.status === 'released' || getAnswer(project.name, 'status') === 'released') ? 'selected' : ''}>🌍 Released - Publicly launched in some form</option>
+                            <option value="done" ${(project.status === 'done' || getAnswer(project.name, 'status') === 'done') ? 'selected' : ''}>✅ Done/Retired - Completed or abandoned</option>
                         </select>
                     </div>
                 </div>
