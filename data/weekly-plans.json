@@ -66,5 +66,887 @@
       ],
       "generatedAt": "2025-08-24T19:08:45.984Z"
     }
+  },
+  {
+    "id": "1756142608219",
+    "weekStart": "2025-08-25",
+    "createdAt": "2025-08-25T17:23:28.219Z",
+    "planData": {
+      "projects": [
+        {
+          "name": "Magic-Quill",
+          "totalCommits": 152,
+          "activityDates": [
+            "2025-07-28",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-12",
+            "2025-08-13",
+            "2025-08-14",
+            "2025-08-15",
+            "2025-08-16",
+            "2025-08-17",
+            "2025-08-18",
+            "2025-08-19",
+            "2025-08-20",
+            "2025-08-21",
+            "2025-08-22"
+          ],
+          "lastActivity": "2025-08-22",
+          "category": "Writing & Story Tools",
+          "status": "active"
+        },
+        {
+          "name": "Friend-Party",
+          "totalCommits": 50,
+          "activityDates": [
+            "2025-07-30",
+            "2025-07-31",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-22",
+            "2025-08-23"
+          ],
+          "lastActivity": "2025-08-23",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        },
+        {
+          "name": "glyph-server",
+          "totalCommits": 162,
+          "activityDates": [
+            "2025-07-30",
+            "2025-08-01",
+            "2025-08-02",
+            "2025-08-03",
+            "2025-08-04",
+            "2025-08-05",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-10",
+            "2025-08-11",
+            "2025-08-12",
+            "2025-08-13",
+            "2025-08-20"
+          ],
+          "lastActivity": "2025-08-20",
+          "category": "Infrastructure & Utilities",
+          "status": "active"
+        },
+        {
+          "name": "glyph-legal",
+          "totalCommits": 10,
+          "activityDates": [
+            "2025-07-31"
+          ],
+          "lastActivity": "2025-07-31",
+          "category": "Infrastructure & Utilities",
+          "status": "released"
+        },
+        {
+          "name": "Audventr-Wizard",
+          "totalCommits": 79,
+          "activityDates": [
+            "2025-08-01",
+            "2025-08-02",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-10",
+            "2025-08-11",
+            "2025-08-12"
+          ],
+          "lastActivity": "2025-08-12",
+          "category": "Writing & Story Tools",
+          "status": "done"
+        },
+        {
+          "name": "Kitch",
+          "totalCommits": 84,
+          "activityDates": [
+            "2025-08-03",
+            "2025-08-04",
+            "2025-08-05",
+            "2025-08-06",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-09"
+          ],
+          "lastActivity": "2025-08-09",
+          "category": "Miscellaneous / Standalone",
+          "status": "active"
+        },
+        {
+          "name": "Github-Notion-Logger",
+          "totalCommits": 42,
+          "activityDates": [
+            "2025-08-06",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-12",
+            "2025-08-15",
+            "2025-08-16",
+            "2025-08-24"
+          ],
+          "lastActivity": "2025-08-24",
+          "category": "Infrastructure & Utilities",
+          "status": "released"
+        },
+        {
+          "name": "Daily-Dungeon",
+          "totalCommits": 8,
+          "activityDates": [
+            "2025-08-13"
+          ],
+          "lastActivity": "2025-08-13",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "planning"
+        },
+        {
+          "name": "roll-call",
+          "totalCommits": 8,
+          "activityDates": [
+            "2025-08-14"
+          ],
+          "lastActivity": "2025-08-14",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        },
+        {
+          "name": "Audventr",
+          "totalCommits": 7,
+          "activityDates": [
+            "2025-08-17"
+          ],
+          "lastActivity": "2025-08-17",
+          "category": "Writing & Story Tools",
+          "status": "active"
+        },
+        {
+          "name": "Audventr-Warlock",
+          "totalCommits": 21,
+          "activityDates": [
+            "2025-08-17",
+            "2025-08-18"
+          ],
+          "lastActivity": "2025-08-18",
+          "category": "Writing & Story Tools",
+          "status": "done"
+        },
+        {
+          "name": "VoiceHub",
+          "totalCommits": 19,
+          "activityDates": [
+            "2025-08-20",
+            "2025-08-21"
+          ],
+          "lastActivity": "2025-08-21",
+          "category": "Writing & Story Tools",
+          "status": "released"
+        },
+        {
+          "name": "avoros-hub",
+          "totalCommits": 2,
+          "activityDates": [
+            "2025-08-22"
+          ],
+          "lastActivity": "2025-08-22",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "released"
+        },
+        {
+          "name": "Crawler-s-Contract",
+          "totalCommits": 58,
+          "activityDates": [
+            "2025-08-22",
+            "2025-08-23"
+          ],
+          "lastActivity": "2025-08-23",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        }
+      ],
+      "userAnswers": {
+        "Magic-Quill": {
+          "category": "Writing & Story Tools",
+          "head": "3",
+          "heart": "2",
+          "status": "active"
+        },
+        "glyph-server": {
+          "category": "Infrastructure & Utilities",
+          "head": "2",
+          "heart": "2",
+          "status": "active"
+        },
+        "Friend-Party": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "glyph-legal": {
+          "category": "Infrastructure & Utilities",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Audventr-Wizard": {
+          "category": "Writing & Story Tools",
+          "head": "1",
+          "heart": "1",
+          "status": "done"
+        },
+        "Kitch": {
+          "category": "Miscellaneous / Standalone",
+          "heart": "2",
+          "head": "3",
+          "status": "active"
+        },
+        "Github-Notion-Logger": {
+          "category": "Infrastructure & Utilities",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Daily-Dungeon": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "1",
+          "heart": "2",
+          "status": "planning"
+        },
+        "roll-call": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "Audventr-Warlock": {
+          "category": "Writing & Story Tools",
+          "head": "1",
+          "heart": "1",
+          "status": "done"
+        },
+        "Audventr": {
+          "category": "Writing & Story Tools",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "VoiceHub": {
+          "category": "Writing & Story Tools",
+          "head": "2",
+          "heart": "1",
+          "status": "released"
+        },
+        "avoros-hub": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Crawler-s-Contract": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        }
+      },
+      "categories": [
+        "Writing & Story Tools",
+        "Infrastructure & Utilities",
+        "Avoros (Shared Fantasy/Game World)",
+        "Miscellaneous / Standalone"
+      ],
+      "generatedAt": "2025-08-25T17:23:28.216Z"
+    }
+  },
+  {
+    "id": "1756142918600",
+    "weekStart": "2025-08-25",
+    "createdAt": "2025-08-25T17:28:38.600Z",
+    "planData": {
+      "projects": [
+        {
+          "name": "Magic-Quill",
+          "totalCommits": 152,
+          "activityDates": [
+            "2025-07-28",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-12",
+            "2025-08-13",
+            "2025-08-14",
+            "2025-08-15",
+            "2025-08-16",
+            "2025-08-17",
+            "2025-08-18",
+            "2025-08-19",
+            "2025-08-20",
+            "2025-08-21",
+            "2025-08-22"
+          ],
+          "lastActivity": "2025-08-22",
+          "category": "Writing & Story Tools",
+          "status": "active"
+        },
+        {
+          "name": "Friend-Party",
+          "totalCommits": 50,
+          "activityDates": [
+            "2025-07-30",
+            "2025-07-31",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-22",
+            "2025-08-23"
+          ],
+          "lastActivity": "2025-08-23",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        },
+        {
+          "name": "glyph-server",
+          "totalCommits": 162,
+          "activityDates": [
+            "2025-07-30",
+            "2025-08-01",
+            "2025-08-02",
+            "2025-08-03",
+            "2025-08-04",
+            "2025-08-05",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-10",
+            "2025-08-11",
+            "2025-08-12",
+            "2025-08-13",
+            "2025-08-20"
+          ],
+          "lastActivity": "2025-08-20",
+          "category": "Infrastructure & Utilities",
+          "status": "active"
+        },
+        {
+          "name": "glyph-legal",
+          "totalCommits": 10,
+          "activityDates": [
+            "2025-07-31"
+          ],
+          "lastActivity": "2025-07-31",
+          "category": "Infrastructure & Utilities",
+          "status": "released"
+        },
+        {
+          "name": "Audventr-Wizard",
+          "totalCommits": 79,
+          "activityDates": [
+            "2025-08-01",
+            "2025-08-02",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-10",
+            "2025-08-11",
+            "2025-08-12"
+          ],
+          "lastActivity": "2025-08-12",
+          "category": "Writing & Story Tools",
+          "status": "done"
+        },
+        {
+          "name": "Kitch",
+          "totalCommits": 84,
+          "activityDates": [
+            "2025-08-03",
+            "2025-08-04",
+            "2025-08-05",
+            "2025-08-06",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-09"
+          ],
+          "lastActivity": "2025-08-09",
+          "category": "Miscellaneous / Standalone",
+          "status": "active"
+        },
+        {
+          "name": "Github-Notion-Logger",
+          "totalCommits": 42,
+          "activityDates": [
+            "2025-08-06",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-12",
+            "2025-08-15",
+            "2025-08-16",
+            "2025-08-24"
+          ],
+          "lastActivity": "2025-08-24",
+          "category": "Infrastructure & Utilities",
+          "status": "released"
+        },
+        {
+          "name": "Daily-Dungeon",
+          "totalCommits": 8,
+          "activityDates": [
+            "2025-08-13"
+          ],
+          "lastActivity": "2025-08-13",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "planning"
+        },
+        {
+          "name": "roll-call",
+          "totalCommits": 8,
+          "activityDates": [
+            "2025-08-14"
+          ],
+          "lastActivity": "2025-08-14",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        },
+        {
+          "name": "Audventr",
+          "totalCommits": 7,
+          "activityDates": [
+            "2025-08-17"
+          ],
+          "lastActivity": "2025-08-17",
+          "category": "Writing & Story Tools",
+          "status": "active"
+        },
+        {
+          "name": "Audventr-Warlock",
+          "totalCommits": 21,
+          "activityDates": [
+            "2025-08-17",
+            "2025-08-18"
+          ],
+          "lastActivity": "2025-08-18",
+          "category": "Writing & Story Tools",
+          "status": "done"
+        },
+        {
+          "name": "VoiceHub",
+          "totalCommits": 19,
+          "activityDates": [
+            "2025-08-20",
+            "2025-08-21"
+          ],
+          "lastActivity": "2025-08-21",
+          "category": "Writing & Story Tools",
+          "status": "released"
+        },
+        {
+          "name": "avoros-hub",
+          "totalCommits": 2,
+          "activityDates": [
+            "2025-08-22"
+          ],
+          "lastActivity": "2025-08-22",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "released"
+        },
+        {
+          "name": "Crawler-s-Contract",
+          "totalCommits": 58,
+          "activityDates": [
+            "2025-08-22",
+            "2025-08-23"
+          ],
+          "lastActivity": "2025-08-23",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        }
+      ],
+      "userAnswers": {
+        "Magic-Quill": {
+          "category": "Writing & Story Tools",
+          "head": "3",
+          "heart": "2",
+          "status": "active"
+        },
+        "glyph-server": {
+          "category": "Infrastructure & Utilities",
+          "head": "2",
+          "heart": "2",
+          "status": "active"
+        },
+        "Friend-Party": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "glyph-legal": {
+          "category": "Infrastructure & Utilities",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Audventr-Wizard": {
+          "category": "Writing & Story Tools",
+          "head": "1",
+          "heart": "1",
+          "status": "done"
+        },
+        "Kitch": {
+          "category": "Miscellaneous / Standalone",
+          "heart": "2",
+          "head": "3",
+          "status": "active"
+        },
+        "Github-Notion-Logger": {
+          "category": "Infrastructure & Utilities",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Daily-Dungeon": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "1",
+          "heart": "2",
+          "status": "planning"
+        },
+        "roll-call": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "Audventr-Warlock": {
+          "category": "Writing & Story Tools",
+          "head": "1",
+          "heart": "1",
+          "status": "done"
+        },
+        "Audventr": {
+          "category": "Writing & Story Tools",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "VoiceHub": {
+          "category": "Writing & Story Tools",
+          "head": "2",
+          "heart": "1",
+          "status": "released"
+        },
+        "avoros-hub": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Crawler-s-Contract": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        }
+      },
+      "categories": [
+        "Writing & Story Tools",
+        "Infrastructure & Utilities",
+        "Avoros (Shared Fantasy/Game World)",
+        "Miscellaneous / Standalone"
+      ],
+      "generatedAt": "2025-08-25T17:28:38.596Z"
+    }
+  },
+  {
+    "id": "1756144531242",
+    "weekStart": "2025-08-25",
+    "createdAt": "2025-08-25T17:55:31.242Z",
+    "planData": {
+      "projects": [
+        {
+          "name": "Magic-Quill",
+          "totalCommits": 152,
+          "activityDates": [
+            "2025-07-28",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-12",
+            "2025-08-13",
+            "2025-08-14",
+            "2025-08-15",
+            "2025-08-16",
+            "2025-08-17",
+            "2025-08-18",
+            "2025-08-19",
+            "2025-08-20",
+            "2025-08-21",
+            "2025-08-22"
+          ],
+          "lastActivity": "2025-08-22",
+          "category": "Writing & Story Tools",
+          "status": "active"
+        },
+        {
+          "name": "Friend-Party",
+          "totalCommits": 50,
+          "activityDates": [
+            "2025-07-30",
+            "2025-07-31",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-22",
+            "2025-08-23"
+          ],
+          "lastActivity": "2025-08-23",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        },
+        {
+          "name": "glyph-server",
+          "totalCommits": 162,
+          "activityDates": [
+            "2025-07-30",
+            "2025-08-01",
+            "2025-08-02",
+            "2025-08-03",
+            "2025-08-04",
+            "2025-08-05",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-10",
+            "2025-08-11",
+            "2025-08-12",
+            "2025-08-13",
+            "2025-08-20"
+          ],
+          "lastActivity": "2025-08-20",
+          "category": "Infrastructure & Utilities",
+          "status": "active"
+        },
+        {
+          "name": "glyph-legal",
+          "totalCommits": 10,
+          "activityDates": [
+            "2025-07-31"
+          ],
+          "lastActivity": "2025-07-31",
+          "category": "Infrastructure & Utilities",
+          "status": "released"
+        },
+        {
+          "name": "Audventr-Wizard",
+          "totalCommits": 79,
+          "activityDates": [
+            "2025-08-01",
+            "2025-08-02",
+            "2025-08-08",
+            "2025-08-09",
+            "2025-08-10",
+            "2025-08-11",
+            "2025-08-12"
+          ],
+          "lastActivity": "2025-08-12",
+          "category": "Writing & Story Tools",
+          "status": "done"
+        },
+        {
+          "name": "Kitch",
+          "totalCommits": 84,
+          "activityDates": [
+            "2025-08-03",
+            "2025-08-04",
+            "2025-08-05",
+            "2025-08-06",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-09"
+          ],
+          "lastActivity": "2025-08-09",
+          "category": "Miscellaneous / Standalone",
+          "status": "active"
+        },
+        {
+          "name": "Github-Notion-Logger",
+          "totalCommits": 42,
+          "activityDates": [
+            "2025-08-06",
+            "2025-08-07",
+            "2025-08-08",
+            "2025-08-12",
+            "2025-08-15",
+            "2025-08-16",
+            "2025-08-24"
+          ],
+          "lastActivity": "2025-08-24",
+          "category": "Infrastructure & Utilities",
+          "status": "released"
+        },
+        {
+          "name": "Daily-Dungeon",
+          "totalCommits": 8,
+          "activityDates": [
+            "2025-08-13"
+          ],
+          "lastActivity": "2025-08-13",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "planning"
+        },
+        {
+          "name": "roll-call",
+          "totalCommits": 8,
+          "activityDates": [
+            "2025-08-14"
+          ],
+          "lastActivity": "2025-08-14",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        },
+        {
+          "name": "Audventr",
+          "totalCommits": 7,
+          "activityDates": [
+            "2025-08-17"
+          ],
+          "lastActivity": "2025-08-17",
+          "category": "Writing & Story Tools",
+          "status": "active"
+        },
+        {
+          "name": "Audventr-Warlock",
+          "totalCommits": 21,
+          "activityDates": [
+            "2025-08-17",
+            "2025-08-18"
+          ],
+          "lastActivity": "2025-08-18",
+          "category": "Writing & Story Tools",
+          "status": "done"
+        },
+        {
+          "name": "VoiceHub",
+          "totalCommits": 19,
+          "activityDates": [
+            "2025-08-20",
+            "2025-08-21"
+          ],
+          "lastActivity": "2025-08-21",
+          "category": "Writing & Story Tools",
+          "status": "released"
+        },
+        {
+          "name": "avoros-hub",
+          "totalCommits": 2,
+          "activityDates": [
+            "2025-08-22"
+          ],
+          "lastActivity": "2025-08-22",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "released"
+        },
+        {
+          "name": "Crawler-s-Contract",
+          "totalCommits": 58,
+          "activityDates": [
+            "2025-08-22",
+            "2025-08-23"
+          ],
+          "lastActivity": "2025-08-23",
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "status": "active"
+        }
+      ],
+      "userAnswers": {
+        "Magic-Quill": {
+          "category": "Writing & Story Tools",
+          "head": "3",
+          "heart": "2",
+          "status": "active"
+        },
+        "glyph-server": {
+          "category": "Infrastructure & Utilities",
+          "head": "2",
+          "heart": "2",
+          "status": "active"
+        },
+        "Friend-Party": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "glyph-legal": {
+          "category": "Infrastructure & Utilities",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Audventr-Wizard": {
+          "category": "Writing & Story Tools",
+          "head": "1",
+          "heart": "1",
+          "status": "done"
+        },
+        "Kitch": {
+          "category": "Miscellaneous / Standalone",
+          "heart": "2",
+          "head": "3",
+          "status": "active"
+        },
+        "Github-Notion-Logger": {
+          "category": "Infrastructure & Utilities",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Daily-Dungeon": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "1",
+          "heart": "2",
+          "status": "planning"
+        },
+        "roll-call": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "Audventr-Warlock": {
+          "category": "Writing & Story Tools",
+          "head": "1",
+          "heart": "1",
+          "status": "done"
+        },
+        "Audventr": {
+          "category": "Writing & Story Tools",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        },
+        "VoiceHub": {
+          "category": "Writing & Story Tools",
+          "head": "2",
+          "heart": "1",
+          "status": "released"
+        },
+        "avoros-hub": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "1",
+          "heart": "1",
+          "status": "released"
+        },
+        "Crawler-s-Contract": {
+          "category": "Avoros (Shared Fantasy/Game World)",
+          "head": "3",
+          "heart": "3",
+          "status": "active"
+        }
+      },
+      "categories": [
+        "Writing & Story Tools",
+        "Infrastructure & Utilities",
+        "Avoros (Shared Fantasy/Game World)",
+        "Miscellaneous / Standalone"
+      ],
+      "generatedAt": "2025-08-25T17:55:31.235Z"
+    }
   }
 ]
