@@ -2,3 +2,4 @@
 .env.rtf
 .DS_Store
 node_modules/
+server.log
