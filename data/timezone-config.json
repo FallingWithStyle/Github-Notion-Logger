@@ -1,0 +1,6 @@
+{
+  "timezone": "America/New_York",
+  "cutoffHour": 6,
+  "cutoffMinute": 0,
+  "autoSave": true
+}

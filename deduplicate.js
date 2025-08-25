@@ -1,4 +1,5 @@
 const { Client } = require('@notionhq/client');
+const timezoneConfig = require('./timezone-config');
 require('dotenv').config();
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
@@ -43,7 +44,9 @@ async function deduplicateDatabase() {
     for (const page of allPages) {
       const commitMessage = page.properties['Commits']?.rich_text?.[0]?.plain_text || '';
       const repoName = page.properties['Project Name']?.title?.[0]?.plain_text || '';
-      const date = page.properties['Date']?.date?.start?.split('T')[0] || '';
+      // Parse the date and use timezone-aware approach
+      const rawDate = page.properties['Date']?.date?.start;
+      const date = rawDate ? timezoneConfig.getEffectiveDate(rawDate) : '';
       
       const key = `${commitMessage}|${repoName}|${date}`;
       

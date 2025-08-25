@@ -295,6 +295,126 @@
                 transform: none;
             }
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 20px 20px 0 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .setting-group select,
+        .setting-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .time-inputs {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .time-inputs input {
+            width: 80px;
+            text-align: center;
+        }
+
+        .time-inputs span {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .timezone-info {
+            margin-left: 10px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .help-text {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .current-time-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .current-time-info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: right;
+        }
+
+        .modal-footer .btn {
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -312,6 +432,7 @@
         <button id="fetch-notion-btn" class="btn">🔄 Fetch from Notion</button>
         <button id="fetch-incremental-btn" class="btn">➕ Incremental Fetch</button>
         <button id="auto-refresh-btn" class="btn">🔄 Auto-refresh</button>
+        <button id="settings-btn" class="btn">⚙️ Settings</button>
         <div id="status" class="status">Ready to load data</div>
     </div>
     
@@ -329,6 +450,42 @@
             </div>
             <div id="cache-info" class="cache-info">
                 <!-- Cache info will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Timezone Settings</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label for="timezone-select">Timezone:</label>
+                    <select id="timezone-select">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="cutoff-hour">Cutoff Time:</label>
+                    <div class="time-inputs">
+                        <input type="number" id="cutoff-hour" min="0" max="23" value="6">
+                        <span>:</span>
+                        <input type="number" id="cutoff-minute" min="0" max="59" value="0">
+                        <span class="timezone-info"></span>
+                    </div>
+                    <p class="help-text">Commits before this time count as the previous day</p>
+                </div>
+                <div class="current-time-info">
+                    <p><strong>Current time in your timezone:</strong> <span id="current-time"></span></p>
+                    <p><strong>Current cutoff:</strong> <span id="current-cutoff"></span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings-btn" class="btn">💾 Save Settings</button>
+                <button id="cancel-settings-btn" class="btn">❌ Cancel</button>
             </div>
         </div>
     </div>
@@ -710,10 +867,113 @@
             document.getElementById('status').textContent = message;
         }
 
+        // Settings functionality
+        let timezoneConfig = null;
+
+        async function loadTimezoneConfig() {
+            try {
+                const response = await fetch('/api/timezone-config');
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        timezoneConfig = result.config;
+                        populateTimezoneSelect(result.availableTimezones);
+                        updateCurrentTimeInfo(result.timezoneInfo);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading timezone config:', error);
+            }
+        }
+
+        function populateTimezoneSelect(timezones) {
+            const select = document.getElementById('timezone-select');
+            select.innerHTML = '';
+            
+            timezones.forEach(tz => {
+                const option = document.createElement('option');
+                option.value = tz.value;
+                option.textContent = tz.label;
+                if (timezoneConfig && tz.value === timezoneConfig.timezone) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        function updateCurrentTimeInfo(timezoneInfo) {
+            document.getElementById('current-time').textContent = timezoneInfo.currentTime;
+            document.getElementById('current-cutoff').textContent = timezoneInfo.cutoffTime;
+            
+            // Update cutoff inputs
+            if (timezoneConfig) {
+                document.getElementById('cutoff-hour').value = timezoneConfig.cutoffHour;
+                document.getElementById('cutoff-minute').value = timezoneConfig.cutoffMinute;
+            }
+        }
+
+        async function saveTimezoneConfig() {
+            try {
+                const timezone = document.getElementById('timezone-select').value;
+                const cutoffHour = parseInt(document.getElementById('cutoff-hour').value);
+                const cutoffMinute = parseInt(document.getElementById('cutoff-minute').value);
+
+                const response = await fetch('/api/timezone-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        timezone,
+                        cutoffHour,
+                        cutoffMinute
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        timezoneConfig = result.config;
+                        updateStatus('Timezone settings saved successfully');
+                        closeSettingsModal();
+                        // Reload data to apply new timezone settings
+                        await loadCommitData();
+                    } else {
+                        updateStatus(`Error: ${result.error}`);
+                    }
+                } else {
+                    updateStatus('Error saving timezone settings');
+                }
+            } catch (error) {
+                console.error('Error saving timezone config:', error);
+                updateStatus('Error saving timezone settings');
+            }
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'block';
+            loadTimezoneConfig();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
         // Event listeners
         document.getElementById('fetch-notion-btn').addEventListener('click', () => fetchFromNotion());
         document.getElementById('fetch-incremental-btn').addEventListener('click', fetchIncremental);
         document.getElementById('auto-refresh-btn').addEventListener('click', toggleAutoRefresh);
+        document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
+        document.getElementById('save-settings-btn').addEventListener('click', saveTimezoneConfig);
+        document.getElementById('cancel-settings-btn').addEventListener('click', closeSettingsModal);
+        
+        // Close modal when clicking outside or on close button
+        document.querySelector('.close').addEventListener('click', closeSettingsModal);
+        document.getElementById('settings-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('settings-modal')) {
+                closeSettingsModal();
+            }
+        });
 
         // Connect to server-sent events to auto-refresh when data updates
         function connectSSE() {

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const timezoneConfig = require('./timezone-config');
 
 // Available colors for projects (matching the frontend)
 const availableColors = ['🟩', '🟥', '🟪', '🟦', '🟨', '🟧', '🟫', '⬛', '⬜', '🟣', '🟢', '🔴', '🔵', '🟡', '🟠'];
@@ -200,7 +201,8 @@ async function fetchFromNotion(since = '2025-01-01') {
                 const date = page.properties["Date"]?.date?.start;
                 
                 if (projectName && date) {
-                    const dateKey = date.split('T')[0];
+                                    // Parse the date and use timezone-aware approach
+                const dateKey = timezoneConfig.getEffectiveDate(date);
                     
                     if (!commitData[dateKey]) {
                         commitData[dateKey] = {};
