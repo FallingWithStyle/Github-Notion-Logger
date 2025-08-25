@@ -134,6 +134,35 @@ async function addWeeklyPlanningEntry(projectData) {
     await ensureWeeklyPlanningDatabase();
     console.log('🔄 Database ensured, ID:', weeklyPlanningDatabaseId);
     
+    // Validate database schema before attempting to write
+    console.log('🔄 Validating database schema before writing...');
+    try {
+      const db = await notion.databases.retrieve({ database_id: weeklyPlanningDatabaseId });
+      console.log('🔄 Database properties found:', Object.keys(db.properties));
+      
+      // Check if all required properties exist
+      const requiredProps = ['Project Name', 'Week Start', 'Head', 'Heart', 'Category', 'Status', 'Notes', 'Created', 'Last Updated'];
+      const missingProps = requiredProps.filter(prop => !db.properties[prop]);
+      
+      if (missingProps.length > 0) {
+        console.log('⚠️ Database schema is outdated. Missing properties:', missingProps);
+        console.log('🔄 Updating database schema...');
+        
+        // Update the database schema
+        await notion.databases.update({
+          database_id: weeklyPlanningDatabaseId,
+          properties: WEEKLY_PLANNING_SCHEMA
+        });
+        
+        console.log('✅ Database schema updated successfully');
+      } else {
+        console.log('✅ Database schema is up to date');
+      }
+    } catch (error) {
+      console.error('❌ Error validating/updating database schema:', error);
+      throw new Error(`Database schema validation failed: ${error.message}`);
+    }
+    
     const { projectName, weekStart, head, heart, category, status, notes } = projectData;
     
     const entry = {
