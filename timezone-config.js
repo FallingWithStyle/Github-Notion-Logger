@@ -84,25 +84,13 @@ class TimezoneConfig {
     if (timeValues.hour < this.config.cutoffHour || 
         (timeValues.hour === this.config.cutoffHour && timeValues.minute < this.config.cutoffMinute)) {
       // Before cutoff - count as previous day
-      // Handle date rollover properly
-      let effectiveDate;
-      if (timeValues.day === 1) {
-        // If it's the first day of the month, go to previous month
-        if (timeValues.month === 1) {
-          // If it's January, go to previous year
-          effectiveDate = new Date(timeValues.year - 1, 11, 31);
-        } else {
-          // Go to previous month, last day
-          const lastDayOfPrevMonth = new Date(timeValues.year, timeValues.month - 1, 0).getDate();
-          effectiveDate = new Date(timeValues.year, timeValues.month - 2, lastDayOfPrevMonth);
-        }
-      } else {
-        effectiveDate = new Date(timeValues.year, timeValues.month - 1, timeValues.day - 1);
-      }
+      // Create a date object for the current time and subtract one day
+      const currentDate = new Date(timeValues.year, timeValues.month - 1, timeValues.day);
+      currentDate.setDate(currentDate.getDate() - 1);
       
-      const year = effectiveDate.getFullYear();
-      const month = String(effectiveDate.getMonth() + 1).padStart(2, '0');
-      const day = String(effectiveDate.getDate()).padStart(2, '0');
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     } else {
       // After cutoff - count as current day

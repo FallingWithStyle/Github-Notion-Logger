@@ -201,8 +201,10 @@ async function fetchFromNotion(since = '2025-01-01') {
                 const date = page.properties["Date"]?.date?.start;
                 
                 if (projectName && date) {
-                                    // Parse the date and use timezone-aware approach
-                const dateKey = timezoneConfig.getEffectiveDate(date);
+                    // The date from Notion is already processed with timezone logic
+                    // Just extract the date portion (YYYY-MM-DD) for grouping
+                    const dateObj = new Date(date);
+                    const dateKey = dateObj.toISOString().split('T')[0];
                     
                     if (!commitData[dateKey]) {
                         commitData[dateKey] = {};

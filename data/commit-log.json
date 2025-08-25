@@ -148,12 +148,13 @@
   {
     "date": "2025-06-23",
     "projects": {
-      "Avoros-Dungeon": 80
+      "Avoros-Dungeon": 82
     }
   },
   {
     "date": "2025-06-24",
     "projects": {
+      "familiar-things": 1,
       "Avoros-Dungeon": 27
     }
   },
@@ -316,6 +317,7 @@
   {
     "date": "2025-07-30",
     "projects": {
+      "glyph-legal": 1,
       "Friend-Party": 3,
       "glyph-server": 17
     }
@@ -380,11 +382,11 @@
   {
     "date": "2025-08-08",
     "projects": {
+      "Kitch": 7,
       "glyph-server": 7,
       "Github-Notion-Logger": 2,
       "Friend-Party": 10,
       "Audventr-Wizard": 2,
-      "Kitch": 6,
       "Magic-Quill": 1
     }
   },
@@ -408,13 +410,14 @@
   {
     "date": "2025-08-11",
     "projects": {
-      "Audventr-Wizard": 18,
+      "Audventr-Wizard": 19,
       "glyph-server": 24
     }
   },
   {
     "date": "2025-08-12",
     "projects": {
+      "Daily-Dungeon": 1,
       "Audventr-Wizard": 13,
       "Magic-Quill": 5,
       "Github-Notion-Logger": 2,
@@ -424,6 +427,7 @@
   {
     "date": "2025-08-13",
     "projects": {
+      "roll-call": 1,
       "Daily-Dungeon": 8,
       "glyph-server": 11,
       "Magic-Quill": 15
@@ -446,6 +450,7 @@
   {
     "date": "2025-08-16",
     "projects": {
+      "Audventr": 1,
       "Github-Notion-Logger": 6,
       "Magic-Quill": 12
     }
@@ -453,8 +458,8 @@
   {
     "date": "2025-08-17",
     "projects": {
+      "Audventr-Warlock": 16,
       "Audventr": 7,
-      "Audventr-Warlock": 15,
       "Magic-Quill": 8
     }
   },
@@ -468,36 +473,39 @@
   {
     "date": "2025-08-19",
     "projects": {
+      "glyph-server": 1,
       "Magic-Quill": 5
     }
   },
   {
     "date": "2025-08-20",
     "projects": {
+      "VoiceHub": 9,
       "glyph-server": 5,
-      "VoiceHub": 8,
       "Magic-Quill": 15
     }
   },
   {
     "date": "2025-08-21",
     "projects": {
-      "VoiceHub": 11,
-      "Magic-Quill": 12
+      "Magic-Quill": 13,
+      "avoros-hub": 1,
+      "VoiceHub": 11
     }
   },
   {
     "date": "2025-08-22",
     "projects": {
+      "Friend-Party": 12,
+      "Crawler-s-Contract": 14,
       "avoros-hub": 2,
-      "Magic-Quill": 11,
-      "Friend-Party": 11,
-      "Crawler-s-Contract": 13
+      "Magic-Quill": 11
     }
   },
   {
     "date": "2025-08-23",
     "projects": {
+      "Github-Notion-Logger": 6,
       "Crawler-s-Contract": 45,
       "Friend-Party": 4
     }
@@ -505,7 +513,7 @@
   {
     "date": "2025-08-24",
     "projects": {
-      "Github-Notion-Logger": 2
+      "Github-Notion-Logger": 30
     }
   }
 ]

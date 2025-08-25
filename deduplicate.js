@@ -44,9 +44,10 @@ async function deduplicateDatabase() {
     for (const page of allPages) {
       const commitMessage = page.properties['Commits']?.rich_text?.[0]?.plain_text || '';
       const repoName = page.properties['Project Name']?.title?.[0]?.plain_text || '';
-      // Parse the date and use timezone-aware approach
+      // The date from Notion is already processed with timezone logic
+      // Just extract the date portion (YYYY-MM-DD) for grouping
       const rawDate = page.properties['Date']?.date?.start;
-      const date = rawDate ? timezoneConfig.getEffectiveDate(rawDate) : '';
+      const date = rawDate ? new Date(rawDate).toISOString().split('T')[0] : '';
       
       const key = `${commitMessage}|${repoName}|${date}`;
       

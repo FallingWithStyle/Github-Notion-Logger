@@ -453,6 +453,42 @@
             color: #ffd700;
         }
         
+        .tie-break-tooltip {
+            position: relative;
+            cursor: help;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+        
+        .tie-break-tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tie-break-tooltip:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+            margin-bottom: -5px;
+            z-index: 1000;
+        }
+        
         .recommendation p {
             margin: 8px 0;
             opacity: 0.9;
@@ -1240,24 +1276,41 @@
                 
                 // Tie-breaking factors
                 let tieBreakBonus = 0;
+                const tieBreakFactors = [];
                 
                 // Status bonus: active projects get priority
-                if (project.status === 'active') tieBreakBonus += 1.0;
-                else if (project.status === 'planning') tieBreakBonus += 0.5;
+                if (project.status === 'active') {
+                    tieBreakBonus += 1.0;
+                    tieBreakFactors.push({ factor: 'Active Status', bonus: 1.0 });
+                } else if (project.status === 'planning') {
+                    tieBreakBonus += 0.5;
+                    tieBreakFactors.push({ factor: 'Planning Status', bonus: 0.5 });
+                }
                 
                 // Recency bonus: projects updated recently get small boost
                 if (project.lastUpdated) {
                     const daysSinceUpdate = (Date.now() - new Date(project.lastUpdated).getTime()) / (1000 * 60 * 60 * 24);
-                    if (daysSinceUpdate <= 7) tieBreakBonus += 0.5; // Updated within week
-                    else if (daysSinceUpdate <= 30) tieBreakBonus += 0.2; // Updated within month
+                    if (daysSinceUpdate <= 7) {
+                        tieBreakBonus += 0.5;
+                        tieBreakFactors.push({ factor: 'Updated within week', bonus: 0.5 });
+                    } else if (daysSinceUpdate <= 30) {
+                        tieBreakBonus += 0.2;
+                        tieBreakFactors.push({ factor: 'Updated within month', bonus: 0.2 });
+                    }
                 }
                 
                 // Category balance: projects from underrepresented categories get small boost
                 const categoryCount = projectData.filter(p => p.category === project.category).length;
-                if (categoryCount <= 2) tieBreakBonus += 0.3; // Small categories get boost
+                if (categoryCount <= 2) {
+                    tieBreakBonus += 0.3;
+                    tieBreakFactors.push({ factor: 'Small category boost', bonus: 0.3 });
+                }
                 
                 // Progress bonus: projects with recent activity get small boost
-                if (project.commitCount && project.commitCount > 0) tieBreakBonus += 0.2;
+                if (project.commitCount && project.commitCount > 0) {
+                    tieBreakBonus += 0.2;
+                    tieBreakFactors.push({ factor: 'Has commits', bonus: 0.2 });
+                }
                 
                 const enhancedPriorityScore = basePriorityScore + tieBreakBonus;
                 
@@ -1267,6 +1320,7 @@
                     heartScore,
                     basePriorityScore,
                     tieBreakBonus: parseFloat(tieBreakBonus.toFixed(2)),
+                    tieBreakFactors,
                     priorityScore: parseFloat(enhancedPriorityScore.toFixed(2)),
                     category: project.category || 'Uncategorized',
                     status: project.status || 'unknown'
@@ -1335,7 +1389,7 @@
                             <div class="scoring-breakdown">
                                 <p><strong>Priority Score: ${recommendations.mainFocus.priorityScore}/10</strong> | Status: ${getStatusDisplay(recommendations.mainFocus.status)}</p>
                                 <p class="base-calculation">Base: ${recommendations.mainFocus.headScore}/5 Head + ${recommendations.mainFocus.heartScore}/5 Heart = ${recommendations.mainFocus.basePriorityScore}/10</p>
-                                ${recommendations.mainFocus.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: +${recommendations.mainFocus.tieBreakBonus} → <strong>${recommendations.mainFocus.priorityScore}/10</strong></p>` : ''}
+                                ${recommendations.mainFocus.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: <span class="tie-break-tooltip" data-factors='${JSON.stringify(recommendations.mainFocus.tieBreakFactors)}'>+${recommendations.mainFocus.tieBreakBonus}</span> → <strong>${recommendations.mainFocus.priorityScore}/10</strong></p>` : ''}
                             </div>
                             <p class="focus-note">Active or planning projects only - ready for immediate work</p>
                         </div>
@@ -1345,7 +1399,7 @@
                             <div class="scoring-breakdown">
                                 <p><strong>Priority Score: ${recommendations.sideFocus.priorityScore}/10</strong> | Status: ${getStatusDisplay(recommendations.sideFocus.status)}</p>
                                 <p class="base-calculation">Base: ${recommendations.sideFocus.headScore}/5 Head + ${recommendations.sideFocus.heartScore}/5 Heart = ${recommendations.sideFocus.basePriorityScore}/10</p>
-                                ${recommendations.sideFocus.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: +${recommendations.sideFocus.tieBreakBonus} → <strong>${recommendations.sideFocus.priorityScore}/10</strong></p>` : ''}
+                                ${recommendations.sideFocus.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: <span class="tie-break-tooltip" data-factors='${JSON.stringify(recommendations.sideFocus.tieBreakFactors)}'>+${recommendations.sideFocus.tieBreakBonus}</span> → <strong>${recommendations.sideFocus.priorityScore}/10</strong></p>` : ''}
                             </div>
                             <p class="focus-note">Active or planning projects only - secondary priority</p>
                         </div>
@@ -1355,7 +1409,7 @@
                             <div class="scoring-breakdown">
                                 <p><strong>Priority Score: ${recommendations.tangent.priorityScore}/10</strong> | Status: ${getStatusDisplay(recommendations.tangent.status)}</p>
                                 <p class="base-calculation">Base: ${recommendations.tangent.headScore}/5 Head + ${recommendations.tangent.heartScore}/5 Heart = ${recommendations.tangent.basePriorityScore}/10</p>
-                                ${recommendations.tangent.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: +${recommendations.tangent.tieBreakBonus} → <strong>${recommendations.tangent.priorityScore}/10</strong></p>` : ''}
+                                ${recommendations.tangent.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: <span class="tie-break-tooltip" data-factors='${JSON.stringify(recommendations.tangent.tieBreakFactors)}'>+${recommendations.tangent.tieBreakBonus}</span> → <strong>${recommendations.tangent.priorityScore}/10</strong></p>` : ''}
                             </div>
                             <p class="tangent-note">High interest project to explore when you have spare time</p>
                         </div>
@@ -1389,7 +1443,7 @@
                                 <div class="project-scores">
                                     <span class="priority-score">Priority: ${project.priorityScore}/10</span>
                                     <span class="base-score">Base: ${project.basePriorityScore}/10</span>
-                                    ${project.tieBreakBonus > 0 ? `<span class="tie-break-badge">+${project.tieBreakBonus}</span>` : ''}
+                                    ${project.tieBreakBonus > 0 ? `<span class="tie-break-badge tie-break-tooltip" data-factors='${JSON.stringify(project.tieBreakFactors)}'>+${project.tieBreakBonus}</span>` : ''}
                                     <span class="head-score">Head: ${project.headScore}/5</span>
                                     <span class="heart-score">Heart: ${project.heartScore}/5</span>
                                     <span class="status-badge status-${project.status}">${getStatusDisplay(project.status)}</span>
@@ -1407,6 +1461,9 @@
             document.getElementById('save-plan-btn').disabled = false;
             document.getElementById('sync-notion-btn').disabled = false;
             document.getElementById('sync-notion-btn').querySelector('.sync-text').textContent = '🔄 Sync to Notion';
+            
+            // Set up tooltips for tiebreaker bonuses
+            setupTiebreakTooltips();
             
             updateStatus('Strategic weekly plan generated! Review priorities and focus areas.');
         }
@@ -1438,9 +1495,9 @@
             // Ensure we have projects to work with
             if (!projectsWithScores || projectsWithScores.length === 0) {
                 return {
-                    mainFocus: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0 },
-                    sideFocus: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0 },
-                    tangent: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0 }
+                    mainFocus: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0, basePriorityScore: 0, tieBreakFactors: [] },
+                    sideFocus: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0, basePriorityScore: 0, tieBreakFactors: [] },
+                    tangent: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0, basePriorityScore: 0, tieBreakFactors: [] }
                 };
             }
             
@@ -1541,14 +1598,16 @@
             // Ensure all recommendations have valid data
             const ensureValidProject = (project, fallbackName) => {
                 if (!project) {
-                    return { name: fallbackName, priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0 };
+                    return { name: fallbackName, priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0, basePriorityScore: 0, tieBreakFactors: [] };
                 }
                 return {
                     name: project.name || fallbackName,
                     priorityScore: project.priorityScore || 0,
                     status: project.status || 'unknown',
                     headScore: project.headScore || 0,
-                    heartScore: project.heartScore || 0
+                    heartScore: project.heartScore || 0,
+                    basePriorityScore: project.basePriorityScore || 0,
+                    tieBreakFactors: project.tieBreakFactors || []
                 };
             };
             
@@ -1724,6 +1783,18 @@
         
         function updateStatus(message) {
             document.getElementById('status').textContent = message;
+        }
+        
+        // Set up tooltips for tiebreaker bonuses
+        function setupTiebreakTooltips() {
+            const tooltips = document.querySelectorAll('.tie-break-tooltip');
+            tooltips.forEach(tooltip => {
+                const factors = JSON.parse(tooltip.dataset.factors || '[]');
+                if (factors.length > 0) {
+                    const tooltipText = factors.map(f => `${f.factor}: +${f.bonus}`).join('\n');
+                    tooltip.setAttribute('data-tooltip', tooltipText);
+                }
+            });
         }
         
         // Event listeners

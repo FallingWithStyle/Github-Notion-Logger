@@ -589,16 +589,45 @@ async function processCommitBatch(commits, repoName, existingCommits, existingSh
 }
 
 async function createCommitPage(commit, repoName) {
+  // Get the effective date for timezone logic, but preserve the full timestamp
+  const effectiveDate = timezoneConfig.getEffectiveDate(commit.timestamp);
+  
+  // Create a new Date object from the effective date and add the time from the original timestamp
+  const originalDate = new Date(commit.timestamp);
+  const effectiveDateObj = new Date(effectiveDate);
+  
+  // Preserve the time from the original commit but use the effective date
+  const finalTimestamp = new Date(
+    effectiveDateObj.getFullYear(),
+    effectiveDateObj.getMonth(),
+    effectiveDateObj.getDate(),
+    originalDate.getUTCHours(),
+    originalDate.getUTCMinutes(),
+    originalDate.getUTCSeconds()
+  );
+  
+  // Truncate commit message if it's too long for Notion (2000 char limit)
+  // Leave some buffer (1990 chars) to be safe
+  const maxLength = 1990;
+  let commitMessage = commit.message;
+  let wasTruncated = false;
+  
+  if (commitMessage.length > maxLength) {
+    commitMessage = commitMessage.substring(0, maxLength - 3) + '...';
+    wasTruncated = true;
+    console.log(`⚠️  Truncated commit message for ${repoName} (was ${commit.message.length} chars, now ${commitMessage.length})`);
+  }
+  
   const properties = {
     "Commits": {
-      rich_text: [{ text: { content: commit.message } }],
+      rich_text: [{ text: { content: commitMessage } }],
     },
     "Project Name": {
       title: [{ text: { content: repoName.split('/').pop() } }],
     },
     "Date": {
-      // Store the effective date (with timezone cutoff logic applied)
-      date: { start: timezoneConfig.getEffectiveDate(commit.timestamp) },
+      // Store the full timestamp with time information
+      date: { start: finalTimestamp.toISOString() },
     }
   };
   if (schemaCache.hasShaProperty && commit.id) {
