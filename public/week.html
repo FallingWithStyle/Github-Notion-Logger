@@ -479,11 +479,16 @@
                     const serverCategories = result.categories || [];
                     categories = [...new Set([...savedCategories, ...serverCategories])];
                     
-                    // Apply saved categories to project data
+                    // Apply saved categories and status to project data
                     projectData.forEach(project => {
                         const savedProject = userAnswers[project.name];
-                        if (savedProject && savedProject.category) {
-                            project.category = savedProject.category;
+                        if (savedProject) {
+                            if (savedProject.category) {
+                                project.category = savedProject.category;
+                            }
+                            if (savedProject.status) {
+                                project.status = savedProject.status;
+                            }
                         }
                     });
                     
