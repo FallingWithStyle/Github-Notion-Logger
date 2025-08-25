@@ -6,12 +6,12 @@ const notion = new Client({ auth: process.env.NOTION_API_KEY });
 async function testNotionConnection() {
   console.log('Testing Notion connection...');
   console.log('API Key starts with:', process.env.NOTION_API_KEY?.substring(0, 10) + '...');
-  console.log('Database ID:', process.env.NOTION_DATABASE_ID);
+  console.log('Database ID:', process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID);
   
   try {
     // Try to retrieve the database
     const response = await notion.databases.retrieve({
-      database_id: process.env.NOTION_DATABASE_ID
+      database_id: process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID
     });
     
     console.log('✅ Successfully connected to Notion!');

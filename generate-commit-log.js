@@ -166,13 +166,13 @@ async function fetchFromNotion(since = '2025-01-01') {
         return null;
     }
     
-    if (!process.env.NOTION_DATABASE_ID) {
-        console.error('❌ NOTION_DATABASE_ID environment variable not set');
+    if (!process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID) {
+        console.error('❌ NOTION_COMMIT_FROM_GITHUB_LOG_ID environment variable not set');
         return null;
     }
     
     const notion = new Client({ auth: process.env.NOTION_API_KEY });
-    const databaseId = process.env.NOTION_DATABASE_ID;
+    const databaseId = process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID;
     
     try {
         console.log(`🔄 Fetching commits from Notion database since ${since}...`);

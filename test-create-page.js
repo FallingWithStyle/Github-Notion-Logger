@@ -8,7 +8,7 @@ async function testCreatePage() {
   
   try {
     const response = await notion.pages.create({
-      parent: { database_id: process.env.NOTION_DATABASE_ID },
+      parent: { database_id: process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID },
       properties: {
         "Commits": {
           rich_text: [{ text: { content: "Test commit message" } }],

@@ -89,8 +89,8 @@ The Notion database includes:
    Then edit `.env` with your actual values:
    ```
    NOTION_API_KEY=your_notion_api_key
-   NOTION_DATABASE_ID=your_notion_database_id
-   NOTION_PARENT_PAGE_ID=your_notion_parent_page_id  # Optional - for weekly planning database
+   NOTION_COMMIT_FROM_GITHUB_LOG_ID=your_notion_commit_database_id
+   NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID=your_notion_weekly_planning_parent_page_id  # Optional - for weekly planning database
    GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
    GITHUB_TOKEN=your_github_personal_access_token
    GITHUB_OWNER=your_github_username_or_org
@@ -119,19 +119,19 @@ The Notion database includes:
 6. Copy the "Internal Integration Token"
 7. Add it to your `.env` file as `NOTION_API_KEY=your_token_here`
 
-#### Notion Database ID (NOTION_DATABASE_ID)
+#### Notion Commit Database ID (NOTION_COMMIT_FROM_GITHUB_LOG_ID)
 1. Open your Notion database in the browser
 2. Copy the URL - it will look like: `https://www.notion.so/workspace/Database-Name-1234567890abcdef1234567890abcdef`
 3. Extract the database ID (the last part before the `?`): `1234567890abcdef1234567890abcdef`
-4. Add it to your `.env` file as `NOTION_DATABASE_ID=your_database_id_here`
+4. Add it to your `.env` file as `NOTION_COMMIT_FROM_GITHUB_LOG_ID=your_database_id_here`
 5. **Important**: Share your database with your integration by clicking "Share" in the database and adding your integration
 
-#### Notion Parent Page ID (NOTION_PARENT_PAGE_ID) - For Weekly Planning Database
+#### Notion Weekly Planning Parent Page ID (NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID) - For Weekly Planning Database
 1. Open your Notion workspace in the browser
 2. Navigate to the "Weekly Planning" page
 3. Copy the page ID from the URL - it will look like: `https://www.notion.so/workspace/Weekly-Planning-1234567890abcdef1234567890abcdef`
 4. Extract the page ID (the last part before the `?`): `1234567890abcdef1234567890abcdef`
-5. Add it to your `.env` file as `NOTION_PARENT_PAGE_ID=your_parent_page_id_here`
+5. Add it to your `.env` file as `NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID=your_parent_page_id_here`
 
 #### GitHub Webhook Secret (GITHUB_WEBHOOK_SECRET) - For Webhook Mode
 1. Generate a random secret (you can use a password generator or run `openssl rand -hex 32`)
@@ -173,8 +173,8 @@ This project includes a `fly.toml` configuration for easy deployment to Fly.io.
 4. **Set environment variables**:
    ```bash
    fly secrets set NOTION_API_KEY=your_notion_api_key
-   fly secrets set NOTION_DATABASE_ID=your_notion_database_id
-   fly secrets set NOTION_PARENT_PAGE_ID=your_notion_parent_page_id
+   fly secrets set NOTION_COMMIT_FROM_GITHUB_LOG_ID=your_notion_commit_database_id
+   fly secrets set NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID=your_notion_weekly_planning_parent_page_id
    fly secrets set GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
    fly secrets set GITHUB_TOKEN=your_github_personal_access_token
    fly secrets set GITHUB_OWNER=your_github_username_or_org
@@ -238,7 +238,7 @@ The visualizer can automatically fetch data from your Notion database:
 - **Web Interface**: Click "Fetch from Notion" button to load latest data
 - **Auto-refresh**: Enable auto-refresh to update every 30 seconds
 - **Real-time Updates**: New commits from webhooks automatically update the visualizer
-- **Environment Variables**: Uses `NOTION_API_KEY` and `NOTION_DATABASE_ID` from your `.env` file
+- **Environment Variables**: Uses `NOTION_API_KEY` and `NOTION_COMMIT_FROM_GITHUB_LOG_ID` from your `.env` file
 
 **Proportional Representation:**
 Each day shows up to 10 squares representing your work distribution:

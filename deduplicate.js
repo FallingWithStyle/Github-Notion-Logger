@@ -3,7 +3,7 @@ const timezoneConfig = require('./timezone-config');
 require('dotenv').config();
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
-const databaseId = process.env.NOTION_DATABASE_ID;
+const databaseId = process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID;
 
 async function deduplicateDatabase() {
   console.log('Starting database deduplication...');

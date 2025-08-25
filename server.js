@@ -105,7 +105,7 @@ const PORT = process.env.PORT || 8080;
 const SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 
 // Validate required environment variables
-const requiredEnvVars = ['NOTION_API_KEY', 'NOTION_DATABASE_ID', 'GITHUB_WEBHOOK_SECRET'];
+const requiredEnvVars = ['NOTION_API_KEY', 'NOTION_COMMIT_FROM_GITHUB_LOG_ID', 'GITHUB_WEBHOOK_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
@@ -377,15 +377,15 @@ app.get('/api/fetch-notion-data', asyncHandler(async (req, res) => {
       });
     }
     
-    if (!process.env.NOTION_DATABASE_ID) {
-      console.log('❌ NOTION_DATABASE_ID not set');
+    if (!process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID) {
+      console.log('❌ NOTION_COMMIT_FROM_GITHUB_LOG_ID not set');
       return res.status(400).json({ 
-        error: 'NOTION_DATABASE_ID environment variable not set' 
+        error: 'NOTION_COMMIT_FROM_GITHUB_LOG_ID environment variable not set' 
       });
     }
     
     const notion = new Client({ auth: process.env.NOTION_API_KEY });
-    const databaseId = process.env.NOTION_DATABASE_ID;
+    const databaseId = process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID;
 
     // Support incremental mode: merge new range into existing commit log
     const isIncremental = req.query.incremental === 'true' || req.query.incremental === '1';
@@ -922,7 +922,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔑 Webhook secret configured: ${SECRET ? 'Yes' : 'No'}`);
   console.log(`📝 Notion API key configured: ${process.env.NOTION_API_KEY ? 'Yes' : 'No'}`);
-  console.log(`🗄️ Notion database ID configured: ${process.env.NOTION_DATABASE_ID ? 'Yes' : 'No'}`);
+      console.log(`🗄️ Notion commit database ID configured: ${process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID ? 'Yes' : 'No'}`);
 });
 
 // Add server timeout

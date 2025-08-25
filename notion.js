@@ -8,13 +8,13 @@ if (!process.env.NOTION_API_KEY) {
   process.exit(1);
 }
 
-if (!process.env.NOTION_DATABASE_ID) {
-  console.error('❌ NOTION_DATABASE_ID environment variable not set');
+if (!process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID) {
+  console.error('❌ NOTION_COMMIT_FROM_GITHUB_LOG_ID environment variable not set');
   process.exit(1);
 }
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
-const databaseId = process.env.NOTION_DATABASE_ID;
+const commitFromGithubLogDatabaseId = process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID;
 
 // Weekly planning database ID (will be created if doesn't exist)
 let weeklyPlanningDatabaseId = null;
@@ -50,8 +50,8 @@ async function ensureWeeklyPlanningDatabase() {
   console.log('🔄 Current database ID:', weeklyPlanningDatabaseId);
   console.log('🔄 Environment variables:');
   console.log('   - NOTION_API_KEY:', process.env.NOTION_API_KEY ? 'SET' : 'NOT SET');
-  console.log('   - NOTION_PARENT_PAGE_ID:', process.env.NOTION_PARENT_PAGE_ID || 'NOT SET');
-  console.log('   - NOTION_DATABASE_ID:', process.env.NOTION_DATABASE_ID || 'NOT SET');
+  console.log('   - NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID:', process.env.NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID || 'NOT SET');
+  console.log('   - NOTION_COMMIT_FROM_GITHUB_LOG_ID:', process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID || 'NOT SET');
   
   // Always check the database schema, even if we have a cached ID
   if (weeklyPlanningDatabaseId) {
@@ -100,17 +100,82 @@ async function ensureWeeklyPlanningDatabase() {
     });
     console.log('🔄 Search response:', response);
 
-    // If database exists, use it
+    // If database exists, use it and validate schema
     if (response.results.length > 0) {
       weeklyPlanningDatabaseId = response.results[0].id;
       console.log(`📊 Found existing weekly planning database: ${weeklyPlanningDatabaseId}`);
-      return weeklyPlanningDatabaseId;
+      
+      // Now validate and update the schema of the found database
+      console.log('🔄 Validating schema of found database...');
+      try {
+        const db = await notion.databases.retrieve({ database_id: weeklyPlanningDatabaseId });
+        console.log('🔄 Found database properties:', Object.keys(db.properties));
+        
+        // Check if all required properties exist
+        const requiredProps = ['Project Name', 'Week Start', 'Head', 'Heart', 'Category', 'Status', 'Notes', 'Created', 'Last Updated'];
+        const missingProps = requiredProps.filter(prop => !db.properties[prop]);
+        
+        if (missingProps.length > 0) {
+          console.log('⚠️ Found database has outdated schema. Missing properties:', missingProps);
+          console.log('🔄 Updating found database schema...');
+          
+          // Update the database schema
+          await notion.databases.update({
+            database_id: weeklyPlanningDatabaseId,
+            properties: WEEKLY_PLANNING_SCHEMA
+          });
+          
+          console.log('✅ Found database schema updated successfully');
+        } else {
+          console.log('✅ Found database schema is up to date');
+        }
+      } catch (error) {
+        console.error('❌ Error validating/updating found database schema:', error);
+        // If we can't update the found database, create a new one
+        console.log('🔄 Creating new database due to schema update failure...');
+        weeklyPlanningDatabaseId = null;
+      }
+      
+      if (weeklyPlanningDatabaseId) {
+        return weeklyPlanningDatabaseId;
+      }
     }
 
-    // Create new database
+    // Create new database - handle the case where NOTION_PARENT_PAGE_ID might be a database ID
     console.log('🔧 Creating new weekly planning database...');
+    
+    let parentId = process.env.NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID || commitFromGithubLogDatabaseId;
+    let parentType = "page_id";
+    
+    // Check if the parent ID is actually a database ID
+    try {
+      const parentCheck = await notion.databases.retrieve({ database_id: parentId });
+      console.log('⚠️ NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID is actually a database ID, not a page ID');
+      console.log('🔄 Attempting to find a page within this database to use as parent...');
+      
+      // Query the database to find a page we can use as parent
+      const pagesResponse = await notion.databases.query({
+        database_id: parentId,
+        page_size: 1
+      });
+      
+      if (pagesResponse.results.length > 0) {
+        parentId = pagesResponse.results[0].id;
+        parentType = "page_id";
+        console.log(`✅ Found page within database to use as parent: ${parentId}`);
+      } else {
+        // If no pages exist, we'll need to create a page first or use a different approach
+        console.log('❌ No pages found in the database to use as parent');
+        console.log('🔄 Using the database itself as parent (this may fail)...');
+        parentType = "database_id";
+      }
+    } catch (error) {
+      // If it's not a database, assume it's a page ID
+      console.log('✅ NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID appears to be a valid page ID');
+    }
+    
     const newDatabase = await notion.databases.create({
-      parent: { type: "page_id", page_id: process.env.NOTION_PARENT_PAGE_ID || databaseId },
+      parent: { type: parentType, [parentType === "page_id" ? "page_id" : "database_id"]: parentId },
       title: [{ type: "text", text: { content: "Weekly Project Planning" } }],
       properties: WEEKLY_PLANNING_SCHEMA,
       description: [{ type: "text", text: { content: "Weekly project prioritization and planning data" } }]
@@ -134,34 +199,11 @@ async function addWeeklyPlanningEntry(projectData) {
     await ensureWeeklyPlanningDatabase();
     console.log('🔄 Database ensured, ID:', weeklyPlanningDatabaseId);
     
-    // Validate database schema before attempting to write
-    console.log('🔄 Validating database schema before writing...');
-    try {
-      const db = await notion.databases.retrieve({ database_id: weeklyPlanningDatabaseId });
-      console.log('🔄 Database properties found:', Object.keys(db.properties));
-      
-      // Check if all required properties exist
-      const requiredProps = ['Project Name', 'Week Start', 'Head', 'Heart', 'Category', 'Status', 'Notes', 'Created', 'Last Updated'];
-      const missingProps = requiredProps.filter(prop => !db.properties[prop]);
-      
-      if (missingProps.length > 0) {
-        console.log('⚠️ Database schema is outdated. Missing properties:', missingProps);
-        console.log('🔄 Updating database schema...');
-        
-        // Update the database schema
-        await notion.databases.update({
-          database_id: weeklyPlanningDatabaseId,
-          properties: WEEKLY_PLANNING_SCHEMA
-        });
-        
-        console.log('✅ Database schema updated successfully');
-      } else {
-        console.log('✅ Database schema is up to date');
-      }
-    } catch (error) {
-      console.error('❌ Error validating/updating database schema:', error);
-      throw new Error(`Database schema validation failed: ${error.message}`);
+    if (!weeklyPlanningDatabaseId) {
+      throw new Error('Failed to get valid weekly planning database ID');
     }
+    
+    console.log('🔄 Proceeding with page creation...');
     
     const { projectName, weekStart, head, heart, category, status, notes } = projectData;
     
@@ -198,6 +240,7 @@ async function addWeeklyPlanningEntry(projectData) {
       }
     };
 
+    console.log('🔄 Creating page with properties:', Object.keys(entry.properties));
     const result = await notion.pages.create(entry);
     console.log(`✅ Added weekly planning entry for ${projectName} (week of ${weekStart})`);
     return result;
@@ -292,7 +335,7 @@ async function ensureDatabaseSchemaLoaded() {
     return schemaCache;
   }
   try {
-    const db = await notion.databases.retrieve({ database_id: databaseId });
+    const db = await notion.databases.retrieve({ database_id: commitFromGithubLogDatabaseId });
     schemaCache.hasShaProperty = !!db.properties?.[SHA_PROPERTY_NAME] && db.properties[SHA_PROPERTY_NAME].type === 'rich_text';
     schemaCache.checked = true;
     console.log(`🧭 Notion schema: SHA property present = ${schemaCache.hasShaProperty}`);
@@ -301,7 +344,7 @@ async function ensureDatabaseSchemaLoaded() {
       try {
         console.log('🔧 Adding SHA property to Notion database...');
         await notion.databases.update({
-          database_id: databaseId,
+          database_id: commitFromGithubLogDatabaseId,
           properties: {
             [SHA_PROPERTY_NAME]: { rich_text: {} }
           }
@@ -368,7 +411,7 @@ async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
         console.log(`📄 Fetching existing commits page ${pageCount} for ${repoName}...`);
         
         const response = await notion.databases.query({
-          database_id: databaseId,
+          database_id: commitFromGithubLogDatabaseId,
           filter: {
             property: "Project Name",
             title: {
@@ -565,7 +608,7 @@ async function createCommitPage(commit, repoName) {
   }
 
   await notion.pages.create({
-    parent: { database_id: databaseId },
+    parent: { database_id: commitFromGithubLogDatabaseId },
     properties
   });
 }
@@ -576,7 +619,7 @@ async function getMostRecentCommitDate(repoName) {
     
     // Query the database for the most recent commit for this repo
     const response = await notion.databases.query({
-      database_id: databaseId,
+      database_id: commitFromGithubLogDatabaseId,
       filter: {
         property: "Project Name",
         title: {

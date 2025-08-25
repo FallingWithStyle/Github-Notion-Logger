@@ -8,7 +8,7 @@ async function getDatabaseSchema() {
   
   try {
     const response = await notion.databases.retrieve({
-      database_id: process.env.NOTION_DATABASE_ID
+      database_id: process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID
     });
     
     console.log('✅ Database schema retrieved!');
