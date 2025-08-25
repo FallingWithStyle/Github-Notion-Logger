@@ -46,11 +46,20 @@ const WEEKLY_PLANNING_SCHEMA = {
 
 // Ensure weekly planning database exists
 async function ensureWeeklyPlanningDatabase() {
+  console.log('🔄 Ensuring weekly planning database exists...');
+  console.log('🔄 Current database ID:', weeklyPlanningDatabaseId);
+  console.log('🔄 Environment variables:');
+  console.log('   - NOTION_API_KEY:', process.env.NOTION_API_KEY ? 'SET' : 'NOT SET');
+  console.log('   - NOTION_PARENT_PAGE_ID:', process.env.NOTION_PARENT_PAGE_ID || 'NOT SET');
+  console.log('   - NOTION_DATABASE_ID:', process.env.NOTION_DATABASE_ID || 'NOT SET');
+  
   if (weeklyPlanningDatabaseId) {
+    console.log('🔄 Using existing database ID:', weeklyPlanningDatabaseId);
     return weeklyPlanningDatabaseId;
   }
 
   try {
+    console.log('🔄 Searching for existing weekly planning database...');
     // Check if database already exists by searching for it
     const response = await notion.search({
       query: "Weekly Project Planning",
@@ -59,6 +68,7 @@ async function ensureWeeklyPlanningDatabase() {
         value: "database"
       }
     });
+    console.log('🔄 Search response:', response);
 
     // If database exists, use it
     if (response.results.length > 0) {
@@ -88,7 +98,11 @@ async function ensureWeeklyPlanningDatabase() {
 // Add weekly planning entry to Notion
 async function addWeeklyPlanningEntry(projectData) {
   try {
+    console.log('🔄 Starting addWeeklyPlanningEntry...');
+    console.log('🔄 Project data received:', projectData);
+    
     await ensureWeeklyPlanningDatabase();
+    console.log('🔄 Database ensured, ID:', weeklyPlanningDatabaseId);
     
     const { projectName, weekStart, head, heart, category, status, notes } = projectData;
     
