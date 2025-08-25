@@ -1,8 +1,14 @@
 [
   {
+    "date": "2025-05-30",
+    "projects": {
+      "Avoros-Dungeon": 92
+    }
+  },
+  {
     "date": "2025-05-31",
     "projects": {
-      "Avoros-Dungeon": 124
+      "Avoros-Dungeon": 32
     }
   },
   {
@@ -14,25 +20,25 @@
   {
     "date": "2025-06-02",
     "projects": {
-      "Avoros-Dungeon": 2
+      "Avoros-Dungeon": 4
     }
   },
   {
     "date": "2025-06-03",
     "projects": {
-      "Avoros-Dungeon": 17
+      "Avoros-Dungeon": 30
     }
   },
   {
     "date": "2025-06-04",
     "projects": {
-      "Avoros-Dungeon": 22
+      "Avoros-Dungeon": 11
     }
   },
   {
     "date": "2025-06-05",
     "projects": {
-      "Avoros-Dungeon": 82
+      "Avoros-Dungeon": 98
     }
   },
   {
@@ -44,200 +50,213 @@
   {
     "date": "2025-06-07",
     "projects": {
-      "Avoros-Dungeon": 107
+      "Avoros-Dungeon": 136
     }
   },
   {
     "date": "2025-06-08",
     "projects": {
-      "Avoros-Dungeon": 146
+      "Avoros-Dungeon": 127
     }
   },
   {
     "date": "2025-06-09",
     "projects": {
-      "Avoros-Dungeon": 79
+      "Avoros-Dungeon": 81
     }
   },
   {
     "date": "2025-06-10",
     "projects": {
-      "Avoros-Dungeon": 89
+      "Avoros-Dungeon": 69
     }
   },
   {
     "date": "2025-06-11",
     "projects": {
-      "Avoros-Dungeon": 67
+      "Avoros-Dungeon": 74
     }
   },
   {
     "date": "2025-06-12",
     "projects": {
-      "Avoros-Dungeon": 59
+      "Avoros-Dungeon": 43
     }
   },
   {
     "date": "2025-06-13",
     "projects": {
-      "Avoros-Dungeon": 80
+      "Avoros-Dungeon": 101
     }
   },
   {
     "date": "2025-06-14",
     "projects": {
-      "Avoros-Dungeon": 45
+      "Avoros-Dungeon": 67
     }
   },
   {
     "date": "2025-06-15",
     "projects": {
-      "Avoros-Dungeon": 48
+      "Avoros-Dungeon": 38
     }
   },
   {
     "date": "2025-06-16",
     "projects": {
-      "Avoros-Dungeon": 66
+      "Avoros-Dungeon": 41
     }
   },
   {
     "date": "2025-06-17",
     "projects": {
-      "Kitch": 12,
-      "Avoros-Dungeon": 12
+      "Kitch": 39,
+      "Avoros-Dungeon": 1
     }
   },
   {
     "date": "2025-06-18",
     "projects": {
-      "Kitch": 72
+      "Kitch": 46
     }
   },
   {
     "date": "2025-06-19",
     "projects": {
-      "Kitch": 44
+      "Kitch": 69
     }
   },
   {
     "date": "2025-06-20",
     "projects": {
-      "Kitch": 69
+      "Kitch": 48
     }
   },
   {
     "date": "2025-06-21",
     "projects": {
-      "Kitch": 106
+      "Kitch": 142
     }
   },
   {
     "date": "2025-06-22",
     "projects": {
-      "Kitch": 58,
-      "Avoros-Dungeon": 73
+      "Kitch": 17,
+      "Avoros-Dungeon": 108
     }
   },
   {
     "date": "2025-06-23",
     "projects": {
-      "Avoros-Dungeon": 54
+      "Avoros-Dungeon": 80
     }
   },
   {
     "date": "2025-06-24",
     "projects": {
-      "Avoros-Dungeon": 86
+      "Avoros-Dungeon": 27
     }
   },
   {
     "date": "2025-06-25",
     "projects": {
-      "familiar-things": 12
+      "familiar-things": 13
     }
   },
   {
     "date": "2025-06-27",
     "projects": {
-      "Magic-Quill": 35
+      "Magic-Quill": 36,
+      "Kitch": 2
     }
   },
   {
     "date": "2025-06-28",
     "projects": {
-      "Magic-Quill": 41,
-      "Kitch": 2
+      "Magic-Quill": 40
+    }
+  },
+  {
+    "date": "2025-07-01",
+    "projects": {
+      "Magic-Quill": 49
     }
   },
   {
     "date": "2025-07-02",
     "projects": {
-      "Magic-Quill": 61
+      "Magic-Quill": 49
     }
   },
   {
     "date": "2025-07-03",
     "projects": {
-      "Magic-Quill": 49
+      "Magic-Quill": 12
+    }
+  },
+  {
+    "date": "2025-07-10",
+    "projects": {
+      "Magic-Quill": 1
     }
   },
   {
     "date": "2025-07-11",
     "projects": {
       "Friend-Party": 3,
-      "Magic-Quill": 2
+      "Magic-Quill": 1
     }
   },
   {
     "date": "2025-07-12",
     "projects": {
-      "Friend-Party": 3
+      "Friend-Party": 6
     }
   },
   {
     "date": "2025-07-13",
     "projects": {
-      "Friend-Party": 8
+      "Friend-Party": 5
     }
   },
   {
     "date": "2025-07-14",
     "projects": {
-      "Friend-Party": 3
+      "Friend-Party": 5
     }
   },
   {
     "date": "2025-07-15",
     "projects": {
-      "Friend-Party": 5
+      "Friend-Party": 3,
+      "Magic-Quill": 1
     }
   },
   {
     "date": "2025-07-16",
     "projects": {
       "Friend-Party": 1,
-      "Magic-Quill": 1
+      "Audventr": 2
     }
   },
   {
     "date": "2025-07-17",
     "projects": {
-      "Audventr": 10,
-      "Magic-Quill": 4
+      "Audventr": 8,
+      "Magic-Quill": 10
     }
   },
   {
     "date": "2025-07-18",
     "projects": {
-      "Magic-Quill": 11
+      "Audventr": 1,
+      "Magic-Quill": 7
     }
   },
   {
     "date": "2025-07-19",
     "projects": {
-      "Audventr": 6,
-      "Magic-Quill": 2
+      "Audventr": 5
     }
   },
   {
@@ -261,25 +280,25 @@
   {
     "date": "2025-07-23",
     "projects": {
-      "Magic-Quill": 2
+      "Magic-Quill": 5
     }
   },
   {
     "date": "2025-07-24",
     "projects": {
-      "Magic-Quill": 6
+      "Magic-Quill": 4
     }
   },
   {
     "date": "2025-07-25",
     "projects": {
-      "Magic-Quill": 3
+      "Magic-Quill": 10
     }
   },
   {
     "date": "2025-07-26",
     "projects": {
-      "Magic-Quill": 22
+      "Magic-Quill": 18
     }
   },
   {
@@ -291,72 +310,71 @@
   {
     "date": "2025-07-28",
     "projects": {
-      "Magic-Quill": 10
+      "Magic-Quill": 6
     }
   },
   {
     "date": "2025-07-30",
     "projects": {
-      "glyph-server": 7
+      "Friend-Party": 3,
+      "glyph-server": 17
     }
   },
   {
     "date": "2025-07-31",
     "projects": {
-      "Friend-Party": 13,
-      "glyph-server": 10
+      "glyph-legal": 10,
+      "Friend-Party": 12
     }
   },
   {
     "date": "2025-08-01",
     "projects": {
-      "glyph-legal": 9,
-      "Friend-Party": 2,
-      "glyph-server": 7
+      "Audventr-Wizard": 11,
+      "glyph-server": 12
     }
   },
   {
     "date": "2025-08-02",
     "projects": {
-      "Audventr-Wizard": 24,
-      "glyph-server": 9
+      "Audventr-Wizard": 17,
+      "glyph-server": 15
     }
   },
   {
     "date": "2025-08-03",
     "projects": {
-      "Audventr-Wizard": 4,
-      "glyph-server": 24,
+      "glyph-server": 21,
       "Kitch": 4
     }
   },
   {
     "date": "2025-08-04",
     "projects": {
-      "glyph-server": 17,
-      "Kitch": 4
+      "glyph-server": 14,
+      "Kitch": 5
     }
   },
   {
     "date": "2025-08-05",
     "projects": {
-      "glyph-server": 9,
-      "Kitch": 3
+      "glyph-server": 4,
+      "Kitch": 2
     }
   },
   {
     "date": "2025-08-06",
     "projects": {
-      "Kitch": 15,
-      "Github-Notion-Logger": 11
+      "Kitch": 16,
+      "Github-Notion-Logger": 20
     }
   },
   {
     "date": "2025-08-07",
     "projects": {
-      "Kitch": 6,
-      "Friend-Party": 3,
-      "Github-Notion-Logger": 13
+      "Kitch": 19,
+      "Friend-Party": 4,
+      "Github-Notion-Logger": 4
     }
   },
   {
@@ -364,125 +382,130 @@
     "projects": {
       "glyph-server": 7,
       "Github-Notion-Logger": 2,
-      "Friend-Party": 11,
+      "Friend-Party": 10,
       "Audventr-Wizard": 2,
-      "Kitch": 20,
+      "Kitch": 6,
       "Magic-Quill": 1
     }
   },
   {
     "date": "2025-08-09",
     "projects": {
-      "Kitch": 31,
+      "Kitch": 32,
       "Friend-Party": 6,
       "Magic-Quill": 1,
-      "Audventr-Wizard": 1,
+      "Audventr-Wizard": 10,
       "glyph-server": 17
     }
   },
   {
     "date": "2025-08-10",
     "projects": {
-      "Audventr-Wizard": 16,
-      "glyph-server": 5
+      "Audventr-Wizard": 8,
+      "glyph-server": 6
     }
   },
   {
     "date": "2025-08-11",
     "projects": {
-      "Audventr-Wizard": 16,
-      "glyph-server": 14
+      "Audventr-Wizard": 18,
+      "glyph-server": 24
     }
   },
   {
     "date": "2025-08-12",
     "projects": {
-      "Audventr-Wizard": 15,
+      "Audventr-Wizard": 13,
+      "Magic-Quill": 5,
       "Github-Notion-Logger": 2,
-      "Magic-Quill": 3,
-      "glyph-server": 15
+      "glyph-server": 9
     }
   },
   {
     "date": "2025-08-13",
     "projects": {
-      "glyph-server": 12,
-      "Magic-Quill": 10
+      "Daily-Dungeon": 8,
+      "glyph-server": 11,
+      "Magic-Quill": 15
     }
   },
   {
     "date": "2025-08-14",
     "projects": {
-      "Daily-Dungeon": 7,
-      "roll-call": 7,
-      "glyph-server": 4,
+      "roll-call": 8,
       "Magic-Quill": 34
     }
   },
   {
     "date": "2025-08-15",
     "projects": {
-      "Magic-Quill": 16,
+      "Magic-Quill": 11,
       "Github-Notion-Logger": 6
     }
   },
   {
     "date": "2025-08-16",
     "projects": {
-      "Github-Notion-Logger": 5,
+      "Github-Notion-Logger": 6,
       "Magic-Quill": 12
     }
   },
   {
     "date": "2025-08-17",
     "projects": {
-      "Audventr-Warlock": 8,
-      "Audventr": 1,
-      "Magic-Quill": 10
+      "Audventr": 7,
+      "Audventr-Warlock": 15,
+      "Magic-Quill": 8
     }
   },
   {
     "date": "2025-08-18",
     "projects": {
-      "Audventr": 5,
-      "Audventr-Warlock": 12,
-      "Magic-Quill": 13
+      "Audventr-Warlock": 6,
+      "Magic-Quill": 16
     }
   },
   {
     "date": "2025-08-19",
     "projects": {
-      "Magic-Quill": 7
+      "Magic-Quill": 5
     }
   },
   {
     "date": "2025-08-20",
     "projects": {
+      "glyph-server": 5,
+      "VoiceHub": 8,
       "Magic-Quill": 15
     }
   },
   {
     "date": "2025-08-21",
     "projects": {
-      "glyph-server": 4,
-      "VoiceHub": 18,
-      "Magic-Quill": 9
+      "VoiceHub": 11,
+      "Magic-Quill": 12
     }
   },
   {
     "date": "2025-08-22",
     "projects": {
-      "Friend-Party": 8,
-      "Magic-Quill": 13
+      "avoros-hub": 2,
+      "Magic-Quill": 11,
+      "Friend-Party": 11,
+      "Crawler-s-Contract": 13
     }
   },
   {
     "date": "2025-08-23",
     "projects": {
-      "avoros-hub": 1,
-      "Crawler-s-Contract": 17,
-      "Friend-Party": 2,
-      "Magic-Quill": 1
+      "Crawler-s-Contract": 45,
+      "Friend-Party": 4
+    }
+  },
+  {
+    "date": "2025-08-24",
+    "projects": {
+      "Github-Notion-Logger": 2
     }
   }
 ]

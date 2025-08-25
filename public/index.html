@@ -698,7 +698,15 @@
             // Date label
             const dateLabel = document.createElement('div');
             dateLabel.className = 'date-label';
-            const date = new Date(dayData.date);
+            // Fix: Treat the date as local time, not UTC
+            // Split the date string and create a local date to avoid timezone shift
+            const [year, month, day] = dayData.date.split('-').map(Number);
+            const date = new Date(year, month - 1, day); // month is 0-indexed
+            console.log('Creating date label for:', dayData.date, '-> Date object:', date, '-> Formatted:', date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            }));
             dateLabel.textContent = date.toLocaleDateString('en-US', { 
                 weekday: 'short', 
                 month: 'short', 
@@ -711,10 +719,13 @@
             squaresContainer.className = 'commit-squares';
             
             // Calculate proportional squares
+            console.log('Calculating squares for day:', dayData.date, 'projects:', dayData.projects);
             const squares = calculateProportionalSquares(dayData.projects);
+            console.log('Generated squares:', squares);
             
             // Create squares
             squares.forEach((projectName, index) => {
+                console.log('Creating square for project:', projectName, 'at index:', index);
                 const square = createCommitSquare(projectName, index);
                 squaresContainer.appendChild(square);
             });
@@ -773,7 +784,11 @@
                 gridContainer.innerHTML = '';
                 
                 // Create rows for each day (most recent first)
-                commitData.slice().reverse().forEach(dayData => {
+                console.log('Raw commit data:', commitData);
+                const reversedData = commitData.slice().reverse();
+                console.log('Reversed data:', reversedData);
+                reversedData.forEach(dayData => {
+                    console.log('Processing day:', dayData.date, 'with projects:', dayData.projects);
                     const row = createDayRow(dayData);
                     gridContainer.appendChild(row);
                 });
