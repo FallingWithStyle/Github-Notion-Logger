@@ -452,6 +452,7 @@
                 };
                 localStorage.setItem('weeklyPlanningData', JSON.stringify(dataToSave));
                 console.log('💾 Saved data to localStorage');
+                console.log('📊 Data saved:', dataToSave);
             } catch (error) {
                 console.warn('⚠️ Could not save data:', error);
             }
@@ -497,6 +498,12 @@
                     // Debug logging to see what's being loaded
                     console.log('📥 Loaded project data:', projectData);
                     console.log('📥 Loaded user answers:', userAnswers);
+                    
+                    // Debug: Check what's actually in userAnswers for each project
+                    Object.keys(userAnswers).forEach(projectName => {
+                        const answers = userAnswers[projectName];
+                        console.log(`🔍 ${projectName}:`, answers);
+                    });
                     
                     if (projectData.length === 0) {
                         updateStatus('No project activity found in the last 28 days. Try fetching data from Notion first.');
@@ -833,17 +840,24 @@
         
         // Update status
         function updateStatus(projectName, status) {
+            console.log(`🔄 Updating status for ${projectName} to: ${status}`);
+            
             const project = projectData.find(p => p.name === projectName);
             if (project) {
                 project.status = status;
+                console.log(`✅ Set project.status to: ${status}`);
                 
                 // Also save status in userAnswers for persistence
                 if (!userAnswers[projectName]) {
                     userAnswers[projectName] = {};
                 }
                 userAnswers[projectName].status = status;
+                console.log(`✅ Set userAnswers[${projectName}].status to: ${status}`);
                 
                 saveData();
+                console.log(`💾 Called saveData() for status update`);
+            } else {
+                console.error(`❌ Project ${projectName} not found in projectData`);
             }
         }
         
