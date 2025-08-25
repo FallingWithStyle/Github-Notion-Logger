@@ -845,24 +845,38 @@
         
         // Update status
         function updateStatus(projectName, status) {
-            console.log(`🔄 Updating status for ${projectName} to: ${status}`);
+            console.log(`🔄 === UPDATE STATUS FUNCTION CALLED ===`);
+            console.log(`🔄 Parameters: projectName="${projectName}", status="${status}"`);
+            console.log(`🔄 projectData length: ${projectData.length}`);
+            console.log(`🔄 userAnswers keys:`, Object.keys(userAnswers));
             
             const project = projectData.find(p => p.name === projectName);
+            console.log(`🔄 Found project:`, project);
+            
             if (project) {
+                console.log(`🔄 Before update - project.status: ${project.status}`);
                 project.status = status;
-                console.log(`✅ Set project.status to: ${status}`);
+                console.log(`✅ After update - project.status: ${project.status}`);
                 
                 // Also save status in userAnswers for persistence
                 if (!userAnswers[projectName]) {
                     userAnswers[projectName] = {};
+                    console.log(`🔄 Created new userAnswers entry for ${projectName}`);
                 }
+                console.log(`🔄 Before update - userAnswers[${projectName}]:`, userAnswers[projectName]);
                 userAnswers[projectName].status = status;
-                console.log(`✅ Set userAnswers[${projectName}].status to: ${status}`);
+                console.log(`✅ After update - userAnswers[${projectName}]:`, userAnswers[projectName]);
                 
+                console.log(`🔄 About to call saveData()...`);
                 saveData();
                 console.log(`💾 Called saveData() for status update`);
+                
+                // Verify the update worked
+                console.log(`🔄 Verification - project.status: ${project.status}`);
+                console.log(`🔄 Verification - userAnswers[${projectName}].status: ${userAnswers[projectName].status}`);
             } else {
                 console.error(`❌ Project ${projectName} not found in projectData`);
+                console.error(`❌ Available projects:`, projectData.map(p => p.name));
             }
         }
         
