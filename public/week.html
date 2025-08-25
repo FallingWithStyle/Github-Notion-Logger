@@ -1159,6 +1159,10 @@
         
         // Generate weekly plan with priority scoring and intelligent recommendations
         function generateWeeklyPlan() {
+            console.log('🔄 Starting weekly plan generation...');
+            console.log('📊 Project data:', projectData);
+            console.log('💭 User answers:', userAnswers);
+            
             // Check if all projects have been rated
             const unratedProjects = projectData.filter(project => {
                 const answers = userAnswers[project.name] || {};
@@ -1228,6 +1232,12 @@
             
             // Generate project recommendations
             const recommendations = generateProjectRecommendations(projectsWithScores, focusCategory);
+            
+            // Validate recommendations before proceeding
+            if (!recommendations || !recommendations.mainFocus || !recommendations.sideFocus || !recommendations.tangent) {
+                showError('Failed to generate project recommendations. Please check your project data.');
+                return;
+            }
             
             // Build the enhanced plan HTML
             let planHTML = `
@@ -1332,9 +1342,23 @@
         
         // Generate project recommendations
         function generateProjectRecommendations(projectsWithScores, focusCategory) {
+            // Ensure we have projects to work with
+            if (!projectsWithScores || projectsWithScores.length === 0) {
+                return {
+                    mainFocus: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0 },
+                    sideFocus: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0 },
+                    tangent: { name: 'No projects available', priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0 }
+                };
+            }
+            
             // Main focus: highest priority project from focus category
             const focusCategoryProjects = projectsWithScores.filter(p => p.category === focusCategory);
-            const mainFocus = focusCategoryProjects.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+            let mainFocus = focusCategoryProjects.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+            
+            // Fallback if no projects in focus category
+            if (!mainFocus) {
+                mainFocus = projectsWithScores.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+            }
             
             // Side focus: second highest priority from focus category, or highest from other categories
             let sideFocus = focusCategoryProjects[1];
@@ -1343,16 +1367,50 @@
                 sideFocus = otherCategories.sort((a, b) => b.priorityScore - a.priorityScore)[0];
             }
             
+            // Fallback if still no side focus
+            if (!sideFocus) {
+                sideFocus = projectsWithScores.sort((a, b) => b.priorityScore - a.priorityScore)[1] || mainFocus;
+            }
+            
             // Tangent: high interest (heart score) project with low progress (planning/unknown status)
+            let tangent = null;
             const tangentCandidates = projectsWithScores.filter(p => 
                 p.heartScore >= 4 && 
                 ['planning', 'unknown'].includes(p.status)
             );
-            const tangent = tangentCandidates.length > 0 
-                ? tangentCandidates.sort((a, b) => b.heartScore - a.heartScore)[0]
-                : projectsWithScores.filter(p => p.heartScore >= 4).sort((a, b) => b.heartScore - a.heartScore)[0];
             
-            return { mainFocus, sideFocus, tangent };
+            if (tangentCandidates.length > 0) {
+                tangent = tangentCandidates.sort((a, b) => b.heartScore - a.heartScore)[0];
+            } else {
+                // Fallback: find any high heart score project
+                const highHeartProjects = projectsWithScores.filter(p => p.heartScore >= 4);
+                if (highHeartProjects.length > 0) {
+                    tangent = highHeartProjects.sort((a, b) => b.heartScore - a.heartScore)[0];
+                } else {
+                    // Final fallback: just pick any project
+                    tangent = projectsWithScores[0];
+                }
+            }
+            
+            // Ensure all recommendations have valid data
+            const ensureValidProject = (project, fallbackName) => {
+                if (!project) {
+                    return { name: fallbackName, priorityScore: 0, status: 'unknown', headScore: 0, heartScore: 0 };
+                }
+                return {
+                    name: project.name || fallbackName,
+                    priorityScore: project.priorityScore || 0,
+                    status: project.status || 'unknown',
+                    headScore: project.headScore || 0,
+                    heartScore: project.heartScore || 0
+                };
+            };
+            
+            return {
+                mainFocus: ensureValidProject(mainFocus, 'Main Focus Project'),
+                sideFocus: ensureValidProject(sideFocus, 'Side Focus Project'),
+                tangent: ensureValidProject(tangent, 'Tangent Project')
+            };
         }
         
         // Save weekly plan
