@@ -485,9 +485,11 @@
                         if (savedProject) {
                             if (savedProject.category) {
                                 project.category = savedProject.category;
+                                console.log(`📝 Applied category "${savedProject.category}" to ${project.name}`);
                             }
                             if (savedProject.status) {
                                 project.status = savedProject.status;
+                                console.log(`📝 Applied status "${savedProject.status}" to ${project.name}`);
                             }
                         }
                     });
@@ -537,6 +539,13 @@
             
             const project = projectData[currentProjectIndex];
             const container = document.getElementById('project-container');
+            
+            // Debug logging for current project
+            console.log(`🎯 Showing project: ${project.name}`);
+            console.log(`   - Project status: ${project.status}`);
+            console.log(`   - User answer status: ${getAnswer(project.name, 'status')}`);
+            console.log(`   - Project category: ${project.category}`);
+            console.log(`   - User answer category: ${getAnswer(project.name, 'category')}`);
             
             const lastActivity = project.lastActivity ? new Date(project.lastActivity).toLocaleDateString() : 'Unknown';
             
