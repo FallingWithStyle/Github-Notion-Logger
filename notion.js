@@ -53,9 +53,9 @@ async function ensureWeeklyPlanningDatabase() {
   console.log('   - NOTION_PARENT_PAGE_ID:', process.env.NOTION_PARENT_PAGE_ID || 'NOT SET');
   console.log('   - NOTION_DATABASE_ID:', process.env.NOTION_DATABASE_ID || 'NOT SET');
   
+  // Always check the database schema, even if we have a cached ID
   if (weeklyPlanningDatabaseId) {
-    console.log('🔄 Using existing database ID:', weeklyPlanningDatabaseId);
-    // Check if the existing database has the correct schema
+    console.log('🔄 Checking existing database schema for ID:', weeklyPlanningDatabaseId);
     try {
       const db = await notion.databases.retrieve({ database_id: weeklyPlanningDatabaseId });
       console.log('🔄 Existing database properties:', Object.keys(db.properties));
@@ -75,18 +75,16 @@ async function ensureWeeklyPlanningDatabase() {
         });
         
         console.log('✅ Database schema updated successfully');
+        return weeklyPlanningDatabaseId;
       } else {
         console.log('✅ Database schema is up to date');
+        return weeklyPlanningDatabaseId;
       }
     } catch (error) {
       console.error('❌ Error checking/updating database schema:', error);
       // If there's an error, try to recreate the database
       console.log('🔄 Attempting to recreate database...');
       weeklyPlanningDatabaseId = null;
-    }
-    
-    if (weeklyPlanningDatabaseId) {
-      return weeklyPlanningDatabaseId;
     }
   }
 
