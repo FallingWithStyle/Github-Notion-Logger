@@ -393,6 +393,7 @@
         <button id="save-plan-btn" class="btn" disabled>💾 Save Plan</button>
         <button id="sync-notion-btn" class="btn" disabled>🔄 Sync to Notion</button>
         <button id="load-plans-btn" class="btn">📂 Load Previous Plans</button>
+        <button id="debug-btn" class="btn" onclick="debugStatus()">🐛 Debug Status</button>
         <div class="status" id="status">Ready to load project data</div>
     </div>
     
@@ -435,6 +436,10 @@
                     categories = data.categories || [];
                     currentProjectIndex = data.currentProjectIndex || 0;
                     console.log('📥 Loaded saved data from localStorage');
+                    console.log('🔍 Raw localStorage data:', data);
+                    console.log('🔍 userAnswers keys:', Object.keys(userAnswers));
+                } else {
+                    console.log('📥 No saved data found in localStorage');
                 }
             } catch (error) {
                 console.warn('⚠️ Could not load saved data:', error);
@@ -909,6 +914,33 @@
         // Get user answer
         function getAnswer(projectName, question) {
             return userAnswers[projectName]?.[question] || '';
+        }
+        
+        // Debug function to test status functionality
+        function debugStatus() {
+            console.log('🐛 === DEBUG STATUS FUNCTION ===');
+            console.log('Current projectData:', projectData);
+            console.log('Current userAnswers:', userAnswers);
+            console.log('Current project index:', currentProjectIndex);
+            
+            if (currentProjectIndex < projectData.length) {
+                const currentProject = projectData[currentProjectIndex];
+                console.log('Current project:', currentProject);
+                console.log('Current project status:', currentProject.status);
+                console.log('Current project userAnswers:', userAnswers[currentProject.name]);
+                
+                // Try to manually set a status
+                console.log('🔄 Manually setting status to "active" for testing...');
+                updateStatus(currentProject.name, 'active');
+                
+                // Check if it was set
+                setTimeout(() => {
+                    console.log('After manual update:');
+                    console.log('Project status:', currentProject.status);
+                    console.log('UserAnswers status:', userAnswers[currentProject.name]?.status);
+                    console.log('localStorage content:', localStorage.getItem('weeklyPlanningData'));
+                }, 100);
+            }
         }
         
         // Generate weekly plan
