@@ -374,6 +374,35 @@
             color: #27ae60;
             font-size: 18px;
         }
+        
+        /* Spinning animation for sync button */
+        .btn.spinning {
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .btn.spinning::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn.spinning .sync-text {
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -391,7 +420,7 @@
         <button id="refresh-btn" class="btn">🔄 Refresh Data</button>
         <button id="generate-plan-btn" class="btn" disabled>📋 Generate Weekly Plan</button>
         <button id="save-plan-btn" class="btn" disabled>💾 Save Plan</button>
-        <button id="sync-notion-btn" class="btn" disabled>🔄 Sync to Notion</button>
+        <button id="sync-notion-btn" class="btn" disabled><span class="sync-text">🔄 Sync to Notion</span></button>
         <button id="load-plans-btn" class="btn">📂 Load Previous Plans</button>
         <button id="debug-btn" class="btn" onclick="debugStatus()">🐛 Debug Status</button>
         <div class="status" id="status">Ready to load project data</div>
@@ -1024,7 +1053,8 @@
             planContent.innerHTML = planHTML;
             document.getElementById('weekly-plan').classList.remove('hidden');
             document.getElementById('save-plan-btn').disabled = false;
-            document.getElementById('sync-notion-btn').disabled = false;
+                                document.getElementById('sync-notion-btn').disabled = false;
+                    document.getElementById('sync-notion-btn').querySelector('.sync-text').textContent = '🔄 Sync to Notion';
             
             updateStatus('Weekly plan generated! Review, save, and sync to Notion as needed.');
         }
@@ -1074,7 +1104,15 @@
         
         // Sync weekly plan to Notion
         async function syncToNotion() {
+            const syncBtn = document.getElementById('sync-notion-btn');
+            const syncText = syncBtn.querySelector('.sync-text');
+            
             try {
+                // Start spinning animation
+                syncBtn.classList.add('spinning');
+                syncBtn.disabled = true;
+                updateStatus('🔄 Syncing to Notion...');
+                
                 const weekStart = new Date().toISOString().split('T')[0]; // Use UTC date for consistency
                 const planData = {
                     projects: projectData,
@@ -1099,11 +1137,13 @@
                 
                 if (result.success) {
                     updateStatus(`✅ Synced ${result.summary.success} projects to Notion! ${result.summary.errors > 0 ? `${result.summary.errors} errors.` : ''}`);
-                    document.getElementById('sync-notion-btn').classList.add('success');
-                    document.getElementById('sync-notion-btn').textContent = '✅ Synced!';
+                    syncBtn.classList.remove('spinning');
+                    syncBtn.classList.add('success');
+                    syncText.textContent = '✅ Synced!';
                     setTimeout(() => {
-                        document.getElementById('sync-notion-btn').classList.remove('success');
-                        document.getElementById('sync-notion-btn').textContent = '🔄 Sync to Notion';
+                        syncBtn.classList.remove('success');
+                        syncText.textContent = '🔄 Sync to Notion';
+                        syncBtn.disabled = false;
                     }, 3000);
                 } else {
                     throw new Error(result.error || 'Failed to sync to Notion');
@@ -1112,6 +1152,9 @@
             } catch (error) {
                 console.error('Error syncing to Notion:', error);
                 showError(`Failed to sync to Notion: ${error.message}`);
+                // Stop spinning and restore button
+                syncBtn.classList.remove('spinning');
+                syncBtn.disabled = false;
             }
         }
         
