@@ -425,7 +425,7 @@
             opacity: 0.9;
         }
         
-        .tangent-note {
+        .tangent-note, .focus-note {
             font-style: italic;
             opacity: 0.8;
             font-size: 14px;
@@ -1254,12 +1254,14 @@
                             <h5>🎯 Main Focus: ${recommendations.mainFocus.name}</h5>
                             <p>Priority Score: ${recommendations.mainFocus.priorityScore}/10 | Status: ${getStatusDisplay(recommendations.mainFocus.status)}</p>
                             <p>${recommendations.mainFocus.headScore}/5 Head + ${recommendations.mainFocus.heartScore}/5 Heart</p>
+                            <p class="focus-note">Active or planning projects only - ready for immediate work</p>
                         </div>
                         
                         <div class="recommendation side-focus">
                             <h5>⚡ Side Focus: ${recommendations.sideFocus.name}</h5>
                             <p>Priority Score: ${recommendations.sideFocus.priorityScore}/10 | Status: ${getStatusDisplay(recommendations.sideFocus.status)}</p>
                             <p>${recommendations.sideFocus.headScore}/5 Head + ${recommendations.sideFocus.heartScore}/5 Heart</p>
+                            <p class="focus-note">Active or planning projects only - secondary priority</p>
                         </div>
                         
                         <div class="recommendation tangent">
@@ -1367,41 +1369,60 @@
             // Track selected projects to avoid duplicates
             const selectedProjects = [];
             
-            // Main focus: highest priority project from focus category
-            const focusCategoryProjects = projectsWithScores.filter(p => p.category === focusCategory);
+            // Define status categories for filtering
+            const actionableStatuses = ['active', 'planning']; // Projects that can be actively worked on
+            const ideationStatuses = ['planning', 'unknown']; // Projects suitable for tangents
+            const excludedStatuses = ['done', 'released', 'abandoned']; // Projects to exclude from main focus
+            
+            // Main focus: highest priority project from focus category (only actionable projects)
+            const focusCategoryProjects = projectsWithScores.filter(p => 
+                p.category === focusCategory && 
+                actionableStatuses.includes(p.status)
+            );
             let mainFocus = focusCategoryProjects.sort((a, b) => b.priorityScore - a.priorityScore)[0];
             
-            // Fallback if no projects in focus category
+            // Fallback if no actionable projects in focus category - look for any actionable project
             if (!mainFocus) {
-                mainFocus = projectsWithScores.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+                const actionableProjects = projectsWithScores.filter(p => actionableStatuses.includes(p.status));
+                mainFocus = actionableProjects.sort((a, b) => b.priorityScore - a.priorityScore)[0];
             }
             
             if (mainFocus) {
                 selectedProjects.push(mainFocus);
             }
             
-            // Side focus: second highest priority from focus category, or highest from other categories
-            let sideFocus = findNextBestProject(focusCategoryProjects, selectedProjects, 'priorityScore');
-            
-            if (!sideFocus) {
-                const otherCategories = projectsWithScores.filter(p => p.category !== focusCategory);
-                sideFocus = findNextBestProject(otherCategories, selectedProjects, 'priorityScore');
-            }
-            
-            // Fallback if still no side focus
-            if (!sideFocus) {
-                sideFocus = findNextBestProject(projectsWithScores, selectedProjects, 'priorityScore');
+            // Side focus: second highest priority actionable project, excluding main focus
+            let sideFocus = null;
+            if (mainFocus) {
+                // First try to find another actionable project from focus category
+                sideFocus = findNextBestProject(focusCategoryProjects, selectedProjects, 'priorityScore');
+                
+                // If none in focus category, look in other categories
+                if (!sideFocus) {
+                    const otherCategoriesActionable = projectsWithScores.filter(p => 
+                        p.category !== focusCategory && 
+                        actionableStatuses.includes(p.status)
+                    );
+                    sideFocus = findNextBestProject(otherCategoriesActionable, selectedProjects, 'priorityScore');
+                }
+                
+                // Final fallback: any actionable project not yet selected
+                if (!sideFocus) {
+                    const allActionable = projectsWithScores.filter(p => actionableStatuses.includes(p.status));
+                    sideFocus = findNextBestProject(allActionable, selectedProjects, 'priorityScore');
+                }
             }
             
             if (sideFocus) {
                 selectedProjects.push(sideFocus);
             }
             
-            // Tangent: high interest (heart score) project with low progress, excluding already selected
+            // Tangent: high interest project with ideation status (planning/unknown), excluding already selected
             let tangent = null;
             const tangentCandidates = projectsWithScores.filter(p => 
                 p.heartScore >= 4 && 
-                ['planning', 'unknown'].includes(p.status)
+                ideationStatuses.includes(p.status) &&
+                !excludedStatuses.includes(p.status)
             );
             
             if (tangentCandidates.length > 0) {
@@ -1409,14 +1430,21 @@
             }
             
             if (!tangent) {
-                // Fallback: find any high heart score project, excluding selected
-                const highHeartProjects = projectsWithScores.filter(p => p.heartScore >= 4);
-                tangent = findNextBestProject(highHeartProjects, selectedProjects, 'heartScore');
+                // Fallback: find any high heart score project that's not excluded, excluding selected
+                const highHeartIdeation = projectsWithScores.filter(p => 
+                    p.heartScore >= 4 && 
+                    !excludedStatuses.includes(p.status)
+                );
+                tangent = findNextBestProject(highHeartIdeation, selectedProjects, 'heartScore');
             }
             
             if (!tangent) {
-                // Final fallback: pick any project not already selected
-                tangent = findNextBestProject(projectsWithScores, selectedProjects);
+                // Final fallback: pick any ideation project not already selected and not excluded
+                const availableIdeation = projectsWithScores.filter(p => 
+                    !excludedStatuses.includes(p.status) &&
+                    !selectedProjects.some(selected => selected.name === p.name)
+                );
+                tangent = availableIdeation[0] || null;
             }
             
             // Ensure all recommendations have valid data
