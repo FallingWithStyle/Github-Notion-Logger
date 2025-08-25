@@ -1351,6 +1351,22 @@
                 };
             }
             
+            // Helper function to find next best project excluding already selected ones
+            const findNextBestProject = (candidates, excludeProjects, sortBy = 'priorityScore') => {
+                const available = candidates.filter(p => !excludeProjects.some(exclude => exclude.name === p.name));
+                if (available.length === 0) return null;
+                
+                if (sortBy === 'priorityScore') {
+                    return available.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+                } else if (sortBy === 'heartScore') {
+                    return available.sort((a, b) => b.heartScore - a.heartScore)[0];
+                }
+                return available[0];
+            };
+            
+            // Track selected projects to avoid duplicates
+            const selectedProjects = [];
+            
             // Main focus: highest priority project from focus category
             const focusCategoryProjects = projectsWithScores.filter(p => p.category === focusCategory);
             let mainFocus = focusCategoryProjects.sort((a, b) => b.priorityScore - a.priorityScore)[0];
@@ -1360,19 +1376,28 @@
                 mainFocus = projectsWithScores.sort((a, b) => b.priorityScore - a.priorityScore)[0];
             }
             
+            if (mainFocus) {
+                selectedProjects.push(mainFocus);
+            }
+            
             // Side focus: second highest priority from focus category, or highest from other categories
-            let sideFocus = focusCategoryProjects[1];
+            let sideFocus = findNextBestProject(focusCategoryProjects, selectedProjects, 'priorityScore');
+            
             if (!sideFocus) {
                 const otherCategories = projectsWithScores.filter(p => p.category !== focusCategory);
-                sideFocus = otherCategories.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+                sideFocus = findNextBestProject(otherCategories, selectedProjects, 'priorityScore');
             }
             
             // Fallback if still no side focus
             if (!sideFocus) {
-                sideFocus = projectsWithScores.sort((a, b) => b.priorityScore - a.priorityScore)[1] || mainFocus;
+                sideFocus = findNextBestProject(projectsWithScores, selectedProjects, 'priorityScore');
             }
             
-            // Tangent: high interest (heart score) project with low progress (planning/unknown status)
+            if (sideFocus) {
+                selectedProjects.push(sideFocus);
+            }
+            
+            // Tangent: high interest (heart score) project with low progress, excluding already selected
             let tangent = null;
             const tangentCandidates = projectsWithScores.filter(p => 
                 p.heartScore >= 4 && 
@@ -1380,16 +1405,18 @@
             );
             
             if (tangentCandidates.length > 0) {
-                tangent = tangentCandidates.sort((a, b) => b.heartScore - a.heartScore)[0];
-            } else {
-                // Fallback: find any high heart score project
+                tangent = findNextBestProject(tangentCandidates, selectedProjects, 'heartScore');
+            }
+            
+            if (!tangent) {
+                // Fallback: find any high heart score project, excluding selected
                 const highHeartProjects = projectsWithScores.filter(p => p.heartScore >= 4);
-                if (highHeartProjects.length > 0) {
-                    tangent = highHeartProjects.sort((a, b) => b.heartScore - a.heartScore)[0];
-                } else {
-                    // Final fallback: just pick any project
-                    tangent = projectsWithScores[0];
-                }
+                tangent = findNextBestProject(highHeartProjects, selectedProjects, 'heartScore');
+            }
+            
+            if (!tangent) {
+                // Final fallback: pick any project not already selected
+                tangent = findNextBestProject(projectsWithScores, selectedProjects);
             }
             
             // Ensure all recommendations have valid data
