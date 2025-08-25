@@ -55,7 +55,39 @@ async function ensureWeeklyPlanningDatabase() {
   
   if (weeklyPlanningDatabaseId) {
     console.log('🔄 Using existing database ID:', weeklyPlanningDatabaseId);
-    return weeklyPlanningDatabaseId;
+    // Check if the existing database has the correct schema
+    try {
+      const db = await notion.databases.retrieve({ database_id: weeklyPlanningDatabaseId });
+      console.log('🔄 Existing database properties:', Object.keys(db.properties));
+      
+      // Check if all required properties exist
+      const requiredProps = ['Project Name', 'Week Start', 'Head', 'Heart', 'Category', 'Status', 'Notes', 'Created', 'Last Updated'];
+      const missingProps = requiredProps.filter(prop => !db.properties[prop]);
+      
+      if (missingProps.length > 0) {
+        console.log('⚠️ Database schema is outdated. Missing properties:', missingProps);
+        console.log('🔄 Updating database schema...');
+        
+        // Update the database schema
+        await notion.databases.update({
+          database_id: weeklyPlanningDatabaseId,
+          properties: WEEKLY_PLANNING_SCHEMA
+        });
+        
+        console.log('✅ Database schema updated successfully');
+      } else {
+        console.log('✅ Database schema is up to date');
+      }
+    } catch (error) {
+      console.error('❌ Error checking/updating database schema:', error);
+      // If there's an error, try to recreate the database
+      console.log('🔄 Attempting to recreate database...');
+      weeklyPlanningDatabaseId = null;
+    }
+    
+    if (weeklyPlanningDatabaseId) {
+      return weeklyPlanningDatabaseId;
+    }
   }
 
   try {
