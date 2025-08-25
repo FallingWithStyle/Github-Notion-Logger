@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 const { logCommitsToNotion, addWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry } = require('./notion');
+const timezoneConfig = require('./timezone-config');
 
 dotenv.config();
 const app = express();
@@ -188,7 +189,8 @@ async function updateCommitLog(newCommits, repoName) {
       if (isNaN(parsed.getTime())) {
         return;
       }
-      const dateKey = parsed.toISOString().split('T')[0];
+      // Use timezone-aware date calculation with cutoff logic
+      const dateKey = timezoneConfig.getEffectiveDate(rawDate);
       if (!commitsByDate[dateKey]) {
         commitsByDate[dateKey] = {};
       }
@@ -404,7 +406,7 @@ app.get('/api/fetch-notion-data', asyncHandler(async (req, res) => {
               if (!isNaN(last.getTime())) {
                 // Start a bit earlier to bridge any timezone/out-of-order commits
                 last.setDate(last.getDate() - overlapDays);
-                since = last.toISOString().split('T')[0];
+                since = last.toISOString().split('T')[0]; // Use UTC date for consistency
               }
             }
           }
@@ -450,7 +452,8 @@ app.get('/api/fetch-notion-data', asyncHandler(async (req, res) => {
           const date = page.properties["Date"]?.date?.start;
           
           if (projectName && date) {
-            const dateKey = date.split('T')[0];
+            // Parse the date and use timezone-aware approach
+            const dateKey = timezoneConfig.getEffectiveDate(date);
             
             if (!commitData[dateKey]) {
               commitData[dateKey] = {};
@@ -566,7 +569,7 @@ app.get('/api/weekly-data', asyncHandler(async (req, res) => {
     const today = new Date();
     const twentyEightDaysAgo = new Date(today);
     twentyEightDaysAgo.setDate(today.getDate() - 28);
-    const startDate = twentyEightDaysAgo.toISOString().split('T')[0];
+    const startDate = twentyEightDaysAgo.toISOString().split('T')[0]; // Use UTC date for consistency
     
     // Filter data to last 28 days
     const recentData = commitLog.filter(day => day.date >= startDate);
@@ -617,7 +620,7 @@ app.get('/api/weekly-data', asyncHandler(async (req, res) => {
       categories: Array.from(categories),
       dateRange: {
         start: startDate,
-        end: today.toISOString().split('T')[0]
+        end: today.toISOString().split('T')[0] // Use UTC date for consistency
       }
     });
     
@@ -729,17 +732,17 @@ app.post('/api/weekly-plan/sync-notion', asyncHandler(async (req, res) => {
     for (const project of projects) {
       const answers = userAnswers[project.name] || {};
       
-      if (answers.inspiration || answers.value || answers.urgency) {
+      if (answers.head || answers.heart) {
         try {
-          const notionEntry = await addWeeklyPlanningEntry({
-            projectName: project.name,
-            weekStart,
-            inspiration: answers.inspiration,
-            value: answers.value,
-            urgency: answers.urgency,
-            category: project.category,
-            notes: `Weekly planning data for ${project.name}`
-          });
+                              const notionEntry = await addWeeklyPlanningEntry({
+                        projectName: project.name,
+                        weekStart,
+                        head: answers.head,
+                        heart: answers.heart,
+                        category: project.category,
+                        status: project.status,
+                        notes: `Weekly planning data for ${project.name}`
+                    });
           
           syncResults.push({
             project: project.name,
@@ -806,6 +809,69 @@ app.get('/api/weekly-plan/notion', asyncHandler(async (req, res) => {
     });
   }
 }));
+
+// Timezone configuration endpoints
+app.get('/api/timezone-config', (req, res) => {
+  try {
+    const config = timezoneConfig.getConfig();
+    const timezoneInfo = timezoneConfig.getTimezoneInfo();
+    const availableTimezones = timezoneConfig.getAvailableTimezones();
+    
+    res.json({
+      success: true,
+      config,
+      timezoneInfo,
+      availableTimezones
+    });
+  } catch (error) {
+    console.error('❌ Error getting timezone config:', error);
+    res.status(500).json({ 
+      error: 'Error getting timezone configuration',
+      details: error.message 
+    });
+  }
+});
+
+app.post('/api/timezone-config', (req, res) => {
+  try {
+    const { timezone, cutoffHour, cutoffMinute } = req.body;
+    
+    if (timezone && !timezoneConfig.getAvailableTimezones().find(tz => tz.value === timezone)) {
+      return res.status(400).json({ error: 'Invalid timezone' });
+    }
+    
+    if (cutoffHour !== undefined && (cutoffHour < 0 || cutoffHour > 23)) {
+      return res.status(400).json({ error: 'Cutoff hour must be between 0 and 23' });
+    }
+    
+    if (cutoffMinute !== undefined && (cutoffMinute < 0 || cutoffMinute > 59)) {
+      return res.status(400).json({ error: 'Cutoff minute must be between 0 and 59' });
+    }
+    
+    const updateData = {};
+    if (timezone !== undefined) updateData.timezone = timezone;
+    if (cutoffHour !== undefined) updateData.cutoffHour = parseInt(cutoffHour);
+    if (cutoffMinute !== undefined) updateData.cutoffMinute = parseInt(cutoffMinute);
+    
+    const success = timezoneConfig.updateConfig(updateData);
+    
+    if (success) {
+      res.json({
+        success: true,
+        message: 'Timezone configuration updated',
+        config: timezoneConfig.getConfig()
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to save configuration' });
+    }
+  } catch (error) {
+    console.error('❌ Error updating timezone config:', error);
+    res.status(500).json({ 
+      error: 'Error updating timezone configuration',
+      details: error.message 
+    });
+  }
+});
 
 // Global error handler
 app.use((error, req, res, next) => {

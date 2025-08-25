@@ -1,4 +1,5 @@
 const { Client } = require('@notionhq/client');
+const timezoneConfig = require('./timezone-config');
 require('dotenv').config();
 
 // Validate required environment variables
@@ -34,10 +35,10 @@ const CACHE_CONFIG = {
 const WEEKLY_PLANNING_SCHEMA = {
   "Project Name": { title: {} },
   "Week Start": { date: {} },
-  "Current Inspiration": { number: {} },
-  "Practical Value": { number: {} },
-  "Urgency": { number: {} },
+  "Head": { number: {} },
+  "Heart": { number: {} },
   "Category": { select: {} },
+  "Status": { select: {} },
   "Notes": { rich_text: {} },
   "Created": { date: {} },
   "Last Updated": { date: {} }
@@ -89,7 +90,7 @@ async function addWeeklyPlanningEntry(projectData) {
   try {
     await ensureWeeklyPlanningDatabase();
     
-    const { projectName, weekStart, inspiration, value, urgency, category, notes } = projectData;
+    const { projectName, weekStart, head, heart, category, status, notes } = projectData;
     
     const entry = {
       parent: { database_id: weeklyPlanningDatabaseId },
@@ -100,17 +101,17 @@ async function addWeeklyPlanningEntry(projectData) {
         "Week Start": {
           date: { start: weekStart }
         },
-        "Current Inspiration": {
-          number: parseInt(inspiration) || null
+        "Head": {
+          number: parseInt(head) || null
         },
-        "Practical Value": {
-          number: parseInt(value) || null
-        },
-        "Urgency": {
-          number: parseInt(urgency) || null
+        "Heart": {
+          number: parseInt(heart) || null
         },
         "Category": {
           select: category ? { name: category } : null
+        },
+        "Status": {
+          select: status ? { name: status } : null
         },
         "Notes": {
           rich_text: notes ? [{ type: "text", text: { content: notes } }] : []
@@ -161,10 +162,10 @@ async function getWeeklyPlanningData(weekStart = null) {
       id: page.id,
       projectName: page.properties["Project Name"]?.title?.[0]?.text?.content || "",
       weekStart: page.properties["Week Start"]?.date?.start || "",
-      inspiration: page.properties["Current Inspiration"]?.number || null,
-      value: page.properties["Practical Value"]?.number || null,
-      urgency: page.properties["Urgency"]?.number || null,
+      head: page.properties["Head"]?.number || null,
+      heart: page.properties["Heart"]?.number || null,
       category: page.properties["Category"]?.select?.name || "",
+      status: page.properties["Status"]?.select?.name || "",
       notes: page.properties["Notes"]?.rich_text?.[0]?.text?.content || "",
       created: page.properties["Created"]?.date?.start || "",
       lastUpdated: page.properties["Last Updated"]?.date?.start || ""
@@ -183,17 +184,17 @@ async function updateWeeklyPlanningEntry(entryId, updates) {
   try {
     const properties = {};
     
-    if (updates.inspiration !== undefined) {
-      properties["Current Inspiration"] = { number: parseInt(updates.inspiration) || null };
+    if (updates.head !== undefined) {
+      properties["Head"] = { number: parseInt(updates.head) || null };
     }
-    if (updates.value !== undefined) {
-      properties["Practical Value"] = { number: parseInt(updates.value) || null };
-    }
-    if (updates.urgency !== undefined) {
-      properties["Urgency"] = { number: parseInt(updates.urgency) || null };
+    if (updates.heart !== undefined) {
+      properties["Heart"] = { number: parseInt(updates.heart) || null };
     }
     if (updates.category !== undefined) {
       properties["Category"] = { select: updates.category ? { name: updates.category } : null };
+    }
+    if (updates.status !== undefined) {
+      properties["Status"] = { select: updates.status ? { name: updates.status } : null };
     }
     if (updates.notes !== undefined) {
       properties["Notes"] = { rich_text: updates.notes ? [{ type: "text", text: { content: updates.notes } }] : [] };
@@ -480,7 +481,8 @@ async function createCommitPage(commit, repoName) {
       title: [{ text: { content: repoName.split('/').pop() } }],
     },
     "Date": {
-      date: { start: new Date(commit.timestamp).toISOString() },
+      // Store the effective date (with timezone cutoff logic applied)
+      date: { start: timezoneConfig.getEffectiveDate(commit.timestamp) },
     }
   };
   if (schemaCache.hasShaProperty && commit.id) {

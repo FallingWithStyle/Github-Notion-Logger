@@ -167,7 +167,8 @@
         }
         
         .category-selector select,
-        .category-selector input {
+        .category-selector input,
+        .status-selector select {
             width: 100%;
             max-width: 300px;
             padding: 12px 16px;
@@ -535,10 +536,24 @@
                     </div>
                 </div>
                 
+                <div class="status-selector">
+                    <label for="status-${project.name}">Status:</label>
+                    <select id="status-${project.name}" onchange="updateStatus('${project.name}', this.value)">
+                        <option value="">Select a status...</option>
+                        <option value="idea" ${project.status === 'idea' ? 'selected' : ''}>💡 Idea - Just a spark or rough concept</option>
+                        <option value="parking-lot" ${project.status === 'parking-lot' ? 'selected' : ''}>🅿️ Parking Lot - Not in current cycle</option>
+                        <option value="planning" ${project.status === 'planning' ? 'selected' : ''}>📝 Planning - Actively shaping into something concrete</option>
+                        <option value="active" ${project.status === 'active' ? 'selected' : ''}>🚀 Active - Currently being worked on</option>
+                        <option value="paused" ${project.status === 'paused' ? 'selected' : ''}>⏸️ Paused - Work stopped, likely to resume later</option>
+                        <option value="released" ${project.status === 'released' ? 'selected' : ''}>🌍 Released - Publicly launched in some form</option>
+                        <option value="done" ${project.status === 'done' ? 'selected' : ''}>✅ Done/Retired - Completed or abandoned</option>
+                    </select>
+                </div>
+                
                 <div class="questions">
                     <div class="question">
-                        <label>Current Inspiration (changes weekly):</label>
-                        <div class="rating-bubbles" data-question="inspiration" data-project="${project.name}">
+                        <label>🧠 Head - How logical is it to proceed now? (timing, external factors, other people):</label>
+                        <div class="rating-bubbles" data-question="head" data-project="${project.name}">
                             <div class="rating-bubble" data-rating="1">1</div>
                             <div class="rating-bubble" data-rating="2">2</div>
                             <div class="rating-bubble" data-rating="3">3</div>
@@ -552,23 +567,8 @@
                     </div>
                     
                     <div class="question">
-                        <label>Practical Value (generally stays the same):</label>
-                        <div class="rating-bubbles" data-question="value" data-project="${project.name}">
-                            <div class="rating-bubble" data-rating="1">1</div>
-                            <div class="rating-bubble" data-rating="2">2</div>
-                            <div class="rating-bubble" data-rating="3">3</div>
-                            <div class="rating-bubble" data-rating="4">4</div>
-                            <div class="rating-bubble" data-rating="5">5</div>
-                        </div>
-                        <div class="rating-labels">
-                            <span>Low</span>
-                            <span>High</span>
-                        </div>
-                    </div>
-                    
-                    <div class="question">
-                        <label>Urgency (generally stays the same):</label>
-                        <div class="rating-bubbles" data-question="urgency" data-project="${project.name}">
+                        <label>❤️ Heart - How excited are you about this project right now?:</label>
+                        <div class="rating-bubbles" data-question="heart" data-project="${project.name}">
                             <div class="rating-bubble" data-rating="1">1</div>
                             <div class="rating-bubble" data-rating="2">2</div>
                             <div class="rating-bubble" data-rating="3">3</div>
@@ -589,13 +589,19 @@
             `;
             
             container.classList.remove('hidden');
-            updateProgressIndicator();
             
-            // Set up rating bubble event listeners
+            // Set up rating bubble event listeners first
             setupRatingBubbles();
             
             // Highlight previously selected ratings
             highlightSelectedRatings();
+            
+            // Now update progress indicator after everything is loaded
+            // Small delay to ensure DOM is fully updated
+            setTimeout(() => {
+                updateProgressIndicator();
+                console.log(`Project ${currentProjectIndex + 1} loaded, button state updated`);
+            }, 50);
         }
         
         // Show completion message
@@ -606,7 +612,7 @@
             // Check if all projects have been rated
             const unratedProjects = projectData.filter(project => {
                 const answers = userAnswers[project.name] || {};
-                return !answers.inspiration || !answers.value || !answers.urgency;
+                return !answers.head || !answers.heart;
             });
             
             if (unratedProjects.length === 0) {
@@ -628,7 +634,7 @@
             for (let i = 0; i < projectData.length; i++) {
                 const project = projectData[i];
                 const answers = userAnswers[project.name] || {};
-                if (!answers.inspiration || !answers.value || !answers.urgency) {
+                if (!answers.head || !answers.heart) {
                     currentProjectIndex = i;
                     document.getElementById('completion-message').classList.add('hidden');
                     showCurrentProject();
@@ -647,7 +653,7 @@
             const currentProject = projectData[currentProjectIndex];
             if (currentProject) {
                 const answers = userAnswers[currentProject.name] || {};
-                const isRated = answers.inspiration && answers.value && answers.urgency;
+                const isRated = answers.head && answers.heart;
                 
                 // Update navigation button text
                 const nextButton = document.querySelector('.navigation-buttons .btn:last-child');
@@ -658,6 +664,15 @@
                         nextButton.textContent = isRated ? 'Next →' : 'Rate All Questions First';
                     }
                     nextButton.disabled = !isRated;
+                    
+                    // Add visual feedback for button state
+                    if (isRated) {
+                        nextButton.style.opacity = '1';
+                        nextButton.style.cursor = 'pointer';
+                    } else {
+                        nextButton.style.opacity = '0.6';
+                        nextButton.style.cursor = 'not-allowed';
+                    }
                 }
             }
         }
@@ -680,6 +695,11 @@
             }
         }
         
+        // Force refresh button state (useful for debugging)
+        function refreshButtonState() {
+            updateProgressIndicator();
+        }
+        
         // Set up rating bubble event listeners
         function setupRatingBubbles() {
             const ratingBubbles = document.querySelectorAll('.rating-bubble');
@@ -697,6 +717,9 @@
                     
                     // Update answer
                     updateAnswer(project, question, rating);
+                    
+                    // Update button state after rating change
+                    setTimeout(() => updateProgressIndicator(), 100);
                 });
             });
         }
@@ -706,7 +729,7 @@
             const currentProject = projectData[currentProjectIndex];
             if (!currentProject) return;
             
-            ['inspiration', 'value', 'urgency'].forEach(question => {
+            ['head', 'heart'].forEach(question => {
                 const answer = getAnswer(currentProject.name, question);
                 if (answer) {
                     const bubble = document.querySelector(`[data-question="${question}"][data-project="${currentProject.name}"] .rating-bubble[data-rating="${answer}"]`);
@@ -720,6 +743,20 @@
         // Get project color
         function getProjectColor(projectName) {
             return projectColors[projectName] || '🟦';
+        }
+        
+        // Get status display with emoji
+        function getStatusDisplay(status) {
+            const statusMap = {
+                'idea': '💡 Idea - Just a spark or rough concept',
+                'parking-lot': '🅿️ Parking Lot - Not in current cycle',
+                'planning': '📝 Planning - Actively shaping into something concrete',
+                'active': '🚀 Active - Currently being worked on',
+                'paused': '⏸️ Paused - Work stopped, likely to resume later',
+                'released': '🌍 Released - Publicly launched in some form',
+                'done': '✅ Done/Retired - Completed or abandoned'
+            };
+            return statusMap[status] || status;
         }
         
         // Update category
@@ -743,6 +780,22 @@
                     userAnswers[projectName] = {};
                 }
                 userAnswers[projectName].category = category;
+                
+                saveData();
+            }
+        }
+        
+        // Update status
+        function updateStatus(projectName, status) {
+            const project = projectData.find(p => p.name === projectName);
+            if (project) {
+                project.status = status;
+                
+                // Also save status in userAnswers for persistence
+                if (!userAnswers[projectName]) {
+                    userAnswers[projectName] = {};
+                }
+                userAnswers[projectName].status = status;
                 
                 saveData();
             }
@@ -803,7 +856,7 @@
             // Check if all projects have been rated
             const unratedProjects = projectData.filter(project => {
                 const answers = userAnswers[project.name] || {};
-                return !answers.inspiration || !answers.value || !answers.urgency;
+                return !answers.head || !answers.heart;
             });
             
             if (unratedProjects.length > 0) {
@@ -834,17 +887,17 @@
                             <div class="plan-project">
                                 <h4>${getProjectColor(project.name)} ${project.name}</h4>
                                 <div class="plan-details">
-                                    ${getAnswer(project.name, 'inspiration') ? `
-                                        <h5>Current Inspiration:</h5>
-                                        <p>Rating: ${getAnswer(project.name, 'inspiration')}/5</p>
+                                    ${project.status ? `
+                                        <h5>Status:</h5>
+                                        <p>${getStatusDisplay(project.status)}</p>
                                     ` : ''}
-                                    ${getAnswer(project.name, 'value') ? `
-                                        <h5>Practical Value:</h5>
-                                        <p>Rating: ${getAnswer(project.name, 'value')}/5</p>
+                                    ${getAnswer(project.name, 'head') ? `
+                                        <h5>Head Rating:</h5>
+                                        <p>Rating: ${getAnswer(project.name, 'head')}/5</p>
                                     ` : ''}
-                                    ${getAnswer(project.name, 'urgency') ? `
-                                        <h5>Urgency:</h5>
-                                        <p>Rating: ${getAnswer(project.name, 'urgency')}/5</p>
+                                    ${getAnswer(project.name, 'heart') ? `
+                                        <h5>Heart Rating:</h5>
+                                        <p>Rating: ${getAnswer(project.name, 'heart')}/5</p>
                                     ` : ''}
                                 </div>
                             </div>
@@ -864,7 +917,7 @@
         // Save weekly plan
         async function saveWeeklyPlan() {
             try {
-                const weekStart = new Date().toISOString().split('T')[0];
+                const weekStart = new Date().toISOString().split('T')[0]; // Use UTC date for consistency
                 const planData = {
                     projects: projectData,
                     userAnswers,
@@ -907,7 +960,7 @@
         // Sync weekly plan to Notion
         async function syncToNotion() {
             try {
-                const weekStart = new Date().toISOString().split('T')[0];
+                const weekStart = new Date().toISOString().split('T')[0]; // Use UTC date for consistency
                 const planData = {
                     projects: projectData,
                     userAnswers,

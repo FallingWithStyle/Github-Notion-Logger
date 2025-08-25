@@ -32,12 +32,20 @@ The app now includes a weekly planning feature at `/week` that helps you:
 1. Navigate to `/week` in your browser
 2. Review your project activity from the last 28 days
 3. Assign categories to projects (or create new ones)
-4. Rate each project on three dimensions:
-   - **Current Inspiration** (1-5, changes weekly)
-   - **Practical Value** (1-5, generally stays the same)
-   - **Urgency** (1-5, generally stays the same)
-5. Generate your weekly plan
-6. Save the plan locally and/or sync to Notion
+4. Assign a status to each project:
+   - **💡 Idea** - Just a spark or rough concept
+   - **🅿️ Parking Lot** - Not in current cycle of attention
+   - **📝 Planning** - Actively shaping into something concrete
+   - **🚀 Active** - Currently being worked on
+   - **⏸️ Paused** - Work stopped, likely to resume later
+   - **🌍 Released** - Publicly launched in some form
+   - **✅ Done/Retired** - Completed or abandoned
+
+5. Rate each project on two dimensions:
+   - **🧠 Head** (1-5) - How logical it is to proceed now (timing, external factors, other people)
+   - **❤️ Heart** (1-5) - How excited you are about this project right now
+6. Generate your weekly plan
+7. Save the plan locally and/or sync to Notion
 
 ### Notion Integration
 
@@ -50,9 +58,9 @@ The weekly planning data can be automatically synced to a dedicated Notion datab
 
 The Notion database includes:
 - Project Name, Week Start Date, Category
-- Current Inspiration Rating (1-5)
-- Practical Value Rating (1-5) 
-- Urgency Rating (1-5)
+- Status (7 lifecycle stages from Idea to Done)
+- Head Rating (1-5) - Logical factors for proceeding
+- Heart Rating (1-5) - Excitement and motivation level
 - Notes and timestamps
 
 ## API Endpoints
