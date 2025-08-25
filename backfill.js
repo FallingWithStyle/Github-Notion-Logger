@@ -406,7 +406,7 @@ async function processRepositoryBatch(owner, repositories, useLastCommit, months
   };
 }
 
-async function backfillCommits(months = 6, useLastCommit = false) {
+async function backfillCommits(months = 6, useLastCommit = false, processAllRepos = false) {
   const startTime = Date.now();
   let totalRecordsSearched = 0;
   let totalNewRecords = 0;
@@ -459,6 +459,20 @@ async function backfillCommits(months = 6, useLastCommit = false) {
       // Single repository mode
       console.log(`Processing single repository: ${owner}/${singleRepo}`);
       repositories = [{ name: singleRepo }];
+         } else if (processAllRepos) {
+       // All repositories mode
+       console.log(`Processing all repositories for ${owner}...`);
+       const allRepos = await getAllRepositories(owner);
+       totalApiCalls += allRepos.apiCalls;
+       repositories = allRepos.repos;
+       if (repositories.length === 0) {
+         console.log('No repositories found for processing.');
+         return;
+       }
+       console.log(`\nSelected ${repositories.length} repository(ies) for processing:`);
+       repositories.forEach(repo => {
+         console.log(`- ${owner}/${repo.name} ${repo.private ? '(private)' : '(public)'}`);
+       });
     } else {
       // Interactive selection mode
       const allRepos = await getAllRepositories(owner);
@@ -571,10 +585,16 @@ if (require.main === module) {
   let months = 6; // default value
   let useLastCommit = false;
   let shaOnlyMode = false;
+  let processAllRepos = false;
   
   // Check for --last or -l argument
   if (args.includes('--last') || args.includes('-l')) {
     useLastCommit = true;
+  }
+  
+  // Check for --all or -a argument
+  if (args.includes('--all') || args.includes('-a')) {
+    processAllRepos = true;
   }
   
   // Check for --sha-only or -s argument (SHA-only deduplication for large repos)
@@ -605,6 +625,7 @@ Usage: node backfill.js [options]
 
 Options:
   -l, --last           Incremental backfill since most recent commit in Notion
+  -a, --all            Process all repositories without interactive selection
   -m, --months <num>   Full backfill for last N months (1-72, default: 6)
   -s, --sha-only       Use SHA-only deduplication for large repositories (faster)
   -h, --help           Show this help message
@@ -613,6 +634,8 @@ Examples:
   node backfill.js                    # Full backfill for last 6 months
   node backfill.js -m 12             # Full backfill for last 12 months
   node backfill.js -l                 # Incremental backfill since last commit
+  node backfill.js -a                 # Process all repositories for last 6 months
+  node backfill.js -l -a              # Process all repositories since last commit
   node backfill.js -l -s              # Incremental backfill with SHA-only dedup
   node backfill.js --months 3 --sha-only  # 3 months with SHA-only dedup
 
@@ -626,7 +649,11 @@ Note: SHA-only mode is automatically enabled for large batches (>100 commits)
     console.log('🔧 SHA-only deduplication mode enabled for large repositories');
   }
   
-  backfillCommits(months, useLastCommit);
+  if (processAllRepos) {
+    console.log('🚀 Processing all repositories without interactive selection');
+  }
+  
+  backfillCommits(months, useLastCommit, processAllRepos);
 }
 
 module.exports = { backfillCommits };

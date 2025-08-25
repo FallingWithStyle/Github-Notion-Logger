@@ -8,7 +8,7 @@ async function testOptimizations() {
     console.log('📊 Running incremental backfill test...');
     const startTime = Date.now();
     
-    await backfillCommits(6, true); // Use incremental mode
+    await backfillCommits(6, true, false); // Use incremental mode, not all repos
     
     const endTime = Date.now();
     const totalTime = (endTime - startTime) / 1000;
