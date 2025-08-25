@@ -415,9 +415,42 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
+        .recommendation.full-width {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
         .recommendation h5 {
             margin: 0 0 15px 0;
             font-size: 18px;
+        }
+        
+        .scoring-breakdown {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .base-calculation {
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 3px solid #4CAF50;
+        }
+        
+        .tie-break-calculation {
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 215, 0, 0.15);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 3px solid #ffd700;
+            color: #ffd700;
         }
         
         .recommendation p {
@@ -1296,27 +1329,34 @@
                     
                     <div class="project-recommendations">
                         <h4>🚀 Recommended Projects for This Week</h4>
-                        <div class="recommendation main-focus">
+                        
+                        <div class="recommendation main-focus full-width">
                             <h5>🎯 Main Focus: ${recommendations.mainFocus.name}</h5>
-                            <p>Priority Score: ${recommendations.mainFocus.priorityScore}/10 | Status: ${getStatusDisplay(recommendations.mainFocus.status)}</p>
-                            <p>${recommendations.mainFocus.headScore}/5 Head + ${recommendations.mainFocus.heartScore}/5 Heart</p>
-                            ${recommendations.mainFocus.tieBreakBonus > 0 ? `<p class="tie-break-info">Tie-break bonus: +${recommendations.mainFocus.tieBreakBonus}</p>` : ''}
+                            <div class="scoring-breakdown">
+                                <p><strong>Priority Score: ${recommendations.mainFocus.priorityScore}/10</strong> | Status: ${getStatusDisplay(recommendations.mainFocus.status)}</p>
+                                <p class="base-calculation">Base: ${recommendations.mainFocus.headScore}/5 Head + ${recommendations.mainFocus.heartScore}/5 Heart = ${recommendations.mainFocus.basePriorityScore}/10</p>
+                                ${recommendations.mainFocus.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: +${recommendations.mainFocus.tieBreakBonus} → <strong>${recommendations.mainFocus.priorityScore}/10</strong></p>` : ''}
+                            </div>
                             <p class="focus-note">Active or planning projects only - ready for immediate work</p>
                         </div>
                         
                         <div class="recommendation side-focus">
                             <h5>⚡ Side Focus: ${recommendations.sideFocus.name}</h5>
-                            <p>Priority Score: ${recommendations.sideFocus.priorityScore}/10 | Status: ${getStatusDisplay(recommendations.sideFocus.status)}</p>
-                            <p>${recommendations.sideFocus.headScore}/5 Head + ${recommendations.sideFocus.heartScore}/5 Heart</p>
-                            ${recommendations.sideFocus.tieBreakBonus > 0 ? `<p class="tie-break-info">Tie-break bonus: +${recommendations.sideFocus.tieBreakBonus}</p>` : ''}
+                            <div class="scoring-breakdown">
+                                <p><strong>Priority Score: ${recommendations.sideFocus.priorityScore}/10</strong> | Status: ${getStatusDisplay(recommendations.sideFocus.status)}</p>
+                                <p class="base-calculation">Base: ${recommendations.sideFocus.headScore}/5 Head + ${recommendations.sideFocus.heartScore}/5 Heart = ${recommendations.sideFocus.basePriorityScore}/10</p>
+                                ${recommendations.sideFocus.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: +${recommendations.sideFocus.tieBreakBonus} → <strong>${recommendations.sideFocus.priorityScore}/10</strong></p>` : ''}
+                            </div>
                             <p class="focus-note">Active or planning projects only - secondary priority</p>
                         </div>
                         
                         <div class="recommendation tangent">
                             <h5>🌟 Tangent Project: ${recommendations.tangent.name}</h5>
-                            <p>Priority Score: ${recommendations.tangent.priorityScore}/10 | Status: ${getStatusDisplay(recommendations.tangent.status)}</p>
-                            <p>${recommendations.tangent.headScore}/5 Head + ${recommendations.tangent.heartScore}/5 Heart</p>
-                            ${recommendations.tangent.tieBreakBonus > 0 ? `<p class="tie-break-info">Tie-break bonus: +${recommendations.tangent.tieBreakBonus}</p>` : ''}
+                            <div class="scoring-breakdown">
+                                <p><strong>Priority Score: ${recommendations.tangent.priorityScore}/10</strong> | Status: ${getStatusDisplay(recommendations.tangent.status)}</p>
+                                <p class="base-calculation">Base: ${recommendations.tangent.headScore}/5 Head + ${recommendations.tangent.heartScore}/5 Heart = ${recommendations.tangent.basePriorityScore}/10</p>
+                                ${recommendations.tangent.tieBreakBonus > 0 ? `<p class="tie-break-calculation">Tie-break bonus: +${recommendations.tangent.tieBreakBonus} → <strong>${recommendations.tangent.priorityScore}/10</strong></p>` : ''}
+                            </div>
                             <p class="tangent-note">High interest project to explore when you have spare time</p>
                         </div>
                     </div>
