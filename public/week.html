@@ -725,6 +725,108 @@
             } catch (error) {
                 console.warn('⚠️ Could not load saved data:', error);
             }
+            
+            // Test sorting logic on page load
+            testSortingLogic();
+        }
+        
+        // Comprehensive project sorting function
+        // Sorts by: 1) Total score (highest first), 2) Status priority, 3) Alphabetical
+        // Status priority order (highest to lowest):
+        // - active (6): Currently being worked on
+        // - planning (5): Actively shaping into something concrete  
+        // - idea (4): Just a spark or rough concept
+        // - paused (3): Work stopped, likely to resume later
+        // - unknown (2): Status not yet determined
+        // - done/released (1): Completed or publicly launched
+        // - parking-lot/abandoned (0): Not in current cycle or abandoned
+        //
+        // This function is used in:
+        // - Category breakdown display (sortProjectsByPriority(projects))
+        // - Project recommendations (findNextBestProject with 'priorityScore' sortBy)
+        // - Main focus selection (sortProjectsByPriority for focus category projects)
+        //
+        // Expected behavior:
+        // - Projects with same score are sorted by status priority (active > planning > idea > paused > unknown > done/released > parking-lot/abandoned)
+        // - Projects with same score and status are sorted alphabetically
+        // - Edge cases (null, empty arrays, invalid projects) are handled gracefully
+        function sortProjectsByPriority(projects) {
+            // Handle edge cases
+            if (!Array.isArray(projects) || projects.length === 0) {
+                return projects;
+            }
+            
+            // Filter out projects without required properties
+            const validProjects = projects.filter(project => 
+                project && 
+                typeof project.name === 'string' && 
+                typeof project.priorityScore === 'number'
+            );
+            
+            if (validProjects.length === 0) {
+                console.warn('⚠️ No valid projects to sort');
+                return projects;
+            }
+            
+            // Define status priority order (higher index = higher priority)
+            const statusPriority = {
+                'active': 6,
+                'planning': 5,
+                'idea': 4,
+                'paused': 3,
+                'unknown': 2,
+                'done': 1,
+                'released': 1,
+                'parking-lot': 0,
+                'abandoned': 0
+            };
+            
+            const sorted = validProjects.sort((a, b) => {
+                // First: sort by total score (highest first)
+                if (a.priorityScore !== b.priorityScore) {
+                    return b.priorityScore - a.priorityScore;
+                }
+                
+                // Second: if scores are tied, sort by status priority
+                const aStatusPriority = statusPriority[a.status] || 0;
+                const bStatusPriority = statusPriority[b.status] || 0;
+                if (aStatusPriority !== bStatusPriority) {
+                    console.log(`🔄 Score tie resolved by status: ${a.name} (${a.status} [${aStatusPriority}]) vs ${b.name} (${b.status} [${bStatusPriority}])`);
+                    return bStatusPriority - aStatusPriority;
+                }
+                
+                // Third: if status is also tied, sort alphabetically
+                console.log(`🔄 Score and status tie resolved alphabetically: ${a.name} vs ${b.name}`);
+                return a.name.localeCompare(b.name);
+            });
+            
+            // Debug logging for sorting results
+            if (sorted.length > 1) {
+                console.log('🔄 Project sorting applied:');
+                sorted.forEach((project, index) => {
+                    const statusPriorityValue = statusPriority[project.status] || 0;
+                    console.log(`  ${index + 1}. ${project.name} (Score: ${project.priorityScore}, Status: ${project.status} [${statusPriorityValue}])`);
+                });
+                
+                // Log any tie-breaking decisions
+                for (let i = 0; i < sorted.length - 1; i++) {
+                    const current = sorted[i];
+                    const next = sorted[i + 1];
+                    
+                    if (current.priorityScore === next.priorityScore) {
+                        const currentStatusPriority = statusPriority[current.status] || 0;
+                        const nextStatusPriority = statusPriority[next.status] || 0;
+                        
+                        if (currentStatusPriority === nextStatusPriority) {
+                            console.log(`📝 Alphabetical tie-break: ${current.name} comes before ${next.name}`);
+                        } else {
+                            console.log(`📝 Status tie-break: ${current.name} (${current.status} [${currentStatusPriority}]) comes before ${next.name} (${next.status} [${nextStatusPriority}])`);
+                        }
+                    }
+                }
+            }
+            
+            return sorted;
         }
         
         // Save data to localStorage
@@ -1247,6 +1349,61 @@
             }
         }
         
+        // Test function to verify sorting logic
+        function testSortingLogic() {
+            console.log('🧪 Testing sorting logic...');
+            
+            const testProjects = [
+                { name: 'Project A', priorityScore: 8, status: 'planning' },
+                { name: 'Project B', priorityScore: 8, status: 'active' },
+                { name: 'Project C', priorityScore: 7, status: 'active' },
+                { name: 'Project D', priorityScore: 8, status: 'planning' },
+                { name: 'Project E', priorityScore: 6, status: 'unknown' },
+                { name: 'Project F', priorityScore: 8, status: 'active' }
+            ];
+            
+            console.log('📊 Before sorting:', testProjects.map(p => `${p.name}: ${p.priorityScore} (${p.status})`));
+            
+            const sorted = sortProjectsByPriority(testProjects);
+            
+            console.log('📊 After sorting:', sorted.map(p => `${p.name}: ${p.priorityScore} (${p.status})`));
+            
+            // Verify sorting order
+            const expectedOrder = ['Project B', 'Project F', 'Project A', 'Project D', 'Project C', 'Project E'];
+            const actualOrder = sorted.map(p => p.name);
+            
+            if (JSON.stringify(expectedOrder) === JSON.stringify(actualOrder)) {
+                console.log('✅ Sorting test passed!');
+            } else {
+                console.log('❌ Sorting test failed!');
+                console.log('Expected:', expectedOrder);
+                console.log('Actual:', actualOrder);
+            }
+            
+            // Test edge cases
+            console.log('🧪 Testing edge cases...');
+            
+            // Test empty array
+            const emptyResult = sortProjectsByPriority([]);
+            console.log('Empty array test:', emptyResult.length === 0 ? '✅' : '❌');
+            
+            // Test null/undefined
+            const nullResult = sortProjectsByPriority(null);
+            console.log('Null test:', nullResult === null ? '✅' : '❌');
+            
+            // Test invalid projects
+            const invalidProjects = [
+                { name: 'Valid Project', priorityScore: 5, status: 'active' },
+                { name: '', priorityScore: 8, status: 'planning' }, // Invalid name
+                { priorityScore: 6, status: 'unknown' }, // Missing name
+                { name: 'Another Project', status: 'active' }, // Missing priorityScore
+                { name: 'Last Project', priorityScore: 'invalid', status: 'planning' } // Invalid priorityScore
+            ];
+            
+            const edgeCaseResult = sortProjectsByPriority(invalidProjects);
+            console.log('Edge case test:', edgeCaseResult.length === 1 ? '✅' : '❌', `(filtered ${invalidProjects.length - edgeCaseResult.length} invalid projects)`);
+        }
+        
         // Generate weekly plan with priority scoring and intelligent recommendations
         function generateWeeklyPlan() {
             console.log('🔄 Starting weekly plan generation...');
@@ -1437,7 +1594,7 @@
                             <span class="stat">🔄 Active: ${stats.activeProjects}</span>
                         </div>
                         
-                        ${projects.sort((a, b) => b.priorityScore - a.priorityScore).map(project => `
+                        ${sortProjectsByPriority(projects).map(project => `
                             <div class="plan-project priority-${Math.floor(project.priorityScore / 2)}">
                                 <h5>${getProjectColor(project.name)} ${project.name}</h5>
                                 <div class="project-scores">
@@ -1507,7 +1664,7 @@
                 if (available.length === 0) return null;
                 
                 if (sortBy === 'priorityScore') {
-                    return available.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+                    return sortProjectsByPriority(available)[0];
                 } else if (sortBy === 'heartScore') {
                     return available.sort((a, b) => b.heartScore - a.heartScore)[0];
                 }
@@ -1527,12 +1684,12 @@
                 p.category === focusCategory && 
                 actionableStatuses.includes(p.status)
             );
-            let mainFocus = focusCategoryProjects.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+            let mainFocus = sortProjectsByPriority(focusCategoryProjects)[0];
             
             // Fallback if no actionable projects in focus category - look for any actionable project
             if (!mainFocus) {
                 const actionableProjects = projectsWithScores.filter(p => actionableStatuses.includes(p.status));
-                mainFocus = actionableProjects.sort((a, b) => b.priorityScore - a.priorityScore)[0];
+                mainFocus = sortProjectsByPriority(actionableProjects)[0];
             }
             
             if (mainFocus) {
