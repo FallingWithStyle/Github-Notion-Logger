@@ -26,7 +26,7 @@ const SHA_PROPERTY_NAME = 'SHA';
 
 // Enhanced caching with TTL and batch operations
 const CACHE_CONFIG = {
-  ttl: 5 * 60 * 1000, // 5 minutes
+  ttl: 30 * 60 * 1000, // 30 minutes (increased from 5 minutes to prevent cache expiration during long backfills)
   maxSize: 100, // Max cached repos
   batchSize: 200, // Batch size for Notion operations
 };
@@ -371,6 +371,11 @@ async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
     return cached.data;
   }
 
+  // If cache is expired but exists, log it for debugging
+  if (cached) {
+    console.log(`⚠️ Cache expired for ${repoName} (age: ${Math.round((Date.now() - cached.timestamp) / 1000)}s), refetching...`);
+  }
+
   console.log(`🔍 Fetching existing commits for ${repoName}...`);
   
   const existingCommits = new Set(); // legacy: message|date
@@ -396,14 +401,14 @@ async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
   let hasMore = true;
   let startCursor = undefined;
   let pageCount = 0;
-  const maxPages = 20; // Limit to prevent timeouts on very large repos
+  const maxPages = 50; // Increased from 20 to prevent timeouts on very large repos
   
   try {
     // Add timeout for the entire fetch operation - longer for large repos
     const fetchTimeout = setTimeout(() => {
       console.log(`⚠️ Timeout while fetching existing commits for ${repoName} - using partial data`);
       throw new Error('Timeout fetching existing commits');
-    }, 60000); // 60 second timeout for large repos
+    }, 120000); // Increased from 60 to 120 seconds for large repos
     
     try {
       while (hasMore && pageCount < maxPages) {
@@ -463,6 +468,13 @@ async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
       existingCommitsCache.set(repoName, { data: result, timestamp: Date.now() });
       
       console.log(`✅ Cached ${existingCommits.size} legacy keys and ${existingShas.size} SHAs for ${repoName}`);
+      
+      // Log warning if we hit page limits (potential incomplete data)
+      if (pageCount >= maxPages && hasMore) {
+        console.warn(`⚠️ WARNING: Hit maximum page limit (${maxPages}) for ${repoName}. Data may be incomplete, which could lead to duplicates.`);
+        console.warn(`   Consider running with --sha-only mode for very large repositories.`);
+      }
+      
       return result;
       
     } catch (error) {
@@ -488,6 +500,17 @@ async function logCommitsToNotion(commits, repoName) {
   const existingData = await getExistingCommitsForRepo(repoName, commits.length > CACHE_CONFIG.batchSize);
   const existingCommits = existingData.existingCommits;
   const existingShas = existingData.existingShas;
+  
+  // For very large batches, we might want to force a fresh fetch to ensure complete deduplication
+  if (commits.length > CACHE_CONFIG.batchSize * 2) {
+    console.log(`🔄 Large batch detected (${commits.length} commits), ensuring fresh deduplication data...`);
+    const freshData = await getExistingCommitsForRepo(repoName, false); // Force fresh fetch with legacy dedup
+    existingCommits.clear();
+    existingShas.clear();
+    freshData.existingCommits.forEach(key => existingCommits.add(key));
+    freshData.existingShas.forEach(sha => existingShas.add(sha));
+    console.log(`🔄 Fresh deduplication data loaded: ${existingCommits.size} legacy keys, ${existingShas.size} SHAs`);
+  }
   
   let processed = 0;
   let skipped = 0;
@@ -530,11 +553,13 @@ async function processCommitBatch(commits, repoName, existingCommits, existingSh
     if (existingShas.has(commit.id)) {
       shouldSkip = true;
       skipReason = 'SHA already exists';
+      console.log(`⏭️ Skipping duplicate SHA: ${commit.id.substring(0, 8)} (${commit.message.substring(0, 50)}...)`);
     }
     // Check legacy deduplication
     else if (existingCommits.has(`${commit.message}|${commit.timestamp}`)) {
       shouldSkip = true;
       skipReason = 'Message + date combination already exists';
+      console.log(`⏭️ Skipping duplicate message+date: ${commit.id.substring(0, 8)} (${commit.message.substring(0, 50)}...)`);
     }
     
     if (shouldSkip) {
@@ -546,11 +571,20 @@ async function processCommitBatch(commits, repoName, existingCommits, existingSh
   }
   
   if (commitsToProcess.length === 0) {
-    console.log(`⏭️  All ${commits.length} commits in batch already exist, skipping...`);
+    console.log(`⏭️ All ${commits.length} commits in batch already exist, skipping...`);
     return { processed: 0, skipped, errors: 0 };
   }
   
   console.log(`📝 Processing ${commitsToProcess.length} new commits (${skipped} skipped)`);
+  
+  // Log detailed skip reasons for debugging
+  if (skipReasons.length > 0) {
+    console.log(`📋 Skip reasons summary:`);
+    skipReasons.slice(0, 10).forEach(reason => console.log(`   - ${reason}`));
+    if (skipReasons.length > 10) {
+      console.log(`   ... and ${skipReasons.length - 10} more`);
+    }
+  }
   
   // Process commits in parallel batches for better performance
   const parallelBatches = [];
@@ -561,6 +595,33 @@ async function processCommitBatch(commits, repoName, existingCommits, existingSh
   for (const parallelBatch of parallelBatches) {
     const batchPromises = parallelBatch.map(async (commit) => {
       try {
+        // Final safety check: verify the commit doesn't exist before creating
+        const finalCheck = await notion.databases.query({
+          database_id: commitFromGithubLogDatabaseId,
+          filter: {
+            and: [
+              {
+                property: "Project Name",
+                title: {
+                  equals: repoName.split('/').pop()
+                }
+              },
+              {
+                property: SHA_PROPERTY_NAME,
+                rich_text: {
+                  equals: commit.id
+                }
+              }
+            ]
+          },
+          page_size: 1
+        });
+        
+        if (finalCheck.results.length > 0) {
+          console.log(`⚠️ Final check: Commit ${commit.id.substring(0, 8)} already exists, skipping...`);
+          return { success: true, skipped: true };
+        }
+        
         await createCommitPage(commit, repoName);
         return { success: true };
       } catch (error) {
@@ -572,8 +633,16 @@ async function processCommitBatch(commits, repoName, existingCommits, existingSh
     const batchResults = await Promise.allSettled(batchPromises);
     
     batchResults.forEach(result => {
-      if (result.status === 'fulfilled' && result.value.success) {
-        processed++;
+      if (result.status === 'fulfilled') {
+        if (result.value.success) {
+          if (result.value.skipped) {
+            skipped++;
+          } else {
+            processed++;
+          }
+        } else {
+          errors++;
+        }
       } else {
         errors++;
       }

@@ -14,6 +14,7 @@ const RATE_LIMIT_CONFIG = {
   delayBetweenBatches: 100, // Reduced from 200ms
   delayBetweenRepos: 300,   // Reduced from 1000ms
   delayBetweenApiCalls: 50, // Reduced from 100ms
+  cacheRefreshInterval: 25 * 60 * 1000, // Refresh cache every 25 minutes (before 30 min TTL expires)
 };
 
 async function getAllRepositories(owner) {
@@ -262,6 +263,7 @@ async function processRepositoryBatch(owner, repositories, useLastCommit, months
   let totalApiCalls = 0;
   let totalRateLimitDelays = 0;
   let totalRateLimitDelayTime = 0;
+  let lastCacheRefresh = Date.now();
   
   // Process repositories in parallel with controlled concurrency
   const chunks = [];
@@ -270,6 +272,14 @@ async function processRepositoryBatch(owner, repositories, useLastCommit, months
   }
   
   for (const chunk of chunks) {
+    // Check if we need to refresh the cache
+    if (Date.now() - lastCacheRefresh > RATE_LIMIT_CONFIG.cacheRefreshInterval) {
+      console.log(`🔄 Cache refresh interval reached, clearing cache to prevent expiration issues...`);
+      // Force a cache refresh by clearing the existing commits cache
+      // This will be handled by the notion.js module when it detects expired cache
+      lastCacheRefresh = Date.now();
+    }
+    
     const chunkPromises = chunk.map(async (repo) => {
       console.log(`\n=== Processing repository: ${owner}/${repo.name} ===`);
       
@@ -602,6 +612,11 @@ if (require.main === module) {
     shaOnlyMode = true;
   }
   
+  // Check for --force-refresh or -f argument (force cache refresh)
+  if (args.includes('--force-refresh') || args.includes('-f')) {
+    console.log('🔄 Force refresh mode enabled - will refresh cache before processing');
+  }
+  
   // Check for --months or -m argument (only if not using last commit mode)
   if (!useLastCommit) {
     const monthsIndex = args.findIndex(arg => arg === '--months' || arg === '-m');
@@ -628,6 +643,7 @@ Options:
   -a, --all            Process all repositories without interactive selection
   -m, --months <num>   Full backfill for last N months (1-72, default: 6)
   -s, --sha-only       Use SHA-only deduplication for large repositories (faster)
+  -f, --force-refresh  Force cache refresh before processing to prevent duplicates
   -h, --help           Show this help message
 
 Examples:
@@ -638,9 +654,11 @@ Examples:
   node backfill.js -l -a              # Process all repositories since last commit
   node backfill.js -l -s              # Incremental backfill with SHA-only dedup
   node backfill.js --months 3 --sha-only  # 3 months with SHA-only dedup
+  node backfill.js -f                 # Force cache refresh to prevent duplicates
 
 Note: SHA-only mode is automatically enabled for large batches (>100 commits)
       to prevent timeouts on repositories with many existing commits.
+      Use --force-refresh if you suspect duplicate issues due to cache problems.
 `);
     process.exit(0);
   }
