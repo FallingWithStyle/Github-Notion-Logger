@@ -334,12 +334,20 @@ async function ensureDatabaseSchemaLoaded() {
   if (schemaCache.checked) {
     return schemaCache;
   }
+  
   try {
+    console.log('🔍 Checking Notion database schema...');
     const db = await notion.databases.retrieve({ database_id: commitFromGithubLogDatabaseId });
-    schemaCache.hasShaProperty = !!db.properties?.[SHA_PROPERTY_NAME] && db.properties[SHA_PROPERTY_NAME].type === 'rich_text';
+    
+    // Check if SHA property exists
+    const hasShaProperty = !!db.properties?.[SHA_PROPERTY_NAME] && db.properties[SHA_PROPERTY_NAME].type === 'rich_text';
+    schemaCache.hasShaProperty = hasShaProperty;
     schemaCache.checked = true;
-    console.log(`🧭 Notion schema: SHA property present = ${schemaCache.hasShaProperty}`);
-    if (!schemaCache.hasShaProperty) {
+    
+    console.log(`🧭 Notion schema: SHA property present = ${hasShaProperty}`);
+    console.log(`🧭 Available properties:`, Object.keys(db.properties));
+    
+    if (!hasShaProperty) {
       // Try to add the SHA property automatically
       try {
         console.log('🔧 Adding SHA property to Notion database...');
@@ -353,14 +361,29 @@ async function ensureDatabaseSchemaLoaded() {
         console.log('✅ Added SHA property to Notion database');
       } catch (updateError) {
         console.warn('⚠️ Unable to add SHA property automatically. Continuing without SHA-based dedup.', updateError.message);
+        // Don't set hasShaProperty to false here - let it remain undefined so we can retry
       }
     }
+    
+    return schemaCache;
+    
   } catch (error) {
-    console.warn('⚠️ Could not retrieve Notion database schema; assuming no SHA property. Reason:', error.message);
-    schemaCache.checked = true;
-    schemaCache.hasShaProperty = false;
+    console.error('❌ Error checking Notion database schema:', error.message);
+    
+    // If this is a network/API error, don't permanently disable SHA property
+    // Instead, mark as unchecked so we can retry on next attempt
+    if (error.code === 'rate_limited' || error.status === 429 || error.status === 500) {
+      console.log('🔄 Schema check failed due to API issues, will retry on next attempt');
+      schemaCache.checked = false;
+      schemaCache.hasShaProperty = false;
+    } else {
+      // For other errors, assume no SHA property but allow retry
+      schemaCache.checked = true;
+      schemaCache.hasShaProperty = false;
+    }
+    
+    return schemaCache;
   }
-  return schemaCache;
 }
 
 async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
@@ -658,6 +681,9 @@ async function processCommitBatch(commits, repoName, existingCommits, existingSh
 }
 
 async function createCommitPage(commit, repoName) {
+  // Ensure we have the latest schema information before creating the page
+  await ensureDatabaseSchemaLoaded();
+  
   // Get the effective date for timezone logic, but preserve the full timestamp
   const effectiveDate = timezoneConfig.getEffectiveDate(commit.timestamp);
   
@@ -699,10 +725,16 @@ async function createCommitPage(commit, repoName) {
       date: { start: finalTimestamp.toISOString() },
     }
   };
-  if (schemaCache.hasShaProperty && commit.id) {
+  
+  // Always try to set SHA property if we have a commit ID
+  // This ensures we don't lose SHA values due to schema cache issues
+  if (commit.id) {
     properties[SHA_PROPERTY_NAME] = {
       rich_text: [{ text: { content: commit.id } }]
     };
+    console.log(`🔐 Setting SHA property for commit ${commit.id.substring(0, 8)}`);
+  } else {
+    console.warn(`⚠️ No commit ID available for commit: ${commit.message.substring(0, 50)}...`);
   }
 
   await notion.pages.create({
@@ -756,11 +788,101 @@ async function getMostRecentCommitDate(repoName) {
   }
 }
 
+// Function to retroactively add SHA values to existing commits
+async function addMissingShaValues() {
+  try {
+    console.log('🔍 Checking for commits without SHA values...');
+    
+    await ensureDatabaseSchemaLoaded();
+    
+    let hasMore = true;
+    let startCursor = undefined;
+    let pageCount = 0;
+    let totalChecked = 0;
+    let totalUpdated = 0;
+    let totalErrors = 0;
+    const maxPages = 100; // Check up to 100 pages
+    
+    while (hasMore && pageCount < maxPages) {
+      pageCount++;
+      console.log(`📄 Checking page ${pageCount} for commits without SHA values...`);
+      
+      const response = await notion.databases.query({
+        database_id: commitFromGithubLogDatabaseId,
+        filter: {
+          and: [
+            {
+              property: SHA_PROPERTY_NAME,
+              rich_text: {
+                is_empty: true
+              }
+            }
+          ]
+        },
+        page_size: 100,
+        start_cursor: startCursor,
+      });
+      
+      if (response.results.length === 0) {
+        console.log('✅ No more commits without SHA values found');
+        break;
+      }
+      
+      console.log(`📝 Found ${response.results.length} commits without SHA values on page ${pageCount}`);
+      
+      // Process each commit without SHA
+      for (const page of response.results) {
+        totalChecked++;
+        
+        try {
+          // Try to extract commit info from the page
+          const commitMessage = page.properties["Commits"]?.rich_text?.[0]?.plain_text;
+          const projectName = page.properties["Project Name"]?.title?.[0]?.plain_text;
+          const commitDate = page.properties["Date"]?.date?.start;
+          
+          if (commitMessage && projectName && commitDate) {
+            console.log(`🔍 Checking commit: ${commitMessage.substring(0, 50)}... (${projectName})`);
+            
+            // For now, we can't recover the SHA from existing data
+            // But we can mark it as needing manual review
+            console.log(`⚠️ Cannot recover SHA for existing commit. Consider re-running backfill for ${projectName}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error processing page ${page.id}:`, error.message);
+          totalErrors++;
+        }
+      }
+      
+      hasMore = response.has_more;
+      startCursor = response.next_cursor;
+      
+      // Small delay between pages
+      if (hasMore) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    console.log(`\n📊 SHA Value Check Summary:`);
+    console.log(`🔍 Total commits checked: ${totalChecked}`);
+    console.log(`✅ Total commits updated: ${totalUpdated}`);
+    console.log(`❌ Total errors: ${totalErrors}`);
+    
+    if (totalChecked > 0 && totalUpdated === 0) {
+      console.log(`\n💡 Recommendation: Re-run backfill for repositories with missing SHA values`);
+      console.log(`   This will ensure all commits have proper SHA values for deduplication`);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error checking for missing SHA values:', error.message);
+  }
+}
+
 module.exports = { 
   logCommitsToNotion, 
   getMostRecentCommitDate,
   addWeeklyPlanningEntry,
   getWeeklyPlanningData,
   updateWeeklyPlanningEntry,
-  ensureWeeklyPlanningDatabase
+  ensureWeeklyPlanningDatabase,
+  addMissingShaValues
 };

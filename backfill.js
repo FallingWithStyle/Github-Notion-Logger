@@ -1,6 +1,6 @@
 const { Octokit } = require('@octokit/rest');
 const inquirer = require('inquirer');
-const { logCommitsToNotion, getMostRecentCommitDate, getExistingCommitsForRepo } = require('./notion');
+const { logCommitsToNotion, getMostRecentCommitDate, getExistingCommitsForRepo, addMissingShaValues } = require('./notion');
 require('dotenv').config();
 
 const octokit = new Octokit({
@@ -617,6 +617,11 @@ if (require.main === module) {
     console.log('🔄 Force refresh mode enabled - will refresh cache before processing');
   }
   
+  // Check for --check-sha or -c argument (check for missing SHA values)
+  if (args.includes('--check-sha') || args.includes('-c')) {
+    console.log('🔍 SHA check mode enabled - will check for commits without SHA values');
+  }
+  
   // Check for --months or -m argument (only if not using last commit mode)
   if (!useLastCommit) {
     const monthsIndex = args.findIndex(arg => arg === '--months' || arg === '-m');
@@ -644,6 +649,7 @@ Options:
   -m, --months <num>   Full backfill for last N months (1-72, default: 6)
   -s, --sha-only       Use SHA-only deduplication for large repositories (faster)
   -f, --force-refresh  Force cache refresh before processing to prevent duplicates
+  -c, --check-sha      Check for existing commits without SHA values
   -h, --help           Show this help message
 
 Examples:
@@ -655,6 +661,7 @@ Examples:
   node backfill.js -l -s              # Incremental backfill with SHA-only dedup
   node backfill.js --months 3 --sha-only  # 3 months with SHA-only dedup
   node backfill.js -f                 # Force cache refresh to prevent duplicates
+  node backfill.js -c                 # Check for commits without SHA values
 
 Note: SHA-only mode is automatically enabled for large batches (>100 commits)
       to prevent timeouts on repositories with many existing commits.
@@ -669,6 +676,13 @@ Note: SHA-only mode is automatically enabled for large batches (>100 commits)
   
   if (processAllRepos) {
     console.log('🚀 Processing all repositories without interactive selection');
+  }
+  
+  // Handle SHA check mode
+  if (args.includes('--check-sha') || args.includes('-c')) {
+    console.log('🔍 Running SHA value check for existing commits...');
+    await addMissingShaValues();
+    return;
   }
   
   backfillCommits(months, useLastCommit, processAllRepos);
