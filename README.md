@@ -372,3 +372,48 @@ This will:
   - Duplicate detection queries
   - Batch commit logging
   - Error handling and retry logic
+
+## Tools
+
+### Backfill Tool (`backfill.js`)
+**Purpose**: Import new commits from GitHub to Notion
+- Fetches commits from GitHub repositories
+- Creates new Notion pages for commits
+- Handles deduplication and rate limiting
+- **Not for fixing existing records**
+
+**Usage**:
+```bash
+# Full backfill for last 6 months
+node backfill.js
+
+# Incremental backfill since last commit
+node backfill.js -l
+
+# Process all repositories
+node backfill.js -a
+
+# Force cache refresh to prevent duplicates
+node backfill.js -f
+```
+
+### Audit Tool (`notion-audit.js`)
+**Purpose**: Audit and maintain existing Notion data quality
+- Check for commits without SHA values
+- Verify database schemas
+- Report data quality issues
+- **For maintaining existing data, not importing new data**
+
+**Usage**:
+```bash
+# Run full audit
+node notion-audit.js
+
+# Show help
+node notion-audit.js --help
+```
+
+### Separation of Concerns
+- **Backfill tool**: Imports new data from external sources
+- **Audit tool**: Maintains quality of existing data
+- This separation makes the codebase more focused and maintainable

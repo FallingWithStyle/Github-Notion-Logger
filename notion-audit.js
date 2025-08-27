@@ -1,6 +1,10 @@
-const { addMissingShaValues, ensureWeeklyPlanningDatabase } = require('./notion');
+const { addMissingShaValues, ensureWeeklyPlanningDatabase, commitFromGithubLogDatabaseId } = require('./notion');
 const { Octokit } = require('@octokit/rest');
+const { Client } = require('@notionhq/client');
 require('dotenv').config();
+
+// Initialize Notion client
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
 // Initialize GitHub API client
 const octokit = new Octokit({
@@ -15,11 +19,8 @@ async function fixMidnightCommits(midnightCommitsList) {
   
   if (!process.env.GITHUB_TOKEN) {
     console.log('⚠️ No GitHub token found, cannot fetch original commit data');
-    return { fixed: 0, errors: 0 };
+    return { fixed: 0, errors: 0, skipped: 0 };
   }
-  
-  const { notion } = require('./notion');
-  const { commitFromGithubLogDatabaseId } = require('./notion');
   
   let fixed = 0;
   let errors = 0;
@@ -122,9 +123,6 @@ async function checkDateStructure() {
   console.log('📅 Checking date structure and uniqueness...');
   
   try {
-    const { notion } = require('./notion');
-    const { commitFromGithubLogDatabaseId } = require('./notion');
-    
     if (!commitFromGithubLogDatabaseId) {
       console.log('⚠️ No commit database ID found, skipping date structure check');
       return { midnightCommitsList: [], duplicateDatesList: [] };

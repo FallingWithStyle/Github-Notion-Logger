@@ -884,5 +884,6 @@ module.exports = {
   getWeeklyPlanningData,
   updateWeeklyPlanningEntry,
   ensureWeeklyPlanningDatabase,
-  addMissingShaValues
+  addMissingShaValues,
+  commitFromGithubLogDatabaseId
 };
