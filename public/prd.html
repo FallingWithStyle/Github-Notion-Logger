@@ -826,9 +826,6 @@
         }
 
         async function showLinkPrdForm() {
-            const projectName = prompt('Project Name (e.g., VoiceHub, Magic-Quill):');
-            if (!projectName) return;
-            
             const prdUrl = prompt('GitHub PRD File URL (e.g., https://github.com/username/repo/blob/main/PRD.md):');
             if (!prdUrl) return;
             
@@ -848,7 +845,6 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        projectName,
                         owner,
                         repoName,
                         branch,
@@ -860,9 +856,12 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    updateStatus('✅ PRD linked successfully', 'success');
-                    // Refresh the repository overview to show the new link
+                    updateStatus(`✅ PRD linked successfully! Found ${result.data.storiesFound} stories, added ${result.data.storiesAdded} to Notion`, 'success');
+                    
+                    // Refresh stories to show the new ones
                     setTimeout(() => {
+                        loadStories();
+                        // Also refresh repository overview if visible
                         if (document.getElementById('repositories-overview').style.display !== 'none') {
                             loadRepositoryOverview();
                         }

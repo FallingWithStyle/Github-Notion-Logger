@@ -1106,6 +1106,92 @@ app.get('/api/prd-stories/status', asyncHandler(async (req, res) => {
   }
 }));
 
+// Helper function to extract stories from PRD content
+function extractStoriesFromContent(content, projectName) {
+  const stories = [];
+  const lines = content.split('\n');
+  
+  // Story extraction patterns
+  const storyPatterns = [
+    // Markdown headers with status indicators
+    /^#{1,3}\s*\[?([^\]]+)\]?\s*[-–—]\s*([^\n]+)$/gm,
+    // Bullet points with status
+    /^[-*]\s*\[?([^\]]+)\]?\s*[-–—]\s*([^\n]+)$/gm,
+    // Numbered lists with status
+    /^\d+\.\s*\[?([^\]]+)\]?\s*[-–—]\s*([^\n]+)$/gm,
+    // Status: Title format
+    /^([A-Za-z]+):\s*([^\n]+)$/gm,
+    // Title - Status format
+    /^([^-]+)\s*[-–—]\s*([A-Za-z]+)$/gm
+  ];
+  
+  // Priority indicators
+  const priorityIndicators = {
+    'high': 5, 'critical': 5, 'urgent': 5,
+    'medium': 3, 'normal': 3,
+    'low': 1, 'nice-to-have': 1, 'future': 1
+  };
+  
+  // Story point indicators
+  const storyPointIndicators = {
+    '1': 1, '2': 2, '3': 3, '5': 5, '8': 8, '13': 13, '21': 21
+  };
+  
+  // Standard statuses
+  const standardStatuses = ['Idea', 'Planning', 'Active', 'Review', 'Done'];
+  
+  for (const pattern of storyPatterns) {
+    const matches = content.matchAll(pattern);
+    for (const match of matches) {
+      const status = match[1]?.toLowerCase();
+      const title = match[2] || match[1];
+      
+      if (title && title.trim()) {
+        // Determine priority from title/content
+        let priority = 3; // Default medium
+        const titleLower = title.toLowerCase();
+        for (const [indicator, value] of Object.entries(priorityIndicators)) {
+          if (titleLower.includes(indicator)) {
+            priority = value;
+            break;
+          }
+        }
+        
+        // Determine story points
+        let storyPoints = null;
+        for (const [indicator, value] of Object.entries(storyPointIndicators)) {
+          if (titleLower.includes(indicator)) {
+            storyPoints = indicator;
+            break;
+          }
+        }
+        
+        // Determine status
+        let storyStatus = 'Idea'; // Default
+        if (status) {
+          for (const standardStatus of standardStatuses) {
+            if (status.includes(standardStatus.toLowerCase())) {
+              storyStatus = standardStatus;
+              break;
+            }
+          }
+        }
+        
+        stories.push({
+          projectName,
+          title: title.trim(),
+          status: storyStatus,
+          priority,
+          storyPoints,
+          notes: `Extracted from PRD: ${title}`
+        });
+      }
+    }
+  }
+  
+  return stories;
+}
+
 // Helper function to parse repository output from standardize-prds.js
 function parseRepositoryOutput(output) {
   const repos = [];
@@ -1191,48 +1277,132 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
 // Link PRD file manually
 app.post('/api/prd-stories/link-prd', asyncHandler(async (req, res) => {
   try {
-    const { projectName, owner, repoName, branch, filePath, prdUrl } = req.body;
+    const { owner, repoName, branch, filePath, prdUrl } = req.body;
     
-    if (!projectName || !owner || !repoName || !branch || !filePath || !prdUrl) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!owner || !repoName || !branch || !filePath || !prdUrl) {
+      return res.status(400).json({ error: 'Missing required fields: owner, repoName, branch, filePath, prdUrl' });
     }
     
-    console.log(`🔗 Linking PRD file: ${filePath} in ${owner}/${repoName} for project ${projectName}`);
+    console.log(`🔗 Linking PRD file: ${filePath} in ${owner}/${repoName}`);
     
-    // Store the PRD link in a simple JSON file for now
-    const prdLinksPath = path.join(__dirname, 'data', 'prd-links.json');
-    const dataDir = path.dirname(prdLinksPath);
+    // Fetch the PRD content from GitHub
+    const { Octokit } = require('@octokit/rest');
+    const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
     
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    
-    let prdLinks = [];
-    if (fs.existsSync(prdLinksPath)) {
-      try {
-        const data = fs.readFileSync(prdLinksPath, 'utf8');
-        prdLinks = JSON.parse(data);
-      } catch (error) {
-        console.error('❌ Error reading existing PRD links:', error.message);
+    try {
+      const response = await octokit.repos.getContent({
+        owner,
+        repo: repoName,
+        path: filePath,
+        ref: branch
+      });
+      
+      if (response.data.encoding === 'base64') {
+        const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+        
+        // Extract project name from PRD content (look for common patterns)
+        let projectName = repoName; // Default to repo name
+        
+        // Try to find project name in content
+        const projectNamePatterns = [
+          /^#\s+(.+)$/m,                    // # Project Name
+          /^title:\s*(.+)$/im,              // title: Project Name
+          /^project:\s*(.+)$/im,            // project: Project Name
+          /^name:\s*(.+)$/im,               // name: Project Name
+          /^#\s+([^#\n]+?)\s*PRD/im,       // # Project Name PRD
+          /^#\s+([^#\n]+?)\s*Requirements/im // # Project Name Requirements
+        ];
+        
+        for (const pattern of projectNamePatterns) {
+          const match = content.match(pattern);
+          if (match && match[1]) {
+            projectName = match[1].trim();
+            break;
+          }
+        }
+        
+        console.log(`📋 Extracted project name: ${projectName}`);
+        
+        // Extract stories from PRD content
+        const stories = extractStoriesFromContent(content, projectName);
+        console.log(`📝 Found ${stories.length} stories in PRD`);
+        
+        // Add stories to Notion
+        const { addPrdStoryEntry } = require('./notion');
+        let addedCount = 0;
+        
+        for (const story of stories) {
+          try {
+            await addPrdStoryEntry({
+              projectName: story.projectName,
+              storyTitle: story.title,
+              status: story.status,
+              priority: story.priority,
+              storyPoints: story.storyPoints,
+              repository: repoName,
+              notes: story.notes
+            });
+            addedCount++;
+          } catch (error) {
+            console.warn(`⚠️ Failed to add story "${story.title}":`, error.message);
+          }
+        }
+        
+        // Store the PRD link
+        const prdLinksPath = path.join(__dirname, 'data', 'prd-links.json');
+        const dataDir = path.dirname(prdLinksPath);
+        
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        let prdLinks = [];
+        if (fs.existsSync(prdLinksPath)) {
+          try {
+            const data = fs.readFileSync(prdLinksPath, 'utf8');
+            prdLinks = JSON.parse(data);
+          } catch (error) {
+            console.error('❌ Error reading existing PRD links:', error.message);
+          }
+        }
+        
+        // Check if project already exists
+        const existingIndex = prdLinks.findIndex(link => link.projectName === projectName);
+        if (existingIndex !== -1) {
+          prdLinks[existingIndex] = { projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() };
+        } else {
+          prdLinks.push({ projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() });
+        }
+        
+        // Save the updated links
+        fs.writeFileSync(prdLinksPath, JSON.stringify(prdLinks, null, 2));
+        
+        res.json({
+          success: true,
+          message: `PRD linked successfully and ${addedCount} stories added to Notion`,
+          data: { 
+            projectName, 
+            owner, 
+            repoName, 
+            branch, 
+            filePath, 
+            prdUrl,
+            storiesFound: stories.length,
+            storiesAdded: addedCount
+          }
+        });
+        
+      } else {
+        throw new Error('PRD content is not base64 encoded');
       }
+      
+    } catch (error) {
+      console.error('❌ Error fetching PRD content:', error.message);
+      res.status(500).json({ 
+        error: 'Error fetching PRD content',
+        details: error.message 
+      });
     }
-    
-    // Check if project already exists
-    const existingIndex = prdLinks.findIndex(link => link.projectName === projectName);
-    if (existingIndex !== -1) {
-      prdLinks[existingIndex] = { projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() };
-    } else {
-      prdLinks.push({ projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() });
-    }
-    
-    // Save the updated links
-    fs.writeFileSync(prdLinksPath, JSON.stringify(prdLinks, null, 2));
-    
-    res.json({
-      success: true,
-      message: 'PRD linked successfully',
-      data: { projectName, owner, repoName, branch, filePath, prdUrl }
-    });
     
   } catch (error) {
     console.error('❌ Error linking PRD:', error);
