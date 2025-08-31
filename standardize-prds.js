@@ -120,7 +120,8 @@ async function getAllRepositories() {
         username: owner,
         page,
         per_page: 100,
-        sort: 'updated'
+        sort: 'updated',
+        type: 'all'  // Include both public and private repositories
       });
       
       if (response.data.length === 0) {
@@ -148,52 +149,41 @@ async function findPrdFiles(repoName) {
     
     const prdFiles = [];
     
-    for (const pattern of PRD_FILE_PATTERNS) {
-      try {
-        let searchQuery;
-        
-        if (typeof pattern === 'string') {
-          // Exact filename match
-          searchQuery = `repo:${owner}/${repoName} filename:${pattern}`;
-        } else if (pattern instanceof RegExp) {
-          // Regex pattern - search more broadly and filter results
-          searchQuery = `repo:${owner}/${repoName} filename:*.md`;
-        }
-        
-        const response = await octokit.search.code({
-          q: searchQuery,
-          per_page: 100
+    // More efficient: search once for all markdown files, then filter by patterns
+    try {
+      const response = await octokit.search.code({
+        q: `repo:${owner}/${repoName} filename:*.md`,
+        per_page: 100,
+        visibility: 'all'  // Include both public and private repositories
+      });
+      
+      if (response.data.items.length > 0) {
+        // Filter results based on all patterns
+        const matchingFiles = response.data.items.filter(item => {
+          return PRD_FILE_PATTERNS.some(pattern => {
+            if (typeof pattern === 'string') {
+              return item.name.toLowerCase() === pattern.toLowerCase();
+            } else if (pattern instanceof RegExp) {
+              return pattern.test(item.name);
+            }
+            return false;
+          });
         });
         
-        if (response.data.items.length > 0) {
-          // Filter results based on pattern type
-          let matchingFiles = response.data.items;
-          
-          if (pattern instanceof RegExp) {
-            // Apply regex filter to filenames
-            matchingFiles = response.data.items.filter(item => 
-              pattern.test(item.name)
-            );
-          }
-          
-          if (matchingFiles.length > 0) {
-            prdFiles.push(...matchingFiles.map(item => ({
-              name: item.name,
-              path: item.path,
-              sha: item.sha,
-              url: item.html_url,
-              // Include additional metadata for better prioritization
-              repository: repoName,
-              owner: owner
-            })));
-          }
+        if (matchingFiles.length > 0) {
+          prdFiles.push(...matchingFiles.map(item => ({
+            name: item.name,
+            path: item.path,
+            sha: item.sha,
+            url: item.html_url,
+            // Include additional metadata for better prioritization
+            repository: repoName,
+            owner: owner
+          })));
         }
-      } catch (error) {
-        console.warn(`⚠️ Error searching for pattern ${pattern} in ${repoName}:`, error.message);
       }
-      
-      // Add a small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error) {
+      console.warn(`⚠️ Error searching for PRD files in ${repoName}:`, error.message);
     }
     
     // Ensure only one PRD per project by prioritizing the most relevant one

@@ -135,7 +135,8 @@ class PrdFileWatcher {
           username: owner,
           page,
           per_page: 100,
-          sort: 'updated'
+          sort: 'updated',
+          type: 'all'  // Include both public and private repositories
         });
         
         if (response.data.length === 0) {
@@ -145,7 +146,7 @@ class PrdFileWatcher {
           page++;
         }
         
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 2500));
       }
       
       return repos;
@@ -196,26 +197,38 @@ class PrdFileWatcher {
     try {
       const prdFiles = [];
       
-      for (const pattern of PRD_FILE_PATTERNS) {
-        try {
-          const response = await octokit.search.code({
-            q: `repo:${owner}/${repoName} filename:${pattern}`,
-            per_page: 10
+      // More efficient: search once for all markdown files, then filter by patterns
+      try {
+        const response = await octokit.search.code({
+          q: `repo:${owner}/${repoName} filename:*.md`,
+          per_page: 100,
+          visibility: 'all'  // Include both public and private repositories
+        });
+        
+        if (response.data.items.length > 0) {
+          // Filter results based on all patterns
+          const matchingFiles = response.data.items.filter(item => {
+            return PRD_FILE_PATTERNS.some(pattern => {
+              if (typeof pattern === 'string') {
+                return item.name.toLowerCase() === pattern.toLowerCase();
+              } else if (pattern instanceof RegExp) {
+                return pattern.test(item.name);
+              }
+              return false;
+            });
           });
           
-          if (response.data.items.length > 0) {
-            prdFiles.push(...response.data.items.map(item => ({
+          if (matchingFiles.length > 0) {
+            prdFiles.push(...matchingFiles.map(item => ({
               name: item.name,
               path: item.path,
               sha: item.sha,
               url: item.html_url
             })));
           }
-        } catch (error) {
-          console.warn(`⚠️ Error searching for ${pattern} in ${repoName}:`, error.message);
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.warn(`⚠️ Error searching for PRD files in ${repoName}:`, error.message);
       }
       
       return prdFiles;
