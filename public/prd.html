@@ -404,6 +404,7 @@
     <div class="controls">
         <button id="refresh-btn" class="btn">🔄 Refresh</button>
         <button id="scan-repos-btn" class="btn primary">🔍 Scan Repos</button>
+        <button id="link-prd-btn" class="btn secondary">🔗 Link PRD</button>
         <button id="standardize-btn" class="btn secondary">🚀 Standardize</button>
         <button id="add-story-btn" class="btn success">➕ Add Story</button>
         <button id="watcher-status-btn" class="btn secondary">📡 Status</button>
@@ -491,15 +492,17 @@
         let stories = [];
         let projects = new Set();
         
-        // Load stories on page load
+        // Load stories and repository overview on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadStories();
+            loadRepositoryOverview();
             setupEventListeners();
         });
         
         function setupEventListeners() {
             document.getElementById('refresh-btn').addEventListener('click', loadStories);
             document.getElementById('scan-repos-btn').addEventListener('click', scanAllRepositories);
+            document.getElementById('link-prd-btn').addEventListener('click', showLinkPrdForm);
             document.getElementById('standardize-btn').addEventListener('click', standardizePrds);
             document.getElementById('add-story-btn').addEventListener('click', showAddStoryForm);
             document.getElementById('watcher-status-btn').addEventListener('click', checkWatcherStatus);
@@ -820,6 +823,71 @@
             if (!dateString) return 'Unknown';
             const date = new Date(dateString);
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        async function showLinkPrdForm() {
+            const projectName = prompt('Project Name (e.g., VoiceHub, Magic-Quill):');
+            if (!projectName) return;
+            
+            const prdUrl = prompt('GitHub PRD File URL (e.g., https://github.com/username/repo/blob/main/PRD.md):');
+            if (!prdUrl) return;
+            
+            // Extract repo name and file path from URL
+            const urlMatch = prdUrl.match(/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)/);
+            if (!urlMatch) {
+                alert('Invalid GitHub URL format. Please use a URL like: https://github.com/username/repo/blob/main/PRD.md');
+                return;
+            }
+            
+            const [, owner, repoName, branch, filePath] = urlMatch;
+            
+            try {
+                updateStatus('🔗 Linking PRD file...', '');
+                
+                const response = await fetch('/api/prd-stories/link-prd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        projectName,
+                        owner,
+                        repoName,
+                        branch,
+                        filePath,
+                        prdUrl
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('✅ PRD linked successfully', 'success');
+                    // Refresh the repository overview to show the new link
+                    setTimeout(() => {
+                        if (document.getElementById('repositories-overview').style.display !== 'none') {
+                            loadRepositoryOverview();
+                        }
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || 'Failed to link PRD');
+                }
+            } catch (error) {
+                updateStatus(`❌ Failed to link PRD: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadRepositoryOverview() {
+            try {
+                const response = await fetch('/api/prd-stories/repositories');
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayRepositoryOverview(result.repositories);
+                } else {
+                    throw new Error(result.error || 'Failed to load repositories');
+                }
+            } catch (error) {
+                updateStatus(`❌ Failed to load repositories: ${error.message}`, 'error');
+            }
         }
     </script>
 </body>

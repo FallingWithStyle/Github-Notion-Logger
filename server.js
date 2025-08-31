@@ -1106,6 +1106,143 @@ app.get('/api/prd-stories/status', asyncHandler(async (req, res) => {
   }
 }));
 
+// Helper function to parse repository output from standardize-prds.js
+function parseRepositoryOutput(output) {
+  const repos = [];
+  const lines = output.split('\n');
+  let currentRepo = null;
+  
+  for (const line of lines) {
+    if (line.includes('🔄 Processing repository:')) {
+      const repoName = line.split(':')[1]?.trim();
+      if (repoName) {
+        currentRepo = { name: repoName, status: 'unknown', prdCount: 0 };
+        repos.push(currentRepo);
+      }
+    }
+    
+    if (line.includes('📁 Found') && line.includes('potential PRD files')) {
+      const match = line.match(/Found (\d+) potential PRD files/);
+      if (match && currentRepo) {
+        const count = parseInt(match[1]);
+        currentRepo.status = count > 0 ? 'prd-found' : 'prd-missing';
+        currentRepo.prdCount = count;
+      }
+    }
+    
+    if (line.includes('⚠️ PRD') && line.includes('does not match expected schema')) {
+      if (currentRepo) currentRepo.status = 'prd-needs-update';
+    }
+  }
+  
+  return repos;
+}
+
+// Get all repositories with PRD status
+app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
+  try {
+    console.log('📊 Getting repository PRD status...');
+    
+    // Import and run the standardize-prds script to get current status
+    const { spawn } = require('child_process');
+    const standardizeProcess = spawn('node', ['standardize-prds.js'], {
+      stdio: 'pipe'
+    });
+    
+    let output = '';
+    let errorOutput = '';
+    
+    standardizeProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    standardizeProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    standardizeProcess.on('close', (code) => {
+      if (code === 0) {
+        // Parse the output to extract repository information
+        const repos = parseRepositoryOutput(output);
+        
+        res.json({
+          success: true,
+          repositories: repos
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to get repository status',
+          output: output,
+          errorOutput: errorOutput
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting repository status:', error);
+    res.status(500).json({ 
+      error: 'Error getting repository status',
+      details: error.message 
+    });
+  }
+}));
+
+// Link PRD file manually
+app.post('/api/prd-stories/link-prd', asyncHandler(async (req, res) => {
+  try {
+    const { projectName, owner, repoName, branch, filePath, prdUrl } = req.body;
+    
+    if (!projectName || !owner || !repoName || !branch || !filePath || !prdUrl) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    console.log(`🔗 Linking PRD file: ${filePath} in ${owner}/${repoName} for project ${projectName}`);
+    
+    // Store the PRD link in a simple JSON file for now
+    const prdLinksPath = path.join(__dirname, 'data', 'prd-links.json');
+    const dataDir = path.dirname(prdLinksPath);
+    
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    
+    let prdLinks = [];
+    if (fs.existsSync(prdLinksPath)) {
+      try {
+        const data = fs.readFileSync(prdLinksPath, 'utf8');
+        prdLinks = JSON.parse(data);
+      } catch (error) {
+        console.error('❌ Error reading existing PRD links:', error.message);
+      }
+    }
+    
+    // Check if project already exists
+    const existingIndex = prdLinks.findIndex(link => link.projectName === projectName);
+    if (existingIndex !== -1) {
+      prdLinks[existingIndex] = { projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() });
+    } else {
+      prdLinks.push({ projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() });
+    }
+    
+    // Save the updated links
+    fs.writeFileSync(prdLinksPath, JSON.stringify(prdLinks, null, 2));
+    
+    res.json({
+      success: true,
+      message: 'PRD linked successfully',
+      data: { projectName, owner, repoName, branch, filePath, prdUrl }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error linking PRD:', error);
+    res.status(500).json({ 
+      error: 'Error linking PRD',
+      details: error.message 
+    });
+  }
+}));
+
 // Global error handler
 app.use((error, req, res, next) => {
   console.error('❌ Unhandled error:', error);
