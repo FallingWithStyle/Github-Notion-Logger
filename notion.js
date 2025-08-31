@@ -49,8 +49,8 @@ let prdTrackingDatabaseId = null;
 
 // PRD tracking database schema
 const PRD_TRACKING_SCHEMA = {
-  "Project Name": { title: {} },
-  "Story Title": { title: {} },
+  "Story Title": { title: {} },  // Only one title property allowed
+  "Project Name": { rich_text: {} },  // Changed to rich_text
   "Status": { select: {} },
   "Priority": { number: {} },
   "Story Points": { select: {} },
@@ -411,11 +411,42 @@ async function ensurePrdTrackingDatabase() {
 
     console.log('🔄 No existing database found, creating new one...');
     
-    // Create the database in the root of the workspace
+    // Create the database using the same parent as other databases
+    let parentId = process.env.NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID || commitFromGithubLogDatabaseId;
+    let parentType = "page_id";
+    
+    // Check if the parent ID is actually a database ID
+    try {
+      const parentCheck = await notion.databases.retrieve({ database_id: parentId });
+      console.log('⚠️ Parent ID is actually a database ID, not a page ID');
+      console.log('🔄 Attempting to find a page within this database to use as parent...');
+      
+      // Query the database to find a page we can use as parent
+      const pagesResponse = await notion.databases.query({
+        database_id: parentId,
+        page_size: 1
+      });
+      
+      if (pagesResponse.results.length > 0) {
+        parentId = pagesResponse.results[0].id;
+        parentType = "page_id";
+        console.log(`✅ Found page within database to use as parent: ${parentId}`);
+      } else {
+        // If no pages exist, we'll need to create a page first or use a different approach
+        console.log('❌ No pages found in the database to use as parent');
+        console.log('🔄 Using the database itself as parent (this may fail)...');
+        parentType = "database_id";
+      }
+    } catch (error) {
+      // If it's not a database, assume it's a page ID
+      console.log('✅ Parent ID appears to be a valid page ID');
+    }
+    
     const newDatabase = await notion.databases.create({
-      parent: { type: "workspace" },
+      parent: { type: parentType, [parentType === "page_id" ? "page_id" : "database_id"]: parentId },
       title: [{ type: "text", text: { content: "PRD Story Tracking" } }],
-      properties: PRD_TRACKING_SCHEMA
+      properties: PRD_TRACKING_SCHEMA,
+      description: [{ type: "text", text: { content: "Product Requirements Document story tracking and management" } }]
     });
 
     prdTrackingDatabaseId = newDatabase.id;
@@ -447,11 +478,11 @@ async function addPrdStoryEntry(storyData) {
     const entry = {
       parent: { database_id: prdTrackingDatabaseId },
       properties: {
-        "Project Name": {
-          title: [{ type: "text", text: { content: projectName } }]
-        },
         "Story Title": {
           title: [{ type: "text", text: { content: storyTitle } }]
+        },
+        "Project Name": {
+          rich_text: [{ type: "text", text: { content: projectName } }]
         },
         "Status": {
           select: status ? { name: status } : null
@@ -498,7 +529,7 @@ async function getPrdStoryData(projectName = null, status = null) {
       if (projectName) {
         filters.push({
           property: "Project Name",
-          title: {
+          rich_text: {
             equals: projectName
           }
         });
@@ -531,7 +562,7 @@ async function getPrdStoryData(projectName = null, status = null) {
 
     const storyData = response.results.map(page => ({
       id: page.id,
-      projectName: page.properties["Project Name"]?.title?.[0]?.text?.content || "",
+      projectName: page.properties["Project Name"]?.rich_text?.[0]?.text?.content || "",
       storyTitle: page.properties["Story Title"]?.title?.[0]?.text?.content || "",
       status: page.properties["Status"]?.select?.name || "",
       priority: page.properties["Priority"]?.number || null,
