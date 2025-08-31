@@ -94,21 +94,8 @@
             transform: none;
         }
 
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-        }
-
         .btn.secondary {
             background: #6c757d;
-        }
-
-        .btn.primary {
-            background: #007bff;
-        }
-
-        .btn.primary:hover {
-            background: #0056b3;
         }
 
         .btn.secondary:hover {
@@ -121,6 +108,14 @@
 
         .btn.success:hover {
             background: #218838;
+        }
+
+        .btn.primary {
+            background: #007bff;
+        }
+
+        .btn.primary:hover {
+            background: #0056b3;
         }
 
         .status {
@@ -167,105 +162,17 @@
             font-size: 0.9rem;
         }
 
-        .repositories-overview {
+        .stories-section {
             max-width: 1200px;
             margin: 2rem auto;
             padding: 0 1rem;
         }
 
-        .repositories-overview h2 {
-            text-align: center;
-            margin-bottom: 2rem;
+        .stories-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
             color: #333;
-        }
-
-        .repo-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .repo-stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             text-align: center;
-        }
-
-        .repo-stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 0.5rem;
-        }
-
-        .repo-stat-label {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .repositories-list {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .repo-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
-            transition: background-color 0.2s ease;
-        }
-
-        .repo-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .repo-item:last-child {
-            border-bottom: none;
-        }
-
-        .repo-status {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 1rem;
-            flex-shrink: 0;
-        }
-
-        .repo-status.prd-found {
-            background-color: #28a745;
-        }
-
-        .repo-status.prd-missing {
-            background-color: #dc3545;
-        }
-
-        .repo-status.prd-needs-update {
-            background-color: #ffc107;
-        }
-
-        .repo-info {
-            flex: 1;
-        }
-
-        .repo-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.25rem;
-        }
-
-        .repo-details {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .repo-actions {
-            margin-left: 1rem;
         }
 
         .stories-container {
@@ -393,6 +300,113 @@
             letter-spacing: 0.5px;
         }
 
+        .control-section {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background: #f0f2ff;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .control-section h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+            color: #495057;
+        }
+
+        .repositories-overview {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: white;
+        }
+
+        .repositories-overview h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .repo-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .repo-stat-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .repo-stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .repo-stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .repositories-list {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .repositories-list h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+            color: #495057;
+        }
+
+        .repo-item {
+            background: #f8f9fa;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            border: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .repo-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .repo-item .repo-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .repo-item .repo-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .repo-item .repo-status.has-prd { background: #d4edda; color: #155724; }
+        .repo-item .repo-status.no-prd { background: #f8d7da; color: #721c24; }
+        .repo-item .repo-status.needs-update { background: #fff3cd; color: #856404; }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -434,11 +448,22 @@
     </div>
     
     <div class="controls">
-        <button id="refresh-btn" class="btn">🔄 Refresh Stories</button>
-        <button id="scan-repos-btn" class="btn primary">🔍 Scan All Repositories</button>
-        <button id="standardize-btn" class="btn secondary">🚀 Standardize PRDs</button>
-        <button id="add-story-btn" class="btn success">➕ Add Story</button>
-        <button id="watcher-status-btn" class="btn secondary">📡 Watcher Status</button>
+        <div class="control-section">
+            <h3>📋 Story Management</h3>
+            <button id="refresh-btn" class="btn">🔄 Refresh Stories</button>
+            <button id="add-story-btn" class="btn success">➕ Add Story</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>🔍 Repository Analysis</h3>
+            <button id="scan-repos-btn" class="btn primary">🔍 Scan All Repositories</button>
+            <button id="standardize-btn" class="btn secondary">🚀 Standardize PRDs</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>📡 System Status</h3>
+            <button id="watcher-status-btn" class="btn secondary">📡 Watcher Status</button>
+        </div>
         
         <div class="filters">
             <div class="filter-group">
@@ -463,31 +488,7 @@
         <div class="status" id="status">Ready to load stories</div>
     </div>
     
-    <div class="stats" id="stats" style="display: none;">
-        <div class="stat-card">
-            <div class="stat-number" id="total-stories">0</div>
-            <div class="stat-label">Total Stories</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number" id="active-stories">0</div>
-            <div class="stat-label">Active</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number" id="planning-stories">0</div>
-            <div class="stat-label">Planning</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number" id="done-stories">0</div>
-            <div class="stat-label">Done</div>
-        </div>
-    </div>
-    
-    <div id="loading" class="loading">
-        <p>Loading stories...</p>
-    </div>
-    
-    <div id="error" class="error hidden"></div>
-    
+    <!-- Repository Overview Section -->
     <div id="repositories-overview" class="repositories-overview" style="display: none;">
         <h2>📊 Repository PRD Status Overview</h2>
         <div class="repo-stats">
@@ -513,7 +514,36 @@
         </div>
     </div>
 
-    <div id="stories-container" class="stories-container" style="display: none;"></div>
+    <!-- Stories Section -->
+    <div id="stories-section" class="stories-section">
+        <h2>📋 PRD Stories</h2>
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-number" id="total-stories">0</div>
+                <div class="stat-label">Total Stories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="active-stories">0</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="planning-stories">0</div>
+                <div class="stat-label">Planning</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="done-stories">0</div>
+                <div class="stat-label">Done</div>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">
+            <p>Loading stories...</p>
+        </div>
+        
+        <div id="error" class="error hidden"></div>
+        
+        <div id="stories-container" class="stories-container" style="display: none;"></div>
+    </div>
     
     <script>
         let stories = [];
@@ -752,7 +782,7 @@
             statusDiv.textContent = message;
             statusDiv.className = `status ${type}`;
         }
-        
+
         async function scanAllRepositories() {
             try {
                 updateStatus('🔍 Scanning all repositories for PRD status...', '');
@@ -863,16 +893,8 @@
             const container = document.getElementById('repositories-list');
             container.innerHTML = repos.map(repo => `
                 <div class="repo-item">
-                    <div class="repo-status ${repo.status}"></div>
-                    <div class="repo-info">
-                        <div class="repo-name">${repo.name}</div>
-                        <div class="repo-details">
-                            ${getRepoStatusDescription(repo)}
-                        </div>
-                    </div>
-                    <div class="repo-actions">
-                        ${getRepoActions(repo)}
-                    </div>
+                    <div class="repo-name">${repo.name}</div>
+                    <div class="repo-status ${getRepoStatusClass(repo.status)}">${getRepoStatusText(repo)}</div>
                 </div>
             `).join('');
             
@@ -880,26 +902,26 @@
             document.getElementById('repositories-overview').style.display = 'block';
         }
         
-        function getRepoStatusDescription(repo) {
+        function getRepoStatusClass(status) {
+            switch (status) {
+                case 'prd-found': return 'has-prd';
+                case 'prd-missing': return 'no-prd';
+                case 'prd-needs-update': return 'needs-update';
+                default: return 'unknown';
+            }
+        }
+        
+        function getRepoStatusText(repo) {
             switch (repo.status) {
                 case 'prd-found':
                     return `✅ PRD found (${repo.prdCount} file${repo.prdCount > 1 ? 's' : ''})`;
                 case 'prd-missing':
                     return '❌ No PRD files found';
                 case 'prd-needs-update':
-                    return `⚠️ PRD needs schema update: ${repo.validationIssues.join(', ')}`;
+                    return `⚠️ Needs schema update`;
                 default:
                     return '❓ Status unknown';
             }
-        }
-        
-        function getRepoActions(repo) {
-            if (repo.status === 'prd-missing') {
-                return '<button class="btn btn-sm" onclick="createPrdTemplate(\'' + repo.name + '\')">📝 Create PRD</button>';
-            } else if (repo.status === 'prd-needs-update') {
-                return '<button class="btn btn-sm" onclick="updatePrdSchema(\'' + repo.name + '\')">🔄 Update Schema</button>';
-            }
-            return '';
         }
         
         function formatDate(dateString) {
