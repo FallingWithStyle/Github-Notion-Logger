@@ -1220,7 +1220,7 @@ app.post('/api/prd-stories/link-prd', asyncHandler(async (req, res) => {
     // Check if project already exists
     const existingIndex = prdLinks.findIndex(link => link.projectName === projectName);
     if (existingIndex !== -1) {
-      prdLinks[existingIndex] = { projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() });
+      prdLinks[existingIndex] = { projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() };
     } else {
       prdLinks.push({ projectName, owner, repoName, branch, filePath, prdUrl, linkedAt: new Date().toISOString() });
     }
