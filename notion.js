@@ -691,14 +691,18 @@ async function createCommitPage(commit, repoName) {
   const originalDate = new Date(commit.timestamp);
   const effectiveDateObj = new Date(effectiveDate);
   
-  // Preserve the time from the original commit but use the effective date
+  // Convert the original UTC time to the user's timezone before applying it
+  const timezoneInfo = timezoneConfig.getTimezoneInfo();
+  const localTime = new Date(originalDate.toLocaleString('en-US', { timeZone: timezoneInfo.timezone }));
+  
+  // Preserve the time from the original commit but use the effective date and local time
   const finalTimestamp = new Date(
     effectiveDateObj.getFullYear(),
     effectiveDateObj.getMonth(),
     effectiveDateObj.getDate(),
-    originalDate.getUTCHours(),
-    originalDate.getUTCMinutes(),
-    originalDate.getUTCSeconds()
+    localTime.getHours(),
+    localTime.getMinutes(),
+    localTime.getSeconds()
   );
   
   // Truncate commit message if it's too long for Notion (2000 char limit)
