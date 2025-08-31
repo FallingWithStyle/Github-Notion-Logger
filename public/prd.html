@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRD Story Tracking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-links {
+            background: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: #667eea;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: #f0f2ff;
+        }
+
+        .nav-link.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .controls {
+            background: white;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            text-align: center;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.secondary {
+            background: #6c757d;
+        }
+
+        .btn.secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn.success {
+            background: #28a745;
+        }
+
+        .btn.success:hover {
+            background: #218838;
+        }
+
+        .status {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 6px;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .stories-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .story-card {
+            background: white;
+            margin: 1rem 0;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .story-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .story-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .story-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .story-project {
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .story-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-idea { background: #f8f9fa; color: #6c757d; }
+        .status-planning { background: #fff3cd; color: #856404; }
+        .status-active { background: #cce5ff; color: #004085; }
+        .status-review { background: #ffeaa7; color: #d63031; }
+        .status-done { background: #d4edda; color: #155724; }
+
+        .story-notes {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                margin: 1rem;
+                padding: 1rem;
+            }
+            
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .story-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .story-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📋 PRD Story Tracking</h1>
+        <p>Monitor and manage feature development across all your projects</p>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/" class="nav-link">📊 Activity View</a>
+        <a href="/week" class="nav-link">📅 Weekly Planning</a>
+        <a href="/prd" class="nav-link active">📋 PRD Stories</a>
+    </div>
+    
+    <div class="controls">
+        <button id="refresh-btn" class="btn">🔄 Refresh Stories</button>
+        <button id="standardize-btn" class="btn secondary">🚀 Standardize PRDs</button>
+        <button id="add-story-btn" class="btn success">➕ Add Story</button>
+        <button id="watcher-status-btn" class="btn secondary">📡 Watcher Status</button>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label for="project-filter">Project:</label>
+                <select id="project-filter">
+                    <option value="">All Projects</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="status-filter">Status:</label>
+                <select id="status-filter">
+                    <option value="">All Statuses</option>
+                    <option value="Idea">Idea</option>
+                    <option value="Planning">Planning</option>
+                    <option value="Active">Active</option>
+                    <option value="Review">Review</option>
+                    <option value="Done">Done</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="status" id="status">Ready to load stories</div>
+    </div>
+    
+    <div class="stats" id="stats" style="display: none;">
+        <div class="stat-card">
+            <div class="stat-number" id="total-stories">0</div>
+            <div class="stat-label">Total Stories</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="active-stories">0</div>
+            <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="planning-stories">0</div>
+            <div class="stat-label">Planning</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="done-stories">0</div>
+            <div class="stat-label">Done</div>
+        </div>
+    </div>
+    
+    <div id="loading" class="loading">
+        <p>Loading stories...</p>
+    </div>
+    
+    <div id="error" class="error hidden"></div>
+    
+    <div id="stories-container" class="stories-container" style="display: none;"></div>
+    
+    <script>
+        let stories = [];
+        let projects = new Set();
+        
+        // Load stories on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStories();
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            document.getElementById('refresh-btn').addEventListener('click', loadStories);
+            document.getElementById('standardize-btn').addEventListener('click', standardizePrds);
+            document.getElementById('add-story-btn').addEventListener('click', showAddStoryForm);
+            document.getElementById('watcher-status-btn').addEventListener('click', checkWatcherStatus);
+            document.getElementById('project-filter').addEventListener('change', filterStories);
+            document.getElementById('status-filter').addEventListener('change', filterStories);
+        }
+        
+        async function loadStories() {
+            try {
+                showLoading(true);
+                updateStatus('Loading stories...', '');
+                
+                const response = await fetch('/api/prd-stories');
+                const result = await response.json();
+                
+                if (result.success) {
+                    stories = result.data;
+                    projects = new Set(stories.map(s => s.projectName));
+                    
+                    updateProjectFilter();
+                    displayStories();
+                    updateStats();
+                    showLoading(false);
+                    updateStatus(`Loaded ${stories.length} stories`, 'success');
+                } else {
+                    throw new Error(result.error || 'Failed to load stories');
+                }
+            } catch (error) {
+                showLoading(false);
+                showError(`Error loading stories: ${error.message}`);
+                updateStatus('Failed to load stories', 'error');
+            }
+        }
+        
+        function updateProjectFilter() {
+            const filter = document.getElementById('project-filter');
+            const currentValue = filter.value;
+            
+            filter.innerHTML = '<option value="">All Projects</option>';
+            Array.from(projects).sort().forEach(project => {
+                const option = document.createElement('option');
+                option.value = project;
+                option.textContent = project;
+                if (project === currentValue) {
+                    option.selected = true;
+                }
+                filter.appendChild(option);
+            });
+        }
+        
+        function displayStories() {
+            const container = document.getElementById('stories-container');
+            const filteredStories = getFilteredStories();
+            
+            if (filteredStories.length === 0) {
+                container.innerHTML = '<div class="loading"><p>No stories found matching the current filters</p></div>';
+                container.style.display = 'block';
+                return;
+            }
+            
+            container.innerHTML = filteredStories.map(story => `
+                <div class="story-card">
+                    <div class="story-header">
+                        <div>
+                            <div class="story-title">${story.storyTitle}</div>
+                            <div class="story-project">${story.projectName}</div>
+                        </div>
+                        <span class="status-badge status-${story.status.toLowerCase()}">${story.status}</span>
+                    </div>
+                    
+                    <div class="story-meta">
+                        ${story.priority ? `<div class="meta-item">🎯 Priority: ${story.priority}</div>` : ''}
+                        ${story.storyPoints ? `<div class="meta-item">📏 Story Points: ${story.storyPoints}</div>` : ''}
+                        ${story.repository ? `<div class="meta-item">📁 Repo: ${story.repository}</div>` : ''}
+                        <div class="meta-item">📅 Created: ${formatDate(story.created)}</div>
+                        <div class="meta-item">🔄 Updated: ${formatDate(story.lastUpdated)}</div>
+                    </div>
+                    
+                    ${story.notes ? `<div class="story-notes">${story.notes}</div>` : ''}
+                </div>
+            `).join('');
+            
+            container.style.display = 'block';
+        }
+        
+        function getFilteredStories() {
+            let filtered = [...stories];
+            
+            const projectFilter = document.getElementById('project-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+            
+            if (projectFilter) {
+                filtered = filtered.filter(s => s.projectName === projectFilter);
+            }
+            
+            if (statusFilter) {
+                filtered = filtered.filter(s => s.status === statusFilter);
+            }
+            
+            return filtered;
+        }
+        
+        function filterStories() {
+            displayStories();
+        }
+        
+        function updateStats() {
+            const stats = document.getElementById('stats');
+            const total = stories.length;
+            const active = stories.filter(s => s.status === 'Active').length;
+            const planning = stories.filter(s => s.status === 'Planning').length;
+            const done = stories.filter(s => s.status === 'Done').length;
+            
+            document.getElementById('total-stories').textContent = total;
+            document.getElementById('active-stories').textContent = active;
+            document.getElementById('planning-stories').textContent = planning;
+            document.getElementById('done-stories').textContent = done;
+            
+            stats.style.display = 'grid';
+        }
+        
+        async function standardizePrds() {
+            try {
+                updateStatus('Starting PRD standardization...', '');
+                
+                const response = await fetch('/api/prd-stories/standardize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Standardized ${result.repositories} repositories, found ${result.count} stories`, 'success');
+                    // Reload stories to show new ones
+                    setTimeout(loadStories, 1000);
+                } else {
+                    throw new Error(result.error || 'Standardization failed');
+                }
+            } catch (error) {
+                updateStatus(`Standardization failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkWatcherStatus() {
+            try {
+                const response = await fetch('/api/prd-stories/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const status = result.data;
+                    updateStatus(`Watcher: ${status.isRunning ? 'Running' : 'Stopped'}, Last check: ${formatDate(status.lastCheck)}`, 'success');
+                } else {
+                    throw new Error(result.error || 'Failed to get watcher status');
+                }
+            } catch (error) {
+                updateStatus(`Failed to get watcher status: ${error.message}`, 'error');
+            }
+        }
+        
+        function showAddStoryForm() {
+            // Simple prompt-based form for now
+            const projectName = prompt('Project Name:');
+            if (!projectName) return;
+            
+            const storyTitle = prompt('Story Title:');
+            if (!storyTitle) return;
+            
+            const status = prompt('Status (Idea/Planning/Active/Review/Done):', 'Idea');
+            const priority = prompt('Priority (1-5):', '3');
+            const storyPoints = prompt('Story Points (1,2,3,5,8,13,21):', '');
+            const notes = prompt('Notes (optional):', '');
+            
+            addStory({
+                projectName,
+                storyTitle,
+                status,
+                priority: parseInt(priority) || 3,
+                storyPoints: storyPoints || null,
+                notes
+            });
+        }
+        
+        async function addStory(storyData) {
+            try {
+                updateStatus('Adding story...', '');
+                
+                const response = await fetch('/api/prd-stories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(storyData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('Story added successfully', 'success');
+                    loadStories(); // Reload to show new story
+                } else {
+                    throw new Error(result.error || 'Failed to add story');
+                }
+            } catch (error) {
+                updateStatus(`Failed to add story: ${error.message}`, 'error');
+            }
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('stories-container').style.display = show ? 'none' : 'block';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+        }
+        
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+    </script>
+</body>
+</html>

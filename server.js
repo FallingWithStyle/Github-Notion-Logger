@@ -550,6 +550,11 @@ app.get('/week', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'week.html'));
 });
 
+// Serve the PRD story tracking page
+app.get('/prd', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'prd.html'));
+});
+
 // API endpoint to get 28-day project data for weekly planning
 app.get('/api/weekly-data', asyncHandler(async (req, res) => {
   try {
@@ -927,6 +932,179 @@ app.post('/api/timezone-config', (req, res) => {
     });
   }
 });
+
+// PRD Story Tracking endpoints
+app.get('/api/prd-stories', asyncHandler(async (req, res) => {
+  try {
+    const { projectName, status } = req.query;
+    
+    console.log(`📊 Fetching PRD stories${projectName ? ` for project ${projectName}` : ''}${status ? ` with status ${status}` : ''}...`);
+    
+    const { getPrdStoryData } = require('./notion');
+    const stories = await getPrdStoryData(projectName, status);
+    
+    res.json({
+      success: true,
+      data: stories,
+      count: stories.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching PRD stories:', error);
+    res.status(500).json({ 
+      error: 'Error fetching PRD stories',
+      details: error.message 
+    });
+  }
+}));
+
+// Add new PRD story
+app.post('/api/prd-stories', asyncHandler(async (req, res) => {
+  try {
+    const { projectName, storyTitle, status, priority, storyPoints, repository, notes } = req.body;
+    
+    if (!projectName || !storyTitle || !status) {
+      return res.status(400).json({ error: 'Missing required fields: projectName, storyTitle, status' });
+    }
+    
+    console.log(`📝 Adding new PRD story: ${storyTitle} for project ${projectName}`);
+    
+    const { addPrdStoryEntry } = require('./notion');
+    const result = await addPrdStoryEntry({
+      projectName,
+      storyTitle,
+      status,
+      priority,
+      storyPoints,
+      repository,
+      notes
+    });
+    
+    res.json({
+      success: true,
+      message: 'Story added successfully',
+      data: result
+    });
+    
+  } catch (error) {
+    console.error('❌ Error adding PRD story:', error);
+    res.status(500).json({ 
+      error: 'Error adding PRD story',
+      details: error.message 
+    });
+  }
+}));
+
+// Update existing PRD story
+app.put('/api/prd-stories/:id', asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'Missing story ID' });
+    }
+    
+    console.log(`📝 Updating PRD story: ${id}`);
+    
+    const { updatePrdStoryEntry } = require('./notion');
+    const result = await updatePrdStoryEntry(id, updates);
+    
+    res.json({
+      success: true,
+      message: 'Story updated successfully',
+      data: result
+    });
+    
+  } catch (error) {
+    console.error('❌ Error updating PRD story:', error);
+    res.status(500).json({ 
+      error: 'Error updating PRD story',
+      details: error.message 
+    });
+  }
+}));
+
+// Standardize PRDs
+app.post('/api/prd-stories/standardize', asyncHandler(async (req, res) => {
+  try {
+    console.log('🔄 Starting PRD standardization process...');
+    
+    // Import and run the standardize-prds script
+    const { spawn } = require('child_process');
+    const standardizeProcess = spawn('node', ['standardize-prds.js'], {
+      stdio: 'pipe'
+    });
+    
+    let output = '';
+    let errorOutput = '';
+    
+    standardizeProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    standardizeProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    standardizeProcess.on('close', (code) => {
+      if (code === 0) {
+        res.json({
+          success: true,
+          message: 'PRD standardization completed successfully',
+          output: output
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'PRD standardization failed',
+          output: output,
+          errorOutput: errorOutput
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error starting PRD standardization:', error);
+    res.status(500).json({ 
+      error: 'Error starting PRD standardization',
+      details: error.message 
+    });
+  }
+}));
+
+// Get PRD watcher status
+app.get('/api/prd-stories/status', asyncHandler(async (req, res) => {
+  try {
+    console.log('📊 Getting PRD watcher status...');
+    
+    // Check if the watcher is running
+    const { spawn } = require('child_process');
+    const psProcess = spawn('ps', ['aux'], { stdio: 'pipe' });
+    
+    let output = '';
+    psProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    psProcess.on('close', (code) => {
+      const isRunning = output.includes('prd-file-watcher.js');
+      
+      res.json({
+        success: true,
+        isRunning,
+        message: isRunning ? 'PRD watcher is running' : 'PRD watcher is not running'
+      });
+    });
+    
+  } catch (error) {
+    console.error('❌ Error checking PRD watcher status:', error);
+    res.status(500).json({ 
+      error: 'Error checking PRD watcher status',
+      details: error.message 
+    });
+  }
+}));
 
 // Global error handler
 app.use((error, req, res, next) => {

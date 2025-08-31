@@ -44,6 +44,22 @@ const WEEKLY_PLANNING_SCHEMA = {
   "Last Updated": { date: {} }
 };
 
+// PRD tracking database ID (will be created if doesn't exist)
+let prdTrackingDatabaseId = null;
+
+// PRD tracking database schema
+const PRD_TRACKING_SCHEMA = {
+  "Project Name": { title: {} },
+  "Story Title": { title: {} },
+  "Status": { select: {} },
+  "Priority": { number: {} },
+  "Story Points": { select: {} },
+  "Repository": { rich_text: {} },
+  "Notes": { rich_text: {} },
+  "Created": { date: {} },
+  "Last Updated": { date: {} }
+};
+
 // Ensure weekly planning database exists
 async function ensureWeeklyPlanningDatabase() {
   console.log('🔄 Ensuring weekly planning database exists...');
@@ -326,6 +342,242 @@ async function updateWeeklyPlanningEntry(entryId, updates) {
     console.log(`✅ Updated weekly planning entry: ${entryId}`);
   } catch (error) {
     console.error('❌ Error updating weekly planning entry:', error);
+    throw error;
+  }
+}
+
+// Ensure PRD tracking database exists
+async function ensurePrdTrackingDatabase() {
+  console.log('🔄 Ensuring PRD tracking database exists...');
+  console.log('🔄 Current database ID:', prdTrackingDatabaseId);
+  console.log('🔄 Environment variables:');
+  console.log('   - NOTION_API_KEY:', process.env.NOTION_API_KEY ? 'SET' : 'NOT SET');
+  console.log('   - NOTION_PRD_TRACKING_DATABASE_ID:', process.env.NOTION_PRD_TRACKING_DATABASE_ID || 'NOT SET');
+  
+  // Always check the database schema, even if we have a cached ID
+  if (prdTrackingDatabaseId) {
+    console.log('🔄 Checking existing database schema for ID:', prdTrackingDatabaseId);
+    try {
+      const db = await notion.databases.retrieve({ database_id: prdTrackingDatabaseId });
+      console.log('🔄 Existing database properties:', Object.keys(db.properties));
+      
+      // Check if all required properties exist
+      const requiredProps = ['Project Name', 'Story Title', 'Status', 'Priority', 'Story Points', 'Repository', 'Last Updated', 'Created', 'Notes'];
+      const missingProps = requiredProps.filter(prop => !db.properties[prop]);
+      
+      if (missingProps.length > 0) {
+        console.log('⚠️ Database schema is outdated. Missing properties:', missingProps);
+        console.log('🔄 Updating database schema...');
+        
+        // Update the database schema
+        await notion.databases.update({
+          database_id: prdTrackingDatabaseId,
+          properties: PRD_TRACKING_SCHEMA
+        });
+        
+        console.log('✅ Database schema updated successfully');
+        return prdTrackingDatabaseId;
+      } else {
+        console.log('✅ Database schema is up to date');
+        return prdTrackingDatabaseId;
+      }
+    } catch (error) {
+      console.error('❌ Error checking/updating database schema:', error);
+      // If there's an error, try to recreate the database
+      console.log('🔄 Attempting to recreate database...');
+      prdTrackingDatabaseId = null;
+    }
+  }
+
+  try {
+    console.log('🔄 Searching for existing PRD tracking database...');
+    // Check if database already exists by searching for it
+    const response = await notion.search({
+      query: "PRD Story Tracking",
+      filter: {
+        property: "object",
+        value: "database"
+      }
+    });
+
+    if (response.results.length > 0) {
+      console.log('🔄 Found existing PRD tracking database');
+      prdTrackingDatabaseId = response.results[0].id;
+      console.log('🔄 Using existing database ID:', prdTrackingDatabaseId);
+      
+      // Verify the database has the correct schema
+      return await ensurePrdTrackingDatabase();
+    }
+
+    console.log('🔄 No existing database found, creating new one...');
+    
+    // Create the database in the root of the workspace
+    const newDatabase = await notion.databases.create({
+      parent: { type: "workspace" },
+      title: [{ type: "text", text: { content: "PRD Story Tracking" } }],
+      properties: PRD_TRACKING_SCHEMA
+    });
+
+    prdTrackingDatabaseId = newDatabase.id;
+    console.log('✅ Created new PRD tracking database with ID:', prdTrackingDatabaseId);
+    return prdTrackingDatabaseId;
+  } catch (error) {
+    console.error('❌ Error ensuring PRD tracking database:', error);
+    throw error;
+  }
+}
+
+// Add PRD story entry to Notion
+async function addPrdStoryEntry(storyData) {
+  try {
+    console.log('🔄 Starting addPrdStoryEntry...');
+    console.log('🔄 Story data received:', storyData);
+    
+    await ensurePrdTrackingDatabase();
+    console.log('🔄 Database ensured, ID:', prdTrackingDatabaseId);
+    
+    if (!prdTrackingDatabaseId) {
+      throw new Error('Failed to get valid PRD tracking database ID');
+    }
+    
+    console.log('🔄 Proceeding with page creation...');
+    
+    const { projectName, storyTitle, status, priority, storyPoints, repository, notes } = storyData;
+    
+    const entry = {
+      parent: { database_id: prdTrackingDatabaseId },
+      properties: {
+        "Project Name": {
+          title: [{ type: "text", text: { content: projectName } }]
+        },
+        "Story Title": {
+          title: [{ type: "text", text: { content: storyTitle } }]
+        },
+        "Status": {
+          select: status ? { name: status } : null
+        },
+        "Priority": {
+          number: parseInt(priority) || null
+        },
+        "Story Points": {
+          select: storyPoints ? { name: storyPoints.toString() } : null
+        },
+        "Repository": {
+          rich_text: repository ? [{ type: "text", text: { content: repository } }] : []
+        },
+        "Notes": {
+          rich_text: notes ? [{ type: "text", text: { content: notes } }] : []
+        },
+        "Created": {
+          date: { start: new Date().toISOString() }
+        },
+        "Last Updated": {
+          date: { start: new Date().toISOString() }
+        }
+      }
+    };
+
+    console.log('🔄 Creating page with properties:', Object.keys(entry.properties));
+    const result = await notion.pages.create(entry);
+    console.log(`✅ Added PRD story entry for ${storyTitle} (${projectName})`);
+    return result;
+  } catch (error) {
+    console.error('❌ Error adding PRD story entry:', error);
+    throw error;
+  }
+}
+
+// Get PRD story data from Notion
+async function getPrdStoryData(projectName = null, status = null) {
+  try {
+    await ensurePrdTrackingDatabase();
+    
+    let filter = {};
+    if (projectName || status) {
+      const filters = [];
+      if (projectName) {
+        filters.push({
+          property: "Project Name",
+          title: {
+            equals: projectName
+          }
+        });
+      }
+      if (status) {
+        filters.push({
+          property: "Status",
+          select: {
+            equals: status
+          }
+        });
+      }
+      
+      if (filters.length === 1) {
+        filter = filters[0];
+      } else {
+        filter = { and: filters };
+      }
+    }
+
+    const response = await notion.databases.query({
+      database_id: prdTrackingDatabaseId,
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      sorts: [
+        { property: "Priority", direction: "descending" },
+        { property: "Project Name", direction: "ascending" },
+        { property: "Story Title", direction: "ascending" }
+      ]
+    });
+
+    const storyData = response.results.map(page => ({
+      id: page.id,
+      projectName: page.properties["Project Name"]?.title?.[0]?.text?.content || "",
+      storyTitle: page.properties["Story Title"]?.title?.[0]?.text?.content || "",
+      status: page.properties["Status"]?.select?.name || "",
+      priority: page.properties["Priority"]?.number || null,
+      storyPoints: page.properties["Story Points"]?.select?.name || "",
+      repository: page.properties["Repository"]?.rich_text?.[0]?.text?.content || "",
+      notes: page.properties["Notes"]?.rich_text?.[0]?.text?.content || "",
+      created: page.properties["Created"]?.date?.start || "",
+      lastUpdated: page.properties["Last Updated"]?.date?.start || ""
+    }));
+
+    console.log(`📊 Retrieved ${storyData.length} PRD story entries`);
+    return storyData;
+  } catch (error) {
+    console.error('❌ Error getting PRD story data:', error);
+    throw error;
+  }
+}
+
+// Update existing PRD story entry
+async function updatePrdStoryEntry(entryId, updates) {
+  try {
+    const properties = {};
+    
+    if (updates.status !== undefined) {
+      properties["Status"] = { select: updates.status ? { name: updates.status } : null };
+    }
+    if (updates.priority !== undefined) {
+      properties["Priority"] = { number: parseInt(updates.priority) || null };
+    }
+    if (updates.storyPoints !== undefined) {
+      properties["Story Points"] = { select: updates.storyPoints ? { name: updates.storyPoints.toString() } : null };
+    }
+    if (updates.notes !== undefined) {
+      properties["Notes"] = { rich_text: updates.notes ? [{ type: "text", text: { content: updates.notes } }] : [] };
+    }
+    
+    properties["Last Updated"] = { date: { start: new Date().toISOString() } };
+
+    await notion.pages.update({
+      page_id: entryId,
+      properties
+    });
+
+    console.log(`✅ Updated PRD story entry: ${entryId}`);
+  } catch (error) {
+    console.error('❌ Error updating PRD story entry:', error);
     throw error;
   }
 }
@@ -889,5 +1141,9 @@ module.exports = {
   updateWeeklyPlanningEntry,
   ensureWeeklyPlanningDatabase,
   addMissingShaValues,
-  commitFromGithubLogDatabaseId
+  commitFromGithubLogDatabaseId,
+  addPrdStoryEntry,
+  getPrdStoryData,
+  updatePrdStoryEntry,
+  ensurePrdTrackingDatabase
 };
