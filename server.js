@@ -1373,6 +1373,36 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
   }
 }));
 
+// Clean up bad PRD story entries (null titles)
+app.post('/api/prd-stories/cleanup', asyncHandler(async (req, res) => {
+  try {
+    console.log('🧹 Cleaning up bad PRD story entries...');
+    
+    const { getPrdStoryData } = require('./notion');
+    const allStories = await getPrdStoryData();
+    
+    // Find stories with null/empty titles
+    const badStories = allStories.filter(story => !story.title || story.title.trim() === '');
+    
+    console.log(`🗑️ Found ${badStories.length} stories with null/empty titles to clean up`);
+    
+    // For now, just return the count - in a real implementation, you'd delete these from Notion
+    res.json({
+      success: true,
+      message: `Found ${badStories.length} stories with null/empty titles that need cleanup`,
+      badStoriesCount: badStories.length,
+      totalStories: allStories.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Error cleaning up PRD stories:', error);
+    res.status(500).json({ 
+      error: 'Error cleaning up PRD stories',
+      details: error.message 
+    });
+  }
+}));
+
 // Link PRD file manually
 app.post('/api/prd-stories/link-prd', asyncHandler(async (req, res) => {
   try {

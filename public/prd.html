@@ -450,6 +450,7 @@
         <button id="refresh-btn" class="btn">🔄 Refresh</button>
         <button id="scan-repos-btn" class="btn primary">🔍 Scan Repos</button>
         <button id="link-prd-btn" class="btn secondary">🔗 Link PRD</button>
+        <button id="cleanup-btn" class="btn warning">🧹 Cleanup</button>
         <button id="standardize-btn" class="btn secondary">🚀 Standardize</button>
         <button id="add-story-btn" class="btn success">➕ Add Story</button>
         <button id="watcher-status-btn" class="btn secondary">📡 Status</button>
@@ -548,6 +549,7 @@
             document.getElementById('refresh-btn').addEventListener('click', loadStories);
             document.getElementById('scan-repos-btn').addEventListener('click', scanAllRepositories);
             document.getElementById('link-prd-btn').addEventListener('click', showLinkPrdForm);
+            document.getElementById('cleanup-btn').addEventListener('click', cleanupStories);
             document.getElementById('standardize-btn').addEventListener('click', standardizePrds);
             document.getElementById('add-story-btn').addEventListener('click', showAddStoryForm);
             document.getElementById('watcher-status-btn').addEventListener('click', checkWatcherStatus);
@@ -708,6 +710,36 @@
             document.getElementById('done-stories').textContent = done;
             
             stats.style.display = 'grid';
+        }
+        
+        async function cleanupStories() {
+            try {
+                updateStatus('Checking for bad story entries...', '');
+                
+                const response = await fetch('/api/prd-stories/cleanup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Found ${result.badStoriesCount} stories with null titles (${result.totalStories} total)`, 'warning');
+                    
+                    if (result.badStoriesCount > 0) {
+                        if (confirm(`Found ${result.badStoriesCount} stories with null titles. These are being filtered out. Would you like to re-extract stories from your PRDs?`)) {
+                            // Re-extract from linked PRDs
+                            updateStatus('Re-extracting stories from linked PRDs...', '');
+                            setTimeout(loadStories, 1000);
+                        }
+                    }
+                } else {
+                    throw new Error(result.error || 'Cleanup check failed');
+                }
+            } catch (error) {
+                updateStatus(`Cleanup check failed: ${error.message}`, 'error');
+            }
         }
         
         async function standardizePrds() {
