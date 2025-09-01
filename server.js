@@ -1251,6 +1251,40 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
         // Parse the output to extract repository information
         const repos = parseRepositoryOutput(output);
         
+        // Add manually linked PRDs to the repository list
+        const prdLinksPath = path.join(__dirname, 'data', 'prd-links.json');
+        if (fs.existsSync(prdLinksPath)) {
+          try {
+            const prdLinksData = fs.readFileSync(prdLinksPath, 'utf8');
+            const prdLinks = JSON.parse(prdLinksData);
+            
+            // Add manually linked repositories to the list
+            for (const link of prdLinks) {
+              const repoName = link.repoName;
+              const existingRepo = repos.find(repo => repo.name === repoName);
+              
+              if (existingRepo) {
+                // Update existing repo to show it has a linked PRD
+                existingRepo.status = 'prd-linked';
+                existingRepo.prdCount = 1;
+                existingRepo.manuallyLinked = true;
+                existingRepo.projectName = link.projectName;
+              } else {
+                // Add new repo entry for manually linked PRD
+                repos.push({
+                  name: repoName,
+                  status: 'prd-linked',
+                  prdCount: 1,
+                  manuallyLinked: true,
+                  projectName: link.projectName
+                });
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Error reading PRD links:', error.message);
+          }
+        }
+        
         res.json({
           success: true,
           repositories: repos

@@ -235,6 +235,7 @@
         .repo-item .repo-status.has-prd { background: #d4edda; color: #155724; }
         .repo-item .repo-status.no-prd { background: #f8d7da; color: #721c24; }
         .repo-item .repo-status.needs-update { background: #fff3cd; color: #856404; }
+        .repo-item .repo-status.prd-linked { background: #cce5ff; color: #004085; }
 
         .stories-container {
             max-width: 1200px;
@@ -806,6 +807,7 @@
                 case 'prd-found': return 'has-prd';
                 case 'prd-missing': return 'no-prd';
                 case 'prd-needs-update': return 'needs-update';
+                case 'prd-linked': return 'prd-linked';
                 default: return 'unknown';
             }
         }
@@ -815,6 +817,7 @@
                 case 'prd-found': return `✅ PRD (${repo.prdCount})`;
                 case 'prd-missing': return '❌ No PRD';
                 case 'prd-needs-update': return '⚠️ Update needed';
+                case 'prd-linked': return `🔗 Linked (${repo.projectName || 'Unknown'})`;
                 default: return '❓ Unknown';
             }
         }
