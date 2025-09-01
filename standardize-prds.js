@@ -322,83 +322,88 @@ function extractStoriesFromContent(content, repoName) {
   const stories = [];
   const lines = content.split('\n');
   
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    
-    // Skip empty lines and comments
-    if (!line || line.startsWith('<!--') || line.startsWith('//')) {
-      continue;
-    }
-    
-    // Try to extract story information using AI patterns
-    for (const pattern of STORY_PATTERNS) {
-      const match = line.match(pattern);
-      if (match) {
-        const status = match[1]?.toLowerCase();
-        const title = match[2] || match[1];
-        
-        if (title && title.length > 3) {
-          // Determine priority from context
-          let priority = 3; // Default medium
-          let storyPoints = null;
-          
-          // Check for priority indicators in the line or surrounding context
-          const lowerLine = line.toLowerCase();
-          for (const [indicator, value] of Object.entries(PRIORITY_INDICATORS)) {
-            if (lowerLine.includes(indicator)) {
-              priority = value;
-              break;
-            }
-          }
-          
-          // Check for story point indicators
-          for (const [indicator, value] of Object.entries(STORY_POINT_INDICATORS)) {
-            if (lowerLine.includes(indicator)) {
-              storyPoints = value;
-              break;
-            }
-          }
-          
-          // Look for story points in surrounding context (next few lines)
-          if (!storyPoints) {
-            for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-              const contextLine = lines[j].toLowerCase();
-              for (const [indicator, value] of Object.entries(STORY_POINT_INDICATORS)) {
-                if (contextLine.includes(indicator)) {
-                  storyPoints = value;
-                  break;
-                }
-              }
-              if (storyPoints) break;
-            }
-          }
-          
-          // Map status to standard statuses
-          let standardStatus = 'Idea';
-          if (status) {
-            if (status.includes('done') || status.includes('complete')) {
-              standardStatus = 'Done';
-            } else if (status.includes('active') || status.includes('in-progress')) {
-              standardStatus = 'Active';
-            } else if (status.includes('plan') || status.includes('design')) {
-              standardStatus = 'Planning';
-            } else if (status.includes('review') || status.includes('testing')) {
-              standardStatus = 'Review';
-            }
-          }
-          
-          stories.push({
-            title: title.trim(),
-            status: standardStatus,
-            priority,
-            storyPoints,
-            repository: repoName,
-            source: line
-          });
-          
-          break; // Found a match, move to next line
+  // Better story extraction patterns - focus on actual story titles
+  const storyPatterns = [
+    // Epic headers: ## Epic 1: [Story Title]
+    /^#{1,3}\s+Epic\s+\d+:\s*(.+)$/gm,
+    // Story headers: #### Story 1.1: [Story Title]
+    /^#{1,6}\s+Story\s+\d+\.\d+:\s*(.+)$/gm,
+    // User Story format: As a [user], I want [action], so that [benefit]
+    /^As\s+a\s+([^,]+),\s+I\s+want\s+([^,]+),\s+so\s+that\s+(.+)$/gm,
+    // Feature headers: ### [Feature Name]
+    /^#{1,3}\s+([^#\n]+?)(?:\s*[-–—]\s*([^\n]+))?$/gm,
+    // Bullet points with meaningful content (not just status)
+    /^[-*]\s+([A-Z][^-\n]+?)(?:\s*[-–—]\s*([^\n]+))?$/gm,
+    // Numbered lists with meaningful content
+    /^\d+\.\s+([A-Z][^-\n]+?)(?:\s*[-–—]\s*([^\n]+))?$/gm
+  ];
+  
+  // Status indicators to avoid extracting as titles
+  const statusOnlyWords = ['IMPLEMENTED', 'DESIGNED', 'PLANNED', 'REVIEW', 'ACTIVE', 'DONE', 'TODO', 'IN PROGRESS'];
+  
+  const seenTitles = new Set(); // For deduplication
+  
+  for (const pattern of storyPatterns) {
+    const matches = content.matchAll(pattern);
+    for (const match of matches) {
+      let title = match[1]?.trim();
+      let description = match[2]?.trim() || '';
+      
+      // Skip if title is just a status word
+      if (!title || statusOnlyWords.includes(title.toUpperCase())) {
+        continue;
+      }
+      
+      // Skip if title is too short or generic
+      if (title.length < 5 || title.toLowerCase().includes('status') || title.toLowerCase().includes('progress')) {
+        continue;
+      }
+      
+      // Create a normalized title for deduplication
+      const normalizedTitle = title.toLowerCase().replace(/[^\w\s]/g, '').trim();
+      if (seenTitles.has(normalizedTitle)) {
+        continue; // Skip duplicates
+      }
+      seenTitles.add(normalizedTitle);
+      
+      // Determine priority from title/content
+      let priority = 3; // Default medium
+      const titleLower = title.toLowerCase();
+      for (const [indicator, value] of Object.entries(PRIORITY_INDICATORS)) {
+        if (titleLower.includes(indicator)) {
+          priority = value;
+          break;
         }
       }
+      
+      // Determine story points
+      let storyPoints = null;
+      for (const [indicator, value] of Object.entries(STORY_POINT_INDICATORS)) {
+        if (titleLower.includes(indicator)) {
+          storyPoints = indicator;
+          break;
+        }
+      }
+      
+      // Determine status from context or default
+      let storyStatus = 'Idea'; // Default
+      const fullText = (title + ' ' + description).toLowerCase();
+      for (const standardStatus of ['Active', 'Planning', 'Review', 'Idea', 'Done']) {
+        if (fullText.includes(standardStatus.toLowerCase())) {
+          storyStatus = standardStatus;
+          break;
+        }
+      }
+      
+      stories.push({
+        title: title,
+        status: storyStatus,
+        priority,
+        storyPoints,
+        repository: repoName,
+        source: title,
+        notes: description ? `Description: ${description}` : `Extracted from PRD: ${title}`
+      });
     }
   }
   
