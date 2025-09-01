@@ -242,10 +242,54 @@
             margin: 0 auto;
             padding: 0 1rem;
         }
+        
+        .project-group {
+            margin: 2rem 0;
+        }
+        
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .project-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 1.2rem;
+        }
+        
+        .project-stats {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .status-count {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-count.active { background: #d4edda; color: #155724; }
+        .status-count.planning { background: #cce5ff; color: #004085; }
+        .status-count.review { background: #fff3cd; color: #856404; }
+        .status-count.idea { background: #e2e3e5; color: #383d41; }
+        .status-count.done { background: #d1ecf1; color: #0c5460; }
+        
+        .project-stories {
+            display: grid;
+            gap: 1rem;
+        }
 
         .story-card {
             background: white;
-            margin: 1rem 0;
             padding: 1.5rem;
             border-radius: 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -527,7 +571,13 @@
                     displayStories();
                     updateStats();
                     showLoading(false);
-                    updateStatus(`Loaded ${stories.length} stories`, 'success');
+                    
+                    // Show deduplication info if duplicates were removed
+                    let statusMessage = `Loaded ${stories.length} stories`;
+                    if (result.duplicatesRemoved > 0) {
+                        statusMessage += ` (removed ${result.duplicatesRemoved} duplicates)`;
+                    }
+                    updateStatus(statusMessage, 'success');
                 } else {
                     throw new Error(result.error || 'Failed to load stories');
                 }
@@ -564,28 +614,63 @@
                 return;
             }
             
-            container.innerHTML = filteredStories.map(story => `
-                <div class="story-card">
-                    <div class="story-header">
-                        <div>
-                            <div class="story-title">${story.storyTitle}</div>
-                            <div class="story-project">${story.projectName}</div>
-                        </div>
-                        <span class="status-badge status-${story.status.toLowerCase()}">${story.status}</span>
-                    </div>
-                    
-                    <div class="story-meta">
-                        ${story.priority ? `<div class="meta-item">🎯 Priority: ${story.priority}</div>` : ''}
-                        ${story.storyPoints ? `<div class="meta-item">📏 Story Points: ${story.storyPoints}</div>` : ''}
-                        ${story.repository ? `<div class="meta-item">📁 Repo: ${story.repository}</div>` : ''}
-                        <div class="meta-item">📅 Created: ${formatDate(story.created)}</div>
-                        <div class="meta-item">🔄 Updated: ${formatDate(story.lastUpdated)}</div>
-                    </div>
-                    
-                    ${story.notes ? `<div class="story-notes">${story.notes}</div>` : ''}
-                </div>
-            `).join('');
+            // Group stories by project
+            const groupedStories = {};
+            filteredStories.forEach(story => {
+                const project = story.projectName || 'Unknown Project';
+                if (!groupedStories[project]) {
+                    groupedStories[project] = [];
+                }
+                groupedStories[project].push(story);
+            });
             
+            // Generate HTML with project headers
+            let html = '';
+            Object.keys(groupedStories).sort().forEach(project => {
+                const projectStories = groupedStories[project];
+                const projectStatusCounts = projectStories.reduce((acc, story) => {
+                    acc[story.status] = (acc[story.status] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                html += `
+                    <div class="project-group">
+                        <div class="project-header">
+                            <h3>${project}</h3>
+                            <div class="project-stats">
+                                ${Object.entries(projectStatusCounts).map(([status, count]) => 
+                                    `<span class="status-count status-${status.toLowerCase()}">${status}: ${count}</span>`
+                                ).join(' ')}
+                            </div>
+                        </div>
+                        <div class="project-stories">
+                            ${projectStories.map(story => `
+                                <div class="story-card">
+                                    <div class="story-header">
+                                        <div>
+                                            <div class="story-title">${story.storyTitle}</div>
+                                            <div class="story-project">${story.projectName}</div>
+                                        </div>
+                                        <span class="status-badge status-${story.status.toLowerCase()}">${story.status}</span>
+                                    </div>
+                                    
+                                    <div class="story-meta">
+                                        ${story.priority ? `<div class="meta-item">🎯 Priority: ${story.priority}</div>` : ''}
+                                        ${story.storyPoints ? `<div class="meta-item">📏 Story Points: ${story.storyPoints}</div>` : ''}
+                                        ${story.repository ? `<div class="meta-item">📁 Repo: ${story.repository}</div>` : ''}
+                                        <div class="meta-item">📅 Created: ${formatDate(story.created)}</div>
+                                        <div class="meta-item">🔄 Updated: ${formatDate(story.lastUpdated)}</div>
+                                    </div>
+                                    
+                                    ${story.notes ? `<div class="story-notes">${story.notes}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
             container.style.display = 'block';
         }
         

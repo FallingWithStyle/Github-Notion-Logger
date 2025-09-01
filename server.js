@@ -941,12 +941,56 @@ app.get('/api/prd-stories', asyncHandler(async (req, res) => {
     console.log(`📊 Fetching PRD stories${projectName ? ` for project ${projectName}` : ''}${status ? ` with status ${status}` : ''}...`);
     
     const { getPrdStoryData } = require('./notion');
-    const stories = await getPrdStoryData(projectName, status);
+    const allStories = await getPrdStoryData(projectName, status);
+    
+    // Deduplicate stories based on title and project
+    const seenStories = new Map();
+    const deduplicatedStories = [];
+    
+    for (const story of allStories) {
+      // Skip stories with null/empty titles
+      if (!story.title || story.title.trim() === '') {
+        continue;
+      }
+      
+      // Create a key for deduplication
+      const key = `${story.projectName || 'Unknown'}-${story.title.toLowerCase().trim()}`;
+      
+      if (!seenStories.has(key)) {
+        seenStories.set(key, true);
+        deduplicatedStories.push(story);
+      }
+    }
+    
+    // Sort stories by project, then by status, then by priority
+    deduplicatedStories.sort((a, b) => {
+      // First by project name
+      const projectA = a.projectName || 'Unknown';
+      const projectB = b.projectName || 'Unknown';
+      if (projectA !== projectB) {
+        return projectA.localeCompare(projectB);
+      }
+      
+      // Then by status (Active > Planning > Review > Idea > Done)
+      const statusOrder = { 'Active': 1, 'Planning': 2, 'Review': 3, 'Idea': 4, 'Done': 5 };
+      const statusA = statusOrder[a.status] || 6;
+      const statusB = statusOrder[b.status] || 6;
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+      
+      // Finally by priority (higher first)
+      const priorityA = a.priority || 3;
+      const priorityB = b.priority || 3;
+      return priorityB - priorityA;
+    });
     
     res.json({
       success: true,
-      data: stories,
-      count: stories.length
+      data: deduplicatedStories,
+      count: deduplicatedStories.length,
+      originalCount: allStories.length,
+      duplicatesRemoved: allStories.length - deduplicatedStories.length
     });
     
   } catch (error) {
@@ -1111,19 +1155,24 @@ function extractStoriesFromContent(content, projectName) {
   const stories = [];
   const lines = content.split('\n');
   
-  // Story extraction patterns
+  // Better story extraction patterns - focus on actual story titles
   const storyPatterns = [
-    // Markdown headers with status indicators
-    /^#{1,3}\s*\[?([^\]]+)\]?\s*[-–—]\s*([^\n]+)$/gm,
-    // Bullet points with status
-    /^[-*]\s*\[?([^\]]+)\]?\s*[-–—]\s*([^\n]+)$/gm,
-    // Numbered lists with status
-    /^\d+\.\s*\[?([^\]]+)\]?\s*[-–—]\s*([^\n]+)$/gm,
-    // Status: Title format
-    /^([A-Za-z]+):\s*([^\n]+)$/gm,
-    // Title - Status format
-    /^([^-]+)\s*[-–—]\s*([A-Za-z]+)$/gm
+    // Epic headers: ## Epic 1: [Story Title]
+    /^#{1,3}\s+Epic\s+\d+:\s*(.+)$/gm,
+    // Story headers: #### Story 1.1: [Story Title]
+    /^#{1,6}\s+Story\s+\d+\.\d+:\s*(.+)$/gm,
+    // User Story format: As a [user], I want [action], so that [benefit]
+    /^As\s+a\s+([^,]+),\s+I\s+want\s+([^,]+),\s+so\s+that\s+(.+)$/gm,
+    // Feature headers: ### [Feature Name]
+    /^#{1,3}\s+([^#\n]+?)(?:\s*[-–—]\s*([^\n]+))?$/gm,
+    // Bullet points with meaningful content (not just status)
+    /^[-*]\s+([A-Z][^-\n]+?)(?:\s*[-–—]\s*([^\n]+))?$/gm,
+    // Numbered lists with meaningful content
+    /^\d+\.\s+([A-Z][^-\n]+?)(?:\s*[-–—]\s*([^\n]+))?$/gm
   ];
+  
+  // Status indicators to avoid extracting as titles
+  const statusOnlyWords = ['IMPLEMENTED', 'DESIGNED', 'PLANNED', 'REVIEW', 'ACTIVE', 'DONE', 'TODO', 'IN PROGRESS'];
   
   // Priority indicators
   const priorityIndicators = {
@@ -1140,52 +1189,68 @@ function extractStoriesFromContent(content, projectName) {
   // Standard statuses
   const standardStatuses = ['Idea', 'Planning', 'Active', 'Review', 'Done'];
   
+  const seenTitles = new Set(); // For deduplication
+  
   for (const pattern of storyPatterns) {
     const matches = content.matchAll(pattern);
     for (const match of matches) {
-      const status = match[1]?.toLowerCase();
-      const title = match[2] || match[1];
+      let title = match[1]?.trim();
+      let description = match[2]?.trim() || '';
       
-      if (title && title.trim()) {
-        // Determine priority from title/content
-        let priority = 3; // Default medium
-        const titleLower = title.toLowerCase();
-        for (const [indicator, value] of Object.entries(priorityIndicators)) {
-          if (titleLower.includes(indicator)) {
-            priority = value;
-            break;
-          }
-        }
-        
-        // Determine story points
-        let storyPoints = null;
-        for (const [indicator, value] of Object.entries(storyPointIndicators)) {
-          if (titleLower.includes(indicator)) {
-            storyPoints = indicator;
-            break;
-          }
-        }
-        
-        // Determine status
-        let storyStatus = 'Idea'; // Default
-        if (status) {
-          for (const standardStatus of standardStatuses) {
-            if (status.includes(standardStatus.toLowerCase())) {
-              storyStatus = standardStatus;
-              break;
-            }
-          }
-        }
-        
-        stories.push({
-          projectName,
-          title: title.trim(),
-          status: storyStatus,
-          priority,
-          storyPoints,
-          notes: `Extracted from PRD: ${title}`
-        });
+      // Skip if title is just a status word
+      if (!title || statusOnlyWords.includes(title.toUpperCase())) {
+        continue;
       }
+      
+      // Skip if title is too short or generic
+      if (title.length < 5 || title.toLowerCase().includes('status') || title.toLowerCase().includes('progress')) {
+        continue;
+      }
+      
+      // Create a normalized title for deduplication
+      const normalizedTitle = title.toLowerCase().replace(/[^\w\s]/g, '').trim();
+      if (seenTitles.has(normalizedTitle)) {
+        continue; // Skip duplicates
+      }
+      seenTitles.add(normalizedTitle);
+      
+      // Determine priority from title/content
+      let priority = 3; // Default medium
+      const titleLower = title.toLowerCase();
+      for (const [indicator, value] of Object.entries(priorityIndicators)) {
+        if (titleLower.includes(indicator)) {
+          priority = value;
+          break;
+        }
+      }
+      
+      // Determine story points
+      let storyPoints = null;
+      for (const [indicator, value] of Object.entries(storyPointIndicators)) {
+        if (titleLower.includes(indicator)) {
+          storyPoints = indicator;
+          break;
+        }
+      }
+      
+      // Determine status from context or default
+      let storyStatus = 'Idea'; // Default
+      const fullText = (title + ' ' + description).toLowerCase();
+      for (const standardStatus of standardStatuses) {
+        if (fullText.includes(standardStatus.toLowerCase())) {
+          storyStatus = standardStatus;
+          break;
+        }
+      }
+      
+      stories.push({
+        projectName,
+        title: title,
+        status: storyStatus,
+        priority,
+        storyPoints,
+        notes: description ? `Description: ${description}` : `Extracted from PRD: ${title}`
+      });
     }
   }
   
