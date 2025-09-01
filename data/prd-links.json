@@ -16,5 +16,23 @@
     "filePath": "docs/prd-v2.md",
     "prdUrl": "https://github.com/FallingWithStyle/Audventr/blob/main/docs/prd-v2.md",
     "linkedAt": "2025-08-31T21:32:27.214Z"
+  },
+  {
+    "projectName": "Audventr Product Requirements Document (PRD)",
+    "owner": "FallingWithStyle",
+    "repoName": "Audventr",
+    "branch": "main",
+    "filePath": "docs/prd-v2.md",
+    "prdUrl": "https://github.com/FallingWithStyle/Audventr/blob/main/docs/prd-v2.md",
+    "linkedAt": "2025-08-31T22:10:48.580Z"
+  },
+  {
+    "projectName": "Magic Quill Product Requirements Document (PRD)",
+    "owner": "FallingWithStyle",
+    "repoName": "Magic-Quill",
+    "branch": "main",
+    "filePath": "docs/prd-v2.md",
+    "prdUrl": "https://github.com/FallingWithStyle/Magic-Quill/blob/main/docs/prd-v2.md",
+    "linkedAt": "2025-08-31T22:56:45.422Z"
   }
 ]

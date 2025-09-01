@@ -419,15 +419,15 @@
   {
     "date": "2025-08-30",
     "projects": {
-      "Audventr": 5,
-      "Magic-Quill": 2,
+      "Magic-Quill": 3,
+      "Audventr": 10,
       "VoiceHub": 3
     }
   },
   {
     "date": "2025-08-31",
     "projects": {
-      "Github-Notion-Logger": 2
+      "Github-Notion-Logger": 11
     }
   }
 ]
