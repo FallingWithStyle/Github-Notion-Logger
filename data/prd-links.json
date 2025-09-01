@@ -34,5 +34,14 @@
     "filePath": "docs/prd-v2.md",
     "prdUrl": "https://github.com/FallingWithStyle/Magic-Quill/blob/main/docs/prd-v2.md",
     "linkedAt": "2025-08-31T22:56:45.422Z"
+  },
+  {
+    "projectName": "Friend Party Product Requirements Document (PRD)",
+    "owner": "FallingWithStyle",
+    "repoName": "Friend-Party",
+    "branch": "main",
+    "filePath": "docs/prd.md",
+    "prdUrl": "https://github.com/FallingWithStyle/Friend-Party/blob/main/docs/prd.md",
+    "linkedAt": "2025-09-01T16:12:15.795Z"
   }
 ]
