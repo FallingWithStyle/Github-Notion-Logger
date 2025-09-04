@@ -1,0 +1,545 @@
+{
+  "colorPalettes": {
+    "Writing & Story Tools": [
+      {
+        "hex": "#4bcf17",
+        "hsl": {
+          "h": 103,
+          "s": 80,
+          "l": 45
+        }
+      },
+      {
+        "hex": "#64e830",
+        "hsl": {
+          "h": 103,
+          "s": 80,
+          "l": 55
+        }
+      },
+      {
+        "hex": "#3aa112",
+        "hsl": {
+          "h": 103,
+          "s": 80,
+          "l": 35
+        }
+      },
+      {
+        "hex": "#87ed5e",
+        "hsl": {
+          "h": 103,
+          "s": 80,
+          "l": 65
+        }
+      },
+      {
+        "hex": "#2a730d",
+        "hsl": {
+          "h": 103,
+          "s": 80,
+          "l": 25
+        }
+      },
+      {
+        "hex": "#a9f28c",
+        "hsl": {
+          "h": 103,
+          "s": 80,
+          "l": 75
+        }
+      }
+    ],
+    "Infrastructure & Utilities": [
+      {
+        "hex": "#1791cf",
+        "hsl": {
+          "h": 200,
+          "s": 80,
+          "l": 45
+        }
+      },
+      {
+        "hex": "#30abe8",
+        "hsl": {
+          "h": 200,
+          "s": 80,
+          "l": 55
+        }
+      },
+      {
+        "hex": "#1271a1",
+        "hsl": {
+          "h": 200,
+          "s": 80,
+          "l": 35
+        }
+      },
+      {
+        "hex": "#5ebeed",
+        "hsl": {
+          "h": 200,
+          "s": 80,
+          "l": 65
+        }
+      },
+      {
+        "hex": "#0d5173",
+        "hsl": {
+          "h": 200,
+          "s": 80,
+          "l": 25
+        }
+      },
+      {
+        "hex": "#8cd0f2",
+        "hsl": {
+          "h": 200,
+          "s": 80,
+          "l": 75
+        }
+      }
+    ],
+    "Avoros (Shared Fantasy/Game World)": [
+      {
+        "hex": "#cf1717",
+        "hsl": {
+          "h": 0,
+          "s": 80,
+          "l": 45
+        }
+      },
+      {
+        "hex": "#e83030",
+        "hsl": {
+          "h": 0,
+          "s": 80,
+          "l": 55
+        }
+      },
+      {
+        "hex": "#a11212",
+        "hsl": {
+          "h": 0,
+          "s": 80,
+          "l": 35
+        }
+      },
+      {
+        "hex": "#ed5e5e",
+        "hsl": {
+          "h": 0,
+          "s": 80,
+          "l": 65
+        }
+      },
+      {
+        "hex": "#730d0d",
+        "hsl": {
+          "h": 0,
+          "s": 80,
+          "l": 25
+        }
+      },
+      {
+        "hex": "#f28c8c",
+        "hsl": {
+          "h": 0,
+          "s": 80,
+          "l": 75
+        }
+      }
+    ],
+    "Miscellaneous / Standalone": [
+      {
+        "hex": "#cf7017",
+        "hsl": {
+          "h": 29,
+          "s": 80,
+          "l": 45
+        }
+      },
+      {
+        "hex": "#e88930",
+        "hsl": {
+          "h": 29,
+          "s": 80,
+          "l": 55
+        }
+      },
+      {
+        "hex": "#a15712",
+        "hsl": {
+          "h": 29,
+          "s": 80,
+          "l": 35
+        }
+      },
+      {
+        "hex": "#eda35e",
+        "hsl": {
+          "h": 29,
+          "s": 80,
+          "l": 65
+        }
+      },
+      {
+        "hex": "#733e0d",
+        "hsl": {
+          "h": 29,
+          "s": 80,
+          "l": 25
+        }
+      },
+      {
+        "hex": "#f2be8c",
+        "hsl": {
+          "h": 29,
+          "s": 80,
+          "l": 75
+        }
+      }
+    ],
+    "Development": [
+      {
+        "hex": "#7d3647",
+        "hsl": {
+          "h": 345,
+          "s": 40,
+          "l": 35
+        },
+        "index": 0
+      },
+      {
+        "hex": "#a1122b",
+        "hsl": {
+          "h": 349.2857142857143,
+          "s": 80,
+          "l": 35
+        },
+        "index": 1
+      },
+      {
+        "hex": "#a1454f",
+        "hsl": {
+          "h": 353.57142857142856,
+          "s": 40,
+          "l": 45
+        },
+        "index": 2
+      },
+      {
+        "hex": "#cf171e",
+        "hsl": {
+          "h": 357.85714285714283,
+          "s": 80,
+          "l": 45
+        },
+        "index": 3
+      },
+      {
+        "hex": "#ba625e",
+        "hsl": {
+          "h": 2.142857142857167,
+          "s": 40,
+          "l": 55
+        },
+        "index": 4
+      },
+      {
+        "hex": "#e84430",
+        "hsl": {
+          "h": 6.428571428571445,
+          "s": 80,
+          "l": 55
+        },
+        "index": 5
+      },
+      {
+        "hex": "#c98f82",
+        "hsl": {
+          "h": 10.714285714285722,
+          "s": 40,
+          "l": 65
+        },
+        "index": 6
+      },
+      {
+        "hex": "#ed825e",
+        "hsl": {
+          "h": 15,
+          "s": 80,
+          "l": 65
+        },
+        "index": 7
+      }
+    ],
+    "Research": [
+      {
+        "hex": "#6b367d",
+        "hsl": {
+          "h": 285,
+          "s": 40,
+          "l": 35
+        },
+        "index": 0
+      },
+      {
+        "hex": "#8712a1",
+        "hsl": {
+          "h": 289.2857142857142,
+          "s": 80,
+          "l": 35
+        },
+        "index": 1
+      },
+      {
+        "hex": "#9745a1",
+        "hsl": {
+          "h": 293.57142857142856,
+          "s": 40,
+          "l": 45
+        },
+        "index": 2
+      },
+      {
+        "hex": "#c817cf",
+        "hsl": {
+          "h": 297.8571428571429,
+          "s": 80,
+          "l": 45
+        },
+        "index": 3
+      },
+      {
+        "hex": "#ba5eb7",
+        "hsl": {
+          "h": 302.1428571428571,
+          "s": 40,
+          "l": 55
+        },
+        "index": 4
+      },
+      {
+        "hex": "#e830d4",
+        "hsl": {
+          "h": 306.42857142857144,
+          "s": 80,
+          "l": 55
+        },
+        "index": 5
+      },
+      {
+        "hex": "#c982bd",
+        "hsl": {
+          "h": 310.7142857142858,
+          "s": 40,
+          "l": 65
+        },
+        "index": 6
+      },
+      {
+        "hex": "#ed5ec9",
+        "hsl": {
+          "h": 315,
+          "s": 80,
+          "l": 65
+        },
+        "index": 7
+      }
+    ],
+    "Unknown Category": [
+      {
+        "hex": "#cf172c",
+        "hsl": {
+          "h": 353,
+          "s": 80,
+          "l": 45
+        }
+      },
+      {
+        "hex": "#e83046",
+        "hsl": {
+          "h": 353,
+          "s": 80,
+          "l": 55
+        }
+      },
+      {
+        "hex": "#a11223",
+        "hsl": {
+          "h": 353,
+          "s": 80,
+          "l": 35
+        }
+      },
+      {
+        "hex": "#ed5e6f",
+        "hsl": {
+          "h": 353,
+          "s": 80,
+          "l": 65
+        }
+      },
+      {
+        "hex": "#730d19",
+        "hsl": {
+          "h": 353,
+          "s": 80,
+          "l": 25
+        }
+      },
+      {
+        "hex": "#f28c98",
+        "hsl": {
+          "h": 353,
+          "s": 80,
+          "l": 75
+        }
+      }
+    ]
+  },
+  "projectColors": {
+    "Magic-Quill": {
+      "hex": "#4bcf17",
+      "hsl": {
+        "h": 103,
+        "s": 80,
+        "l": 45
+      },
+      "category": "Writing & Story Tools",
+      "assignedAt": "2025-09-04T20:16:03.538Z"
+    },
+    "glyph-server": {
+      "hex": "#1791cf",
+      "hsl": {
+        "h": 200,
+        "s": 80,
+        "l": 45
+      },
+      "category": "Infrastructure & Utilities",
+      "assignedAt": "2025-09-04T20:16:03.538Z"
+    },
+    "Friend-Party": {
+      "hex": "#cf1717",
+      "hsl": {
+        "h": 0,
+        "s": 80,
+        "l": 45
+      },
+      "category": "Avoros (Shared Fantasy/Game World)",
+      "assignedAt": "2025-09-04T20:16:03.539Z"
+    },
+    "Kitch": {
+      "hex": "#cf7017",
+      "hsl": {
+        "h": 29,
+        "s": 80,
+        "l": 45
+      },
+      "category": "Miscellaneous / Standalone",
+      "assignedAt": "2025-09-04T20:16:03.540Z"
+    },
+    "Daily-Dungeon": {
+      "hex": "#e83030",
+      "hsl": {
+        "h": 0,
+        "s": 80,
+        "l": 55
+      },
+      "category": "Avoros (Shared Fantasy/Game World)",
+      "assignedAt": "2025-09-04T20:16:03.539Z"
+    },
+    "VoiceHub": {
+      "hex": "#3aa112",
+      "hsl": {
+        "h": 103,
+        "s": 80,
+        "l": 35
+      },
+      "category": "Writing & Story Tools",
+      "assignedAt": "2025-09-04T20:16:03.538Z"
+    },
+    "glyph-legal": {
+      "hex": "#30abe8",
+      "hsl": {
+        "h": 200,
+        "s": 80,
+        "l": 55
+      },
+      "category": "Infrastructure & Utilities",
+      "assignedAt": "2025-09-04T20:16:03.538Z"
+    },
+    "Audventr": {
+      "hex": "#64e830",
+      "hsl": {
+        "h": 103,
+        "s": 80,
+        "l": 55
+      },
+      "category": "Writing & Story Tools",
+      "assignedAt": "2025-09-04T20:16:03.538Z"
+    },
+    "Crawler-s-Contract": {
+      "hex": "#730d0d",
+      "hsl": {
+        "h": 0,
+        "s": 80,
+        "l": 25
+      },
+      "category": "Avoros (Shared Fantasy/Game World)",
+      "assignedAt": "2025-09-04T20:16:03.539Z"
+    },
+    "Github-Notion-Logger": {
+      "hex": "#1271a1",
+      "hsl": {
+        "h": 200,
+        "s": 80,
+        "l": 35
+      },
+      "category": "Infrastructure & Utilities",
+      "assignedAt": "2025-09-04T20:16:03.538Z"
+    },
+    "Avoros-Dungeon": {
+      "hex": "#f28c8c",
+      "hsl": {
+        "h": 0,
+        "s": 80,
+        "l": 75
+      },
+      "category": "Avoros (Shared Fantasy/Game World)",
+      "assignedAt": "2025-09-04T20:15:00.000Z"
+    },
+    "roll-call": {
+      "hex": "#a11212",
+      "hsl": {
+        "h": 0,
+        "s": 80,
+        "l": 35
+      },
+      "category": "Avoros (Shared Fantasy/Game World)",
+      "assignedAt": "2025-09-04T20:16:03.539Z"
+    },
+    "avoros-hub": {
+      "hex": "#ed5e5e",
+      "hsl": {
+        "h": 0,
+        "s": 80,
+        "l": 65
+      },
+      "category": "Avoros (Shared Fantasy/Game World)",
+      "assignedAt": "2025-09-04T20:16:03.539Z"
+    },
+    "Devra": {
+      "hex": "#cf6017",
+      "hsl": {
+        "h": 24,
+        "s": 80,
+        "l": 45
+      },
+      "category": "Miscellaneous / Standalone",
+      "assignedAt": "2025-09-04T20:06:51.946Z"
+    }
+  },
+  "lastUpdated": "2025-09-04T20:16:03.539Z"
+}

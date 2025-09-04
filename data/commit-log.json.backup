@@ -198,6 +198,7 @@
   {
     "date": "2025-08-01",
     "projects": {
+      "Audventr-Wizard": 24,
       "glyph-server": 9
     }
   },
@@ -205,6 +206,7 @@
     "date": "2025-08-02",
     "projects": {
       "Kitch": 4,
+      "Audventr-Wizard": 4,
       "glyph-server": 24
     }
   },
@@ -225,13 +227,15 @@
   {
     "date": "2025-08-05",
     "projects": {
-      "Kitch": 16
+      "Kitch": 16,
+      "Github-Notion-Logger": 11
     }
   },
   {
     "date": "2025-08-06",
     "projects": {
       "Kitch": 9,
+      "Github-Notion-Logger": 13,
       "Friend-Party": 4
     }
   },
@@ -239,36 +243,43 @@
     "date": "2025-08-07",
     "projects": {
       "Kitch": 17,
+      "Audventr-Wizard": 2,
       "glyph-server": 7,
-      "Magic-Quill": 1,
-      "Friend-Party": 10
+      "Github-Notion-Logger": 2,
+      "Friend-Party": 10,
+      "Magic-Quill": 1
     }
   },
   {
     "date": "2025-08-08",
     "projects": {
       "Kitch": 25,
+      "Audventr-Wizard": 1,
       "glyph-server": 17,
-      "Magic-Quill": 1,
-      "Friend-Party": 1
+      "Friend-Party": 1,
+      "Magic-Quill": 1
     }
   },
   {
     "date": "2025-08-09",
     "projects": {
+      "Audventr-Wizard": 16,
       "glyph-server": 5
     }
   },
   {
     "date": "2025-08-10",
     "projects": {
+      "Audventr-Wizard": 16,
       "glyph-server": 14
     }
   },
   {
     "date": "2025-08-11",
     "projects": {
+      "Audventr-Wizard": 9,
       "glyph-server": 15,
+      "Github-Notion-Logger": 2,
       "Magic-Quill": 3
     }
   },
@@ -282,6 +293,8 @@
   {
     "date": "2025-08-13",
     "projects": {
+      "Daily-Dungeon": 1,
+      "roll-call": 1,
       "glyph-server": 1,
       "Magic-Quill": 34
     }
@@ -289,18 +302,21 @@
   {
     "date": "2025-08-14",
     "projects": {
+      "Github-Notion-Logger": 4,
       "Magic-Quill": 13
     }
   },
   {
     "date": "2025-08-15",
     "projects": {
+      "Github-Notion-Logger": 1,
       "Magic-Quill": 12
     }
   },
   {
     "date": "2025-08-16",
     "projects": {
+      "Audventr-Warlock": 9,
       "Magic-Quill": 11,
       "Audventr": 1
     }
@@ -308,6 +324,7 @@
   {
     "date": "2025-08-17",
     "projects": {
+      "Audventr-Warlock": 9,
       "Magic-Quill": 13,
       "Audventr": 2
     }
@@ -328,44 +345,54 @@
     "date": "2025-08-20",
     "projects": {
       "glyph-server": 1,
+      "VoiceHub": 15,
       "Magic-Quill": 8
     }
   },
   {
     "date": "2025-08-21",
     "projects": {
-      "Magic-Quill": 11,
-      "Friend-Party": 7
+      "Crawler-s-Contract": 2,
+      "Friend-Party": 7,
+      "Magic-Quill": 11
     }
   },
   {
     "date": "2025-08-22",
     "projects": {
-      "Magic-Quill": 1,
-      "Friend-Party": 6
+      "avoros-hub": 1,
+      "Crawler-s-Contract": 55,
+      "Friend-Party": 6,
+      "Magic-Quill": 1
+    }
+  },
+  {
+    "date": "2025-08-23",
+    "projects": {
+      "Github-Notion-Logger": 7
     }
   },
   {
     "date": "2025-08-24",
     "projects": {
-      "Magic-Quill": 1,
-      "Github-Notion-Logger": 22
+      "Github-Notion-Logger": 29,
+      "Magic-Quill": 1
     }
   },
   {
     "date": "2025-08-25",
     "projects": {
-      "Magic-Quill": 3,
+      "Github-Notion-Logger": 4,
       "Audventr": 3,
-      "Github-Notion-Logger": 4
+      "Magic-Quill": 3
     }
   },
   {
     "date": "2025-08-26",
     "projects": {
-      "VoiceHub": 4,
+      "Github-Notion-Logger": 1,
       "Audventr": 10,
-      "Github-Notion-Logger": 1
+      "VoiceHub": 4
     }
   },
   {
@@ -378,9 +405,9 @@
   {
     "date": "2025-08-28",
     "projects": {
+      "Audventr": 3,
       "VoiceHub": 10,
-      "Magic-Quill": 1,
-      "Audventr": 3
+      "Magic-Quill": 1
     }
   },
   {
@@ -393,41 +420,14 @@
     "date": "2025-08-30",
     "projects": {
       "Magic-Quill": 3,
-      "VoiceHub": 3,
-      "Audventr": 14,
-      "Github-Notion-Logger": 11,
-      "Friend-Party": 1
+      "Audventr": 10,
+      "VoiceHub": 3
     }
   },
   {
     "date": "2025-08-31",
     "projects": {
-      "Devra": 8,
-      "Audventr": 13,
-      "Github-Notion-Logger": 6
-    }
-  },
-  {
-    "date": "2025-09-01",
-    "projects": {
-      "Devra": 5,
-      "Kitch": 36
-    }
-  },
-  {
-    "date": "2025-09-02",
-    "projects": {
-      "Friend-Party": 4,
-      "Kitch": 12
-    }
-  },
-  {
-    "date": "2025-09-03",
-    "projects": {
-      "Friend-Party": 1,
-      "Kitch": 4,
-      "roll-call": 3,
-      "avoros-hub": 3
+      "Github-Notion-Logger": 11
     }
   }
 ]

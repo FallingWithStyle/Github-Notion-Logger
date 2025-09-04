@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { logCommitsToNotion, addWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry } = require('./notion');
 const timezoneConfig = require('./timezone-config');
+const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('./color-palette');
 
 dotenv.config();
 const app = express();
@@ -607,9 +608,69 @@ app.get('/api/weekly-data', asyncHandler(async (req, res) => {
       });
     });
     
-    // Assign colors to projects
-    Object.keys(projectData).forEach(projectName => {
-      projectColors[projectName] = assignColorToProject(projectName, projectColors);
+    // Load category data from weekly planning data
+    try {
+      const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+      if (fs.existsSync(weeklyPlansPath)) {
+        const weeklyPlansData = fs.readFileSync(weeklyPlansPath, 'utf8');
+        const weeklyPlans = JSON.parse(weeklyPlansData);
+        
+        // Get the most recent weekly plan
+        if (weeklyPlans.length > 0) {
+          const latestPlan = weeklyPlans[weeklyPlans.length - 1];
+          const userAnswers = latestPlan.planData?.userAnswers || {};
+          
+          // Apply categories to projects
+          Object.values(projectData).forEach(project => {
+            const savedProject = userAnswers[project.name];
+            if (savedProject && savedProject.category) {
+              project.category = savedProject.category;
+              console.log(`📝 Applied category "${savedProject.category}" to ${project.name}`);
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not load category data from weekly plans:', error.message);
+    }
+    
+    // Migrate existing projects to color system and assign colors
+    const projectArray = Object.values(projectData);
+    const migratedProjects = migrateExistingProjects(projectArray);
+    
+    // Update projectData with migrated projects
+    migratedProjects.forEach(project => {
+      projectData[project.name] = project;
+    });
+    
+    // Also ensure all projects in the color palette system have correct categories
+    // This handles projects that might not be in the current 28-day window
+    const { getAllProjectColors } = require('./color-palette');
+    const allProjectColors = getAllProjectColors();
+    
+    Object.entries(allProjectColors).forEach(([projectName, colorData]) => {
+      if (colorData.category && !projectData[projectName]) {
+        // This project exists in color palette but not in current weekly data
+        // Create a minimal project entry to ensure it gets the right category
+        projectData[projectName] = {
+          name: projectName,
+          category: colorData.category,
+          status: 'unknown',
+          priorityScore: 0,
+          basePriorityScore: 0,
+          lastActivity: null
+        };
+      }
+    });
+    
+    // Get project colors for response - use the color palette system directly
+    const projectColorMap = getAllProjectColors();
+    
+    // Also ensure projectData has color information
+    Object.values(projectData).forEach(project => {
+      if (projectColorMap[project.name]) {
+        project.color = projectColorMap[project.name];
+      }
     });
     
     // Get unique categories from existing data (if any)
@@ -623,7 +684,7 @@ app.get('/api/weekly-data', asyncHandler(async (req, res) => {
     res.json({
       success: true,
       projects: Object.values(projectData),
-      projectColors,
+      projectColors: projectColorMap,
       categories: Array.from(categories),
       dateRange: {
         start: startDate,
@@ -667,6 +728,11 @@ app.post('/api/weekly-plan', asyncHandler(async (req, res) => {
       ...planData,
       userAnswers: migrateOldUserAnswers(planData.userAnswers)
     };
+    
+    // Ensure projects have colors assigned
+    if (migratedPlanData.projects) {
+      migratedPlanData.projects = migrateExistingProjects(migratedPlanData.projects);
+    }
     
     // Add new plan
     const newPlan = {
@@ -1288,6 +1354,355 @@ function parseRepositoryOutput(output) {
   
   return repos;
 }
+
+// Color palette management endpoints
+app.get('/api/color-palette/stats', asyncHandler(async (req, res) => {
+  try {
+    const stats = getColorStats();
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('❌ Error getting color stats:', error);
+    res.status(500).json({ 
+      error: 'Error getting color statistics',
+      details: error.message 
+    });
+  }
+}));
+
+// Get color for specific project
+app.get('/api/color-palette/project/:projectName', asyncHandler(async (req, res) => {
+  try {
+    const { projectName } = req.params;
+    const color = getProjectColor(projectName);
+    
+    if (color) {
+      res.json({
+        success: true,
+        color
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Project color not found'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error getting project color:', error);
+    res.status(500).json({ 
+      error: 'Error getting project color',
+      details: error.message 
+    });
+  }
+}));
+
+// Update project color
+app.put('/api/color-palette/project/:projectName', asyncHandler(async (req, res) => {
+  try {
+    const { projectName } = req.params;
+    const { category } = req.body;
+    
+    if (!category) {
+      return res.status(400).json({ error: 'Category is required' });
+    }
+    
+    const color = updateProjectColor(projectName, category);
+    
+    res.json({
+      success: true,
+      color,
+      message: `Updated color for ${projectName}`
+    });
+  } catch (error) {
+    console.error('❌ Error updating project color:', error);
+    res.status(500).json({ 
+      error: 'Error updating project color',
+      details: error.message 
+    });
+  }
+}));
+
+// Generate palette for category
+app.post('/api/color-palette/generate', asyncHandler(async (req, res) => {
+  try {
+    const { category } = req.body;
+    
+    if (!category) {
+      return res.status(400).json({ error: 'Category is required' });
+    }
+    
+    const { generatePalette } = require('./color-palette');
+    const palette = generatePalette(category);
+    
+    res.json({
+      success: true,
+      category,
+      palette,
+      message: `Generated palette for ${category}`
+    });
+  } catch (error) {
+    console.error('❌ Error generating palette:', error);
+    res.status(500).json({ 
+      error: 'Error generating palette',
+      details: error.message 
+    });
+  }
+}));
+
+// Migrate all existing projects to color system
+app.post('/api/color-palette/migrate', asyncHandler(async (req, res) => {
+  try {
+    console.log('🔄 Starting color migration for existing projects...');
+    
+    // Load commit log data
+    let commitLog = [];
+    if (fs.existsSync(COMMIT_LOG_PATH)) {
+      const data = fs.readFileSync(COMMIT_LOG_PATH, 'utf8');
+      commitLog = JSON.parse(data);
+    } else {
+      return res.status(404).json({ error: 'No commit log found' });
+    }
+
+    // Load category data from weekly plans
+    let categoryData = {};
+    const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+    if (fs.existsSync(weeklyPlansPath)) {
+      const weeklyPlansData = fs.readFileSync(weeklyPlansPath, 'utf8');
+      const weeklyPlans = JSON.parse(weeklyPlansData);
+      
+      if (weeklyPlans.length > 0) {
+        const latestPlan = weeklyPlans[weeklyPlans.length - 1];
+        categoryData = latestPlan.planData?.userAnswers || {};
+      }
+    }
+
+    // Extract unique projects from commit log
+    const projects = new Set();
+    commitLog.forEach(day => {
+      Object.keys(day.projects).forEach(projectName => {
+        projects.add(projectName);
+      });
+    });
+
+    // Migrate projects
+    let migratedCount = 0;
+    let skippedCount = 0;
+
+    for (const projectName of projects) {
+      const existingColor = getProjectColor(projectName);
+      if (existingColor) {
+        skippedCount++;
+        continue;
+      }
+
+      const projectData = categoryData[projectName];
+      const category = projectData?.category || 'Miscellaneous / Standalone';
+      
+      assignColor(category, projectName);
+      migratedCount++;
+    }
+
+    const stats = getColorStats();
+    
+    res.json({
+      success: true,
+      message: `Color migration completed`,
+      stats: {
+        migrated: migratedCount,
+        skipped: skippedCount,
+        total: migratedCount + skippedCount,
+        totalProjects: stats.totalProjects,
+        totalPalettes: stats.totalPalettes
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error migrating colors:', error);
+    res.status(500).json({ 
+      error: 'Error migrating colors',
+      details: error.message 
+    });
+  }
+}));
+
+// Get colors for a specific category
+app.get('/api/color-palette/category/:category', asyncHandler(async (req, res) => {
+  try {
+    const { category } = req.params;
+    const decodedCategory = decodeURIComponent(category);
+    
+    // Load color palettes
+    const palettesPath = path.join(DATA_DIR, 'color-palettes.json');
+    let palettes = {};
+    if (fs.existsSync(palettesPath)) {
+      const palettesData = fs.readFileSync(palettesPath, 'utf8');
+      const data = JSON.parse(palettesData);
+      palettes = data.colorPalettes || {};
+    }
+    
+    const categoryPalette = palettes[decodedCategory];
+    if (!categoryPalette) {
+      return res.json({ success: true, colors: [] });
+    }
+    
+    // Handle both old array format and new object format
+    const colors = Array.isArray(categoryPalette) ? categoryPalette : categoryPalette.colors || [];
+    res.json({ success: true, colors });
+  } catch (error) {
+    console.error('❌ Error getting category colors:', error);
+    res.status(500).json({ 
+      error: 'Error getting category colors',
+      details: error.message 
+    });
+  }
+}));
+
+// Update category colors
+app.post('/api/color-palette/update-category-colors', asyncHandler(async (req, res) => {
+  try {
+    const { categoryColors } = req.body;
+    
+    if (!categoryColors || typeof categoryColors !== 'object') {
+      return res.status(400).json({ success: false, error: 'Invalid category colors data' });
+    }
+    
+    // Load existing palettes
+    const palettesPath = path.join(DATA_DIR, 'color-palettes.json');
+    let data = { colorPalettes: {}, projectColors: {}, lastUpdated: new Date().toISOString() };
+    if (fs.existsSync(palettesPath)) {
+      const palettesData = fs.readFileSync(palettesPath, 'utf8');
+      data = JSON.parse(palettesData);
+    }
+    
+    // Update each category's base color and reassign project colors
+    const updatedCategories = [];
+    Object.entries(categoryColors).forEach(([category, newBaseColor]) => {
+      if (data.colorPalettes[category]) {
+        // Update the base color and regenerate the palette
+        const hsl = hexToHsl(newBaseColor);
+        const newPalette = generatePaletteFromHue(hsl.h);
+        data.colorPalettes[category] = newPalette;
+        data.lastUpdated = new Date().toISOString();
+        updatedCategories.push(category);
+        
+        // Reassign colors to all projects in this category
+        // First, we need to find which projects belong to this category
+        // We'll do this by checking the weekly planning data
+        const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+        let categoryProjects = [];
+        
+        if (fs.existsSync(weeklyPlansPath)) {
+          const weeklyPlansData = fs.readFileSync(weeklyPlansPath, 'utf8');
+          const weeklyPlans = JSON.parse(weeklyPlansData);
+          
+          if (weeklyPlans.length > 0) {
+            const latestPlan = weeklyPlans[weeklyPlans.length - 1];
+            const userAnswers = latestPlan.planData?.userAnswers || {};
+            
+            // Find projects that belong to this category
+            Object.entries(userAnswers).forEach(([projectName, projectData]) => {
+              if (projectData.category === category) {
+                categoryProjects.push(projectName);
+              }
+            });
+          }
+        }
+        
+        // Reassign colors to projects in this category
+        // Use a more sophisticated algorithm to ensure unique colors
+        const usedColors = new Set();
+        categoryProjects.forEach((projectName, index) => {
+          if (data.projectColors[projectName]) {
+            // Find the least used color in the new palette
+            let selectedColor = newPalette[0];
+            let minUsage = Infinity;
+            
+            for (const color of newPalette) {
+              const usageCount = Array.from(usedColors).filter(hex => hex === color.hex).length;
+              if (usageCount < minUsage) {
+                minUsage = usageCount;
+                selectedColor = color;
+              }
+            }
+            
+            // Mark this color as used
+            usedColors.add(selectedColor.hex);
+            
+            // Update the project's color
+            data.projectColors[projectName] = {
+              ...selectedColor,
+              category: category,
+              assignedAt: new Date().toISOString()
+            };
+          }
+        });
+      }
+    });
+    
+    // Save updated palettes
+    fs.writeFileSync(palettesPath, JSON.stringify(data, null, 2));
+    
+    // Count how many projects were updated
+    let updatedProjectsCount = 0;
+    updatedCategories.forEach(category => {
+      const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+      if (fs.existsSync(weeklyPlansPath)) {
+        const weeklyPlansData = fs.readFileSync(weeklyPlansPath, 'utf8');
+        const weeklyPlans = JSON.parse(weeklyPlansData);
+        
+        if (weeklyPlans.length > 0) {
+          const latestPlan = weeklyPlans[weeklyPlans.length - 1];
+          const userAnswers = latestPlan.planData?.userAnswers || {};
+          
+          Object.entries(userAnswers).forEach(([projectName, projectData]) => {
+            if (projectData.category === category && data.projectColors[projectName]) {
+              updatedProjectsCount++;
+            }
+          });
+        }
+      }
+    });
+    
+    console.log('🎨 Updated category colors:', Object.keys(categoryColors));
+    console.log(`🎨 Reassigned colors to ${updatedProjectsCount} projects`);
+    
+    res.json({ 
+      success: true, 
+      message: `Category colors updated successfully. ${updatedProjectsCount} projects reassigned new colors.`,
+      updatedCategories: updatedCategories,
+      updatedProjectsCount: updatedProjectsCount
+    });
+  } catch (error) {
+    console.error('❌ Error updating category colors:', error);
+    res.status(500).json({ 
+      error: 'Error updating category colors',
+      details: error.message 
+    });
+  }
+}));
+
+// Reset all colors to defaults
+app.post('/api/color-palette/reset-colors', asyncHandler(async (req, res) => {
+  try {
+    // Delete the color palettes file to reset to defaults
+    const palettesPath = path.join(DATA_DIR, 'color-palettes.json');
+    if (fs.existsSync(palettesPath)) {
+      fs.unlinkSync(palettesPath);
+    }
+    
+    console.log('🔄 Reset all color palettes to defaults');
+    
+    res.json({ success: true, message: 'All colors reset to defaults' });
+  } catch (error) {
+    console.error('❌ Error resetting colors:', error);
+    res.status(500).json({ 
+      error: 'Error resetting colors',
+      details: error.message 
+    });
+  }
+}));
 
 // Get all repositories with PRD status
 app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {

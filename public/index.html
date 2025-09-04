@@ -432,6 +432,7 @@
     <div class="controls">
         <button id="fetch-notion-btn" class="btn">🔄 Fetch from Notion</button>
         <button id="fetch-incremental-btn" class="btn">➕ Incremental Fetch</button>
+        <button id="migrate-colors-btn" class="btn">🎨 Migrate Colors</button>
         <button id="auto-refresh-btn" class="btn">🔄 Auto-refresh</button>
         <button id="settings-btn" class="btn">⚙️ Settings</button>
         <div id="status" class="status">Ready to load data</div>
@@ -594,6 +595,11 @@
 
         // Get color for a project
         function getProjectColor(projectName) {
+            const colorData = projectColors[projectName];
+            if (colorData && colorData.hex) {
+                return colorData.hex;
+            }
+            // Fallback to old system if no color palette data
             return assignColorToProject(projectName);
         }
 
@@ -680,12 +686,18 @@
             const square = document.createElement('div');
             square.className = 'commit-square';
             square.style.backgroundColor = getProjectColor(normalizedName);
-            square.title = `${normalizedName} (square ${index + 1})`;
+            
+            // Get project category for tooltip
+            const colorData = projectColors[normalizedName];
+            const category = colorData?.category || 'Unknown Category';
+            const tooltipText = `${normalizedName} (${category})`;
+            
+            square.title = tooltipText;
             
             // Add tooltip
             const tooltip = document.createElement('div');
             tooltip.className = 'tooltip';
-            tooltip.textContent = `${normalizedName} (square ${index + 1})`;
+            tooltip.textContent = tooltipText;
             square.appendChild(tooltip);
             
             return square;
@@ -781,6 +793,23 @@
                 }
                 commitData = await response.json();
                 
+                // Load color data from the color palette API
+                try {
+                    // Load project colors from the color palette system
+                    const projectColorResponse = await fetch('/api/weekly-data');
+                    if (projectColorResponse.ok) {
+                        const weeklyData = await projectColorResponse.json();
+                        if (weeklyData.success && weeklyData.projectColors) {
+                            // Clear existing colors and use the new color palette system
+                            Object.keys(projectColors).forEach(key => delete projectColors[key]);
+                            Object.assign(projectColors, weeklyData.projectColors);
+                            console.log('🎨 Loaded project colors from color palette system:', Object.keys(projectColors).length, 'projects');
+                        }
+                    }
+                } catch (colorError) {
+                    console.warn('⚠️ Could not load color data, using fallback colors:', colorError);
+                }
+                
                 const gridContainer = document.getElementById('grid-container');
                 gridContainer.innerHTML = '';
                 
@@ -858,6 +887,57 @@
             const params = { incremental: 'true', overlapDays: '1' };
             if (lastDate) params.since = lastDate; // server will subtract overlapDays
             return fetchFromNotion(params);
+        }
+
+        // Migrate existing projects to use color palette system
+        async function migrateColors() {
+            const btn = document.getElementById('migrate-colors-btn');
+            const originalText = btn.textContent;
+            
+            try {
+                btn.textContent = '🔄 Migrating...';
+                btn.disabled = true;
+                updateStatus('Migrating project colors...');
+                
+                const response = await fetch('/api/color-palette/migrate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Color migration completed: ${result.stats.migrated} migrated, ${result.stats.skipped} skipped`);
+                    btn.classList.add('success');
+                    
+                    // Reload the data to show new colors
+                    await loadCommitData();
+                    
+                    setTimeout(() => {
+                        btn.classList.remove('success');
+                    }, 3000);
+                } else {
+                    throw new Error(result.error || 'Migration failed');
+                }
+                
+            } catch (error) {
+                console.error('Error migrating colors:', error);
+                updateStatus(`Migration failed: ${error.message}`);
+                btn.classList.add('error');
+                
+                setTimeout(() => {
+                    btn.classList.remove('error');
+                }, 3000);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         }
 
         // Toggle auto-refresh
@@ -978,6 +1058,7 @@
         // Event listeners
         document.getElementById('fetch-notion-btn').addEventListener('click', () => fetchFromNotion());
         document.getElementById('fetch-incremental-btn').addEventListener('click', fetchIncremental);
+        document.getElementById('migrate-colors-btn').addEventListener('click', migrateColors);
         document.getElementById('auto-refresh-btn').addEventListener('click', toggleAutoRefresh);
         document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
         document.getElementById('save-settings-btn').addEventListener('click', saveTimezoneConfig);
