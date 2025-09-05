@@ -1,4 +1,4 @@
-# Universal PRD Template
+# Project Title Here
 
 ## Project Metadata
 - **Project Name**: [Project Name]
