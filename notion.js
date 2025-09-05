@@ -39,6 +39,7 @@ const WEEKLY_PLANNING_SCHEMA = {
   "Heart": { number: {} },
   "Category": { select: {} },
   "Status": { select: {} },
+  "Weekly Focus": { rich_text: {} },
   "Notes": { rich_text: {} },
   "Created": { date: {} },
   "Last Updated": { date: {} }
@@ -128,7 +129,7 @@ async function ensureWeeklyPlanningDatabase() {
         console.log('🔄 Found database properties:', Object.keys(db.properties));
         
         // Check if all required properties exist
-        const requiredProps = ['Project Name', 'Week Start', 'Head', 'Heart', 'Category', 'Status', 'Notes', 'Created', 'Last Updated'];
+        const requiredProps = ['Project Name', 'Week Start', 'Head', 'Heart', 'Category', 'Status', 'Weekly Focus', 'Notes', 'Created', 'Last Updated'];
         const missingProps = requiredProps.filter(prop => !db.properties[prop]);
         
         if (missingProps.length > 0) {
@@ -206,10 +207,42 @@ async function ensureWeeklyPlanningDatabase() {
   }
 }
 
-// Add weekly planning entry to Notion
-async function addWeeklyPlanningEntry(projectData) {
+// Find existing weekly planning entry
+async function findWeeklyPlanningEntry(projectName, weekStart) {
   try {
-    console.log('🔄 Starting addWeeklyPlanningEntry...');
+    await ensureWeeklyPlanningDatabase();
+    
+    const response = await notion.databases.query({
+      database_id: weeklyPlanningDatabaseId,
+      filter: {
+        and: [
+          {
+            property: "Project Name",
+            title: {
+              equals: projectName
+            }
+          },
+          {
+            property: "Week Start",
+            date: {
+              equals: weekStart
+            }
+          }
+        ]
+      }
+    });
+    
+    return response.results.length > 0 ? response.results[0] : null;
+  } catch (error) {
+    console.error('❌ Error finding weekly planning entry:', error);
+    return null;
+  }
+}
+
+// Add or update weekly planning entry to Notion
+async function addOrUpdateWeeklyPlanningEntry(projectData) {
+  try {
+    console.log('🔄 Starting addOrUpdateWeeklyPlanningEntry...');
     console.log('🔄 Project data received:', projectData);
     
     await ensureWeeklyPlanningDatabase();
@@ -219,51 +252,85 @@ async function addWeeklyPlanningEntry(projectData) {
       throw new Error('Failed to get valid weekly planning database ID');
     }
     
-    console.log('🔄 Proceeding with page creation...');
+    const { projectName, weekStart, head, heart, category, status, notes, weeklyFocus } = projectData;
     
-    const { projectName, weekStart, head, heart, category, status, notes } = projectData;
+    // Check if entry already exists
+    const existingEntry = await findWeeklyPlanningEntry(projectName, weekStart);
     
-    const entry = {
-      parent: { database_id: weeklyPlanningDatabaseId },
-      properties: {
-        "Project Name": {
-          title: [{ type: "text", text: { content: projectName } }]
-        },
-        "Week Start": {
-          date: { start: weekStart }
-        },
-        "Head": {
-          number: parseInt(head) || null
-        },
-        "Heart": {
-          number: parseInt(heart) || null
-        },
-        "Category": {
-          select: category ? { name: category } : null
-        },
-        "Status": {
-          select: status ? { name: status } : null
-        },
-        "Notes": {
-          rich_text: notes ? [{ type: "text", text: { content: notes } }] : []
-        },
-        "Created": {
-          date: { start: new Date().toISOString() }
-        },
-        "Last Updated": {
-          date: { start: new Date().toISOString() }
-        }
+    const entryData = {
+      "Project Name": {
+        title: [{ type: "text", text: { content: projectName } }]
+      },
+      "Week Start": {
+        date: { start: weekStart }
+      },
+      "Head": {
+        number: parseInt(head) || null
+      },
+      "Heart": {
+        number: parseInt(heart) || null
+      },
+      "Category": {
+        select: category ? { name: category } : null
+      },
+      "Status": {
+        select: status ? { name: status } : null
+      },
+      "Weekly Focus": {
+        rich_text: weeklyFocus ? [{ type: "text", text: { content: weeklyFocus } }] : []
+      },
+      "Notes": {
+        rich_text: notes ? [{ type: "text", text: { content: notes } }] : []
+      },
+      "Last Updated": {
+        date: { start: new Date().toISOString() }
       }
     };
 
-    console.log('🔄 Creating page with properties:', Object.keys(entry.properties));
-    const result = await notion.pages.create(entry);
-    console.log(`✅ Added weekly planning entry for ${projectName} (week of ${weekStart})`);
-    return result;
+    if (existingEntry) {
+      // Update existing entry
+      console.log(`🔄 Updating existing entry for ${projectName} (week of ${weekStart})`);
+      
+      // Add Created date only if it doesn't exist
+      if (!existingEntry.properties["Created"]?.date?.start) {
+        entryData["Created"] = {
+          date: { start: new Date().toISOString() }
+        };
+      }
+      
+      const result = await notion.pages.update({
+        page_id: existingEntry.id,
+        properties: entryData
+      });
+      
+      console.log(`✅ Updated weekly planning entry for ${projectName} (week of ${weekStart})`);
+      return result;
+    } else {
+      // Create new entry
+      console.log(`🔄 Creating new entry for ${projectName} (week of ${weekStart})`);
+      
+      entryData["Created"] = {
+        date: { start: new Date().toISOString() }
+      };
+      
+      const entry = {
+        parent: { database_id: weeklyPlanningDatabaseId },
+        properties: entryData
+      };
+
+      const result = await notion.pages.create(entry);
+      console.log(`✅ Created weekly planning entry for ${projectName} (week of ${weekStart})`);
+      return result;
+    }
   } catch (error) {
-    console.error('❌ Error adding weekly planning entry:', error);
+    console.error('❌ Error adding/updating weekly planning entry:', error);
     throw error;
   }
+}
+
+// Legacy function for backward compatibility
+async function addWeeklyPlanningEntry(projectData) {
+  return addOrUpdateWeeklyPlanningEntry(projectData);
 }
 
 // Get weekly planning data from Notion
@@ -342,6 +409,77 @@ async function updateWeeklyPlanningEntry(entryId, updates) {
     console.log(`✅ Updated weekly planning entry: ${entryId}`);
   } catch (error) {
     console.error('❌ Error updating weekly planning entry:', error);
+    throw error;
+  }
+}
+
+// Clean up duplicate entries for a specific week
+async function cleanupDuplicateEntries(weekStart) {
+  try {
+    console.log(`🔄 Cleaning up duplicate entries for week ${weekStart}...`);
+    
+    await ensureWeeklyPlanningDatabase();
+    
+    // Get all entries for the week
+    const response = await notion.databases.query({
+      database_id: weeklyPlanningDatabaseId,
+      filter: {
+        property: "Week Start",
+        date: {
+          equals: weekStart
+        }
+      }
+    });
+    
+    const entries = response.results;
+    console.log(`📊 Found ${entries.length} entries for week ${weekStart}`);
+    
+    // Group by project name
+    const projectGroups = {};
+    entries.forEach(entry => {
+      const projectName = entry.properties["Project Name"]?.title?.[0]?.text?.content || 'Unknown';
+      if (!projectGroups[projectName]) {
+        projectGroups[projectName] = [];
+      }
+      projectGroups[projectName].push(entry);
+    });
+    
+    let duplicatesRemoved = 0;
+    
+    // For each project, keep the most recent entry and delete the rest
+    for (const [projectName, projectEntries] of Object.entries(projectGroups)) {
+      if (projectEntries.length > 1) {
+        console.log(`🔄 Found ${projectEntries.length} entries for ${projectName}, keeping most recent`);
+        
+        // Sort by creation time (most recent first)
+        projectEntries.sort((a, b) => {
+          const timeA = new Date(a.created_time);
+          const timeB = new Date(b.created_time);
+          return timeB - timeA;
+        });
+        
+        // Keep the first (most recent) entry, delete the rest
+        const toDelete = projectEntries.slice(1);
+        
+        for (const entry of toDelete) {
+          try {
+            await notion.pages.update({
+              page_id: entry.id,
+              archived: true
+            });
+            duplicatesRemoved++;
+            console.log(`🗑️ Archived duplicate entry for ${projectName}`);
+          } catch (error) {
+            console.error(`❌ Failed to archive duplicate entry for ${projectName}:`, error.message);
+          }
+        }
+      }
+    }
+    
+    console.log(`✅ Cleanup complete: ${duplicatesRemoved} duplicate entries archived`);
+    return duplicatesRemoved;
+  } catch (error) {
+    console.error('❌ Error cleaning up duplicate entries:', error);
     throw error;
   }
 }
@@ -1168,8 +1306,10 @@ module.exports = {
   logCommitsToNotion, 
   getMostRecentCommitDate,
   addWeeklyPlanningEntry,
+  addOrUpdateWeeklyPlanningEntry,
   getWeeklyPlanningData,
   updateWeeklyPlanningEntry,
+  cleanupDuplicateEntries,
   ensureWeeklyPlanningDatabase,
   addMissingShaValues,
   commitFromGithubLogDatabaseId,

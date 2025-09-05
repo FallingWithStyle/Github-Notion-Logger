@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
-const { logCommitsToNotion, addWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry } = require('./notion');
+const { logCommitsToNotion, addWeeklyPlanningEntry, addOrUpdateWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry, cleanupDuplicateEntries } = require('./notion');
 const timezoneConfig = require('./timezone-config');
 const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('./color-palette');
 
@@ -831,13 +831,14 @@ app.post('/api/weekly-plan/sync-notion', asyncHandler(async (req, res) => {
       
       if (answers.head || answers.heart) {
         try {
-          const notionEntry = await addWeeklyPlanningEntry({
+          const notionEntry = await addOrUpdateWeeklyPlanningEntry({
             projectName: project.name,
             weekStart,
             head: answers.head,
             heart: answers.heart,
             category: project.category,
             status: project.status,
+            weeklyFocus: planData.weeklyFocus || '',
             notes: `Weekly planning data for ${project.name}`
           });
           
@@ -862,6 +863,16 @@ app.post('/api/weekly-plan/sync-notion', asyncHandler(async (req, res) => {
     const errorCount = syncResults.filter(r => r.status === 'error').length;
     
     console.log(`✅ Synced ${successCount} projects to Notion (${errorCount} errors)`);
+    
+    // Clean up any duplicate entries for this week
+    try {
+      const duplicatesRemoved = await cleanupDuplicateEntries(weekStart);
+      if (duplicatesRemoved > 0) {
+        console.log(`🧹 Cleaned up ${duplicatesRemoved} duplicate entries`);
+      }
+    } catch (cleanupError) {
+      console.warn('⚠️ Failed to clean up duplicates:', cleanupError.message);
+    }
     
     res.json({
       success: true,

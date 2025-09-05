@@ -384,9 +384,19 @@
         
         .completion-message {
             text-align: center;
-            padding: 40px;
+            padding: 20px;
             color: #27ae60;
-            font-size: 18px;
+            font-size: 16px;
+        }
+        
+        .completion-indicator {
+            background: #27ae60;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-block;
         }
         
         /* Enhanced weekly plan styling */
@@ -830,10 +840,9 @@
     <div id="project-container" class="project-card hidden"></div>
     
             <div id="completion-message" class="completion-message hidden">
-            <h2>🎉 All Projects Reviewed!</h2>
-            <p>You've completed the weekly review for all projects.</p>
-            <p id="completion-status">Click "Generate Weekly Plan" to see your summary.</p>
-            <button id="go-back-btn" class="btn" onclick="goBackToIncomplete()" style="margin-top: 15px;">← Go Back to Incomplete</button>
+            <div class="completion-indicator">⚠️ Some Projects Need Ratings</div>
+            <p id="completion-status" style="margin-top: 10px; font-size: 14px;">Click "Generate Weekly Plan" to see your summary.</p>
+            <button id="go-back-btn" class="btn" onclick="goBackToIncomplete()" style="margin-top: 10px; font-size: 12px; padding: 8px 16px;">← Go Back to Incomplete</button>
         </div>
     
     <div id="weekly-plan" class="weekly-plan hidden">
@@ -1234,8 +1243,8 @@
         
         // Show completion message
         function showCompletionMessage() {
+            // Hide project container but keep progress indicator visible
             document.getElementById('project-container').classList.add('hidden');
-            document.getElementById('completion-message').classList.remove('hidden');
             
             // Check if all projects have been rated
             const unratedProjects = projectData.filter(project => {
@@ -1244,11 +1253,17 @@
             });
             
             if (unratedProjects.length === 0) {
+                // Replace progress indicator with completion message
+                const progressEl = document.getElementById('progress-indicator');
+                progressEl.innerHTML = '<div class="completion-indicator">✅ All Projects Reviewed</div>';
+                progressEl.classList.remove('hidden');
+                
                 document.getElementById('generate-plan-btn').disabled = false;
-                document.getElementById('go-back-btn').style.display = 'none';
-                document.getElementById('completion-status').textContent = 'Click "Generate Weekly Plan" to see your summary.';
+                document.getElementById('completion-message').classList.add('hidden');
                 updateStatus('All projects reviewed and rated! Generate your weekly plan.');
             } else {
+                // Show completion message with incomplete projects
+                document.getElementById('completion-message').classList.remove('hidden');
                 document.getElementById('generate-plan-btn').disabled = true;
                 document.getElementById('go-back-btn').style.display = 'inline-block';
                 document.getElementById('completion-status').textContent = `${unratedProjects.length} projects still need ratings. Go back and complete them.`;
@@ -1265,6 +1280,8 @@
                 if (!answers.head || !answers.heart) {
                     currentProjectIndex = i;
                     document.getElementById('completion-message').classList.add('hidden');
+                    // Restore normal progress indicator
+                    updateProgressIndicator();
                     showCurrentProject();
                     return;
                 }
