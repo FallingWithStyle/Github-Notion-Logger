@@ -1358,7 +1358,7 @@ async function ensureScanCacheDatabase() {
       console.log('🔄 Existing database properties:', Object.keys(db.properties));
       
       // Check if all required properties exist
-      const requiredProps = ['Repository', 'Last Scanned', 'Has PRD', 'Has Task List', 'Story Count', 'Task Count', 'Progress', 'Cache Data', 'Status', 'Created', 'Last Updated'];
+      const requiredProps = ['Repository', 'Last Scanned', 'Has PRD', 'Has Task List', 'Story Count', 'Task Count', 'Progress', 'Cache Data', 'Cache Data 2', 'Cache Data 3', 'Cache Data 4', 'Cache Data 5', 'Chunk Count', 'Status', 'Created', 'Last Updated'];
       const missingProps = requiredProps.filter(prop => !db.properties[prop]);
       
       if (missingProps.length > 0) {
