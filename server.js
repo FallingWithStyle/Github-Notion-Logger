@@ -7,6 +7,7 @@ const fs = require('fs');
 const { logCommitsToNotion, addWeeklyPlanningEntry, addOrUpdateWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry, cleanupDuplicateEntries } = require('./notion');
 const timezoneConfig = require('./timezone-config');
 const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('./color-palette');
+const { Client } = require('@notionhq/client');
 
 dotenv.config();
 const app = express();
@@ -117,6 +118,9 @@ if (missingEnvVars.length > 0) {
   });
   process.exit(1);
 }
+
+// Initialize Notion client
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
 console.log('✅ All required environment variables are set');
 
@@ -1079,6 +1083,396 @@ app.get('/api/prd-stories', asyncHandler(async (req, res) => {
   }
 }));
 
+// Cache for project progress data
+const progressCache = new Map();
+const CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+// New optimized PRD and task-list processing endpoints
+app.get('/api/project-progress', asyncHandler(async (req, res) => {
+  try {
+    const { repository } = req.query;
+    
+    console.log(`📊 Fetching project progress${repository ? ` for ${repository}` : ' for all repositories'}...`);
+    
+    // Check cache first
+    const cacheKey = repository || 'all';
+    const cached = progressCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TIMEOUT) {
+      console.log(`📈 Returning cached progress data for ${cacheKey}`);
+      return res.json({
+        success: true,
+        data: cached.data,
+        count: cached.data.length,
+        cached: true
+      });
+    }
+    
+    const PrdTaskProcessor = require('./prd-task-processor');
+    const processor = new PrdTaskProcessor();
+    
+    let results;
+    if (repository) {
+      // Process single repository
+      const result = await processor.processRepository(repository);
+      results = [result];
+    } else {
+      // Process all repositories
+      results = await processor.processAllRepositories();
+    }
+    
+    // Cache the results
+    progressCache.set(cacheKey, {
+      data: results,
+      timestamp: Date.now()
+    });
+    
+    res.json({
+      success: true,
+      data: results,
+      count: results.length,
+      cached: false
+    });
+  } catch (error) {
+    console.error('❌ Error fetching project progress:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch project progress',
+      details: error.message 
+    });
+  }
+}));
+
+// Get project progress with detailed breakdown
+app.get('/api/project-progress/:repository', asyncHandler(async (req, res) => {
+  try {
+    const { repository } = req.params;
+    
+    console.log(`📊 Fetching detailed progress for ${repository}...`);
+    
+    // Check cache first
+    const cacheKey = `detail:${repository}`;
+    const cached = progressCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TIMEOUT) {
+      console.log(`📈 Returning cached detailed progress for ${repository}`);
+      return res.json({
+        success: true,
+        data: cached.data,
+        cached: true
+      });
+    }
+    
+    const PrdTaskProcessor = require('./prd-task-processor');
+    const processor = new PrdTaskProcessor();
+    
+    const result = await processor.processRepository(repository);
+    
+    if (result.error) {
+      return res.status(404).json({
+        success: false,
+        error: 'Repository not found or error processing',
+        details: result.error
+      });
+    }
+    
+    // Cache the result
+    progressCache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now()
+    });
+    
+    res.json({
+      success: true,
+      data: result,
+      cached: false
+    });
+  } catch (error) {
+    console.error('❌ Error fetching detailed progress:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch detailed progress',
+      details: error.message 
+    });
+  }
+}));
+
+// Clear progress cache
+app.post('/api/project-progress/clear-cache', asyncHandler(async (req, res) => {
+  try {
+    progressCache.clear();
+    console.log('🗑️ Progress cache cleared');
+    
+    res.json({
+      success: true,
+      message: 'Progress cache cleared successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error clearing progress cache:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear progress cache',
+      details: error.message 
+    });
+  }
+}));
+
+// Get repositories list (simple, no file processing)
+app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
+  try {
+    console.log('📊 Getting repositories list...');
+    
+    const PrdTaskProcessor = require('./prd-task-processor');
+    const processor = new PrdTaskProcessor();
+    
+    // Just get the repository list without processing files
+    const repos = await processor.getAllRepositories();
+    
+    // Get ignored repositories
+    const ignoredPath = path.join(__dirname, 'data', 'ignored-repos.json');
+    let ignoredRepos = [];
+    
+    if (fs.existsSync(ignoredPath)) {
+      try {
+        const data = fs.readFileSync(ignoredPath, 'utf8');
+        ignoredRepos = JSON.parse(data);
+      } catch (error) {
+        console.warn('⚠️ Error reading ignored repos file:', error.message);
+      }
+    }
+    
+    const ignoredNames = new Set(ignoredRepos.map(repo => repo.name));
+    
+    // Filter out ignored repositories
+    const filteredRepos = repos.filter(repo => !ignoredNames.has(repo.name));
+    
+    // Return simple repository list
+    const repositories = filteredRepos.map(repo => ({
+      name: repo.name,
+      status: 'not-processed', // Will be updated when user clicks to process
+      prdCount: 0,
+      taskCount: 0,
+      storyCount: 0,
+      progress: 0,
+      lastUpdated: repo.updated_at
+    }));
+    
+    res.json({
+      success: true,
+      repositories: repositories,
+      totalRepos: repos.length,
+      ignoredCount: ignoredRepos.length
+    });
+  } catch (error) {
+    console.error('❌ Error getting repositories list:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get repositories list',
+      details: error.message 
+    });
+  }
+}));
+
+// Process specific repository for PRD and task-list files
+app.post('/api/prd-stories/process-repo', asyncHandler(async (req, res) => {
+  try {
+    const { repository } = req.body;
+    
+    if (!repository) {
+      return res.status(400).json({
+        success: false,
+        error: 'Repository name is required'
+      });
+    }
+    
+    console.log(`🔍 Scanning repository: ${repository}`);
+    
+    const PrdTaskProcessor = require('./prd-task-processor');
+    const processor = new PrdTaskProcessor();
+    
+    const result = await processor.processRepository(repository);
+    
+    // Transform the result to match the expected format
+    const repositoryData = {
+      name: result.repository,
+      status: result.hasPrd ? (result.hasTaskList ? 'prd-and-tasks' : 'prd-only') : (result.hasTaskList ? 'tasks-only' : 'no-files'),
+      prdCount: result.hasPrd ? 1 : 0,
+      taskCount: result.tasks ? result.tasks.length : 0,
+      storyCount: result.stories ? result.stories.length : 0,
+      progress: result.progress ? result.progress.progressPercentage : 0,
+      lastUpdated: result.lastUpdated,
+      stories: result.stories,
+      tasks: result.tasks,
+      progressDetails: result.progress
+    };
+    
+    // Return response immediately
+    res.json({
+      success: true,
+      repository: repositoryData
+    });
+    
+    // Store in Notion asynchronously (don't wait for it)
+    if (result.stories && result.stories.length > 0) {
+      setImmediate(async () => {
+        try {
+          await storeProjectProgressInNotion(repositoryData);
+          console.log(`✅ Stored ${repository} progress in Notion`);
+        } catch (notionError) {
+          console.warn(`⚠️ Failed to store ${repository} in Notion:`, notionError.message);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error processing repository:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to scan repository',
+      details: error.message 
+    });
+  }
+}));
+
+// Ignore repository
+app.post('/api/prd-stories/ignore-repo', asyncHandler(async (req, res) => {
+  try {
+    const { repository } = req.body;
+    
+    if (!repository) {
+      return res.status(400).json({
+        success: false,
+        error: 'Repository name is required'
+      });
+    }
+    
+    console.log(`🚫 Ignoring repository: ${repository}`);
+    
+    // Read existing ignored repositories
+    const ignoredPath = path.join(__dirname, 'data', 'ignored-repos.json');
+    let ignoredRepos = [];
+    
+    if (fs.existsSync(ignoredPath)) {
+      try {
+        const data = fs.readFileSync(ignoredPath, 'utf8');
+        ignoredRepos = JSON.parse(data);
+      } catch (error) {
+        console.warn('⚠️ Error reading ignored repos file:', error.message);
+      }
+    }
+    
+    // Add repository to ignored list if not already there
+    if (!ignoredRepos.find(repo => repo.name === repository)) {
+      ignoredRepos.push({
+        name: repository,
+        ignoredAt: new Date().toISOString(),
+        reason: 'User ignored'
+      });
+      
+      // Save updated list
+      fs.writeFileSync(ignoredPath, JSON.stringify(ignoredRepos, null, 2));
+      console.log(`✅ Added ${repository} to ignored list`);
+    }
+    
+    res.json({
+      success: true,
+      message: `Repository ${repository} has been ignored`,
+      ignoredCount: ignoredRepos.length
+    });
+  } catch (error) {
+    console.error('❌ Error ignoring repository:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to ignore repository',
+      details: error.message 
+    });
+  }
+}));
+
+// Get ignored repositories
+app.get('/api/prd-stories/ignored', asyncHandler(async (req, res) => {
+  try {
+    console.log('📋 Getting ignored repositories...');
+    
+    const ignoredPath = path.join(__dirname, 'data', 'ignored-repos.json');
+    let ignoredRepos = [];
+    
+    if (fs.existsSync(ignoredPath)) {
+      try {
+        const data = fs.readFileSync(ignoredPath, 'utf8');
+        ignoredRepos = JSON.parse(data);
+      } catch (error) {
+        console.warn('⚠️ Error reading ignored repos file:', error.message);
+      }
+    }
+    
+    res.json({
+      success: true,
+      repositories: ignoredRepos
+    });
+  } catch (error) {
+    console.error('❌ Error getting ignored repositories:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get ignored repositories',
+      details: error.message 
+    });
+  }
+}));
+
+// Unignore repository
+app.post('/api/prd-stories/unignore-repo', asyncHandler(async (req, res) => {
+  try {
+    const { repository } = req.body;
+    
+    if (!repository) {
+      return res.status(400).json({
+        success: false,
+        error: 'Repository name is required'
+      });
+    }
+    
+    console.log(`🔄 Unignoring repository: ${repository}`);
+    
+    const ignoredPath = path.join(__dirname, 'data', 'ignored-repos.json');
+    let ignoredRepos = [];
+    
+    if (fs.existsSync(ignoredPath)) {
+      try {
+        const data = fs.readFileSync(ignoredPath, 'utf8');
+        ignoredRepos = JSON.parse(data);
+      } catch (error) {
+        console.warn('⚠️ Error reading ignored repos file:', error.message);
+      }
+    }
+    
+    // Remove repository from ignored list
+    const originalLength = ignoredRepos.length;
+    ignoredRepos = ignoredRepos.filter(repo => repo.name !== repository);
+    
+    if (ignoredRepos.length < originalLength) {
+      // Save updated list
+      fs.writeFileSync(ignoredPath, JSON.stringify(ignoredRepos, null, 2));
+      console.log(`✅ Removed ${repository} from ignored list`);
+      
+      res.json({
+        success: true,
+        message: `Repository ${repository} has been unignored`,
+        ignoredCount: ignoredRepos.length
+      });
+    } else {
+      res.json({
+        success: false,
+        message: `Repository ${repository} was not in the ignored list`
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error unignoring repository:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to unignore repository',
+      details: error.message 
+    });
+  }
+}));
+
 // Add new PRD story
 app.post('/api/prd-stories', asyncHandler(async (req, res) => {
   try {
@@ -1146,86 +1540,7 @@ app.put('/api/prd-stories/:id', asyncHandler(async (req, res) => {
   }
 }));
 
-// Standardize PRDs
-app.post('/api/prd-stories/standardize', asyncHandler(async (req, res) => {
-  try {
-    console.log('🔄 Starting PRD standardization process...');
-    
-    // Import and run the standardize-prds script
-    const { spawn } = require('child_process');
-    const standardizeProcess = spawn('node', ['standardize-prds.js'], {
-      stdio: 'pipe'
-    });
-    
-    let output = '';
-    let errorOutput = '';
-    
-    standardizeProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    standardizeProcess.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-    
-    standardizeProcess.on('close', (code) => {
-      if (code === 0) {
-        res.json({
-          success: true,
-          message: 'PRD standardization completed successfully',
-          output: output
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          error: 'PRD standardization failed',
-          output: output,
-          errorOutput: errorOutput
-        });
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Error starting PRD standardization:', error);
-    res.status(500).json({ 
-      error: 'Error starting PRD standardization',
-      details: error.message 
-    });
-  }
-}));
 
-// Get PRD watcher status
-app.get('/api/prd-stories/status', asyncHandler(async (req, res) => {
-  try {
-    console.log('📊 Getting PRD watcher status...');
-    
-    // Check if the watcher is running
-    const { spawn } = require('child_process');
-    const psProcess = spawn('ps', ['aux'], { stdio: 'pipe' });
-    
-    let output = '';
-    psProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    psProcess.on('close', (code) => {
-      const isRunning = output.includes('prd-file-watcher.js');
-      
-      res.json({
-        success: true,
-        isRunning,
-        message: isRunning ? 'PRD watcher is running' : 'PRD watcher is not running'
-      });
-    });
-    
-  } catch (error) {
-    console.error('❌ Error checking PRD watcher status:', error);
-    res.status(500).json({ 
-      error: 'Error checking PRD watcher status',
-      details: error.message 
-    });
-  }
-}));
 
 // Helper function to extract stories from PRD content
 function extractStoriesFromContent(content, projectName) {
@@ -1334,36 +1649,295 @@ function extractStoriesFromContent(content, projectName) {
   return stories;
 }
 
-// Helper function to parse repository output from standardize-prds.js
-function parseRepositoryOutput(output) {
-  const repos = [];
-  const lines = output.split('\n');
-  let currentRepo = null;
+// Store project progress in Notion
+async function storeProjectProgressInNotion(repositoryData) {
+  try {
+    // Ensure project progress database exists
+    const projectDbId = await ensureProjectProgressDatabase();
+    
+    // Create or update project entry
+    const projectEntry = {
+      parent: { database_id: projectDbId },
+      properties: {
+        'Project Name': {
+          title: [{ text: { content: repositoryData.name } }]
+        },
+        'Repository': {
+          rich_text: [{ text: { content: repositoryData.name } }]
+        },
+        'Status': {
+          select: { name: repositoryData.status }
+        },
+        'Progress': {
+          number: repositoryData.progress
+        },
+        'Stories Total': {
+          number: repositoryData.storyCount
+        },
+        'Stories Completed': {
+          number: repositoryData.progressDetails ? repositoryData.progressDetails.completedStories : 0
+        },
+        'Tasks Total': {
+          number: repositoryData.taskCount
+        },
+        'Tasks Completed': {
+          number: repositoryData.progressDetails ? repositoryData.progressDetails.completedTasks : 0
+        },
+        'Last Updated': {
+          date: { start: new Date().toISOString() }
+        },
+        'Has PRD': {
+          checkbox: repositoryData.prdCount > 0
+        },
+        'Has Task List': {
+          checkbox: repositoryData.taskCount > 0
+        }
+      }
+    };
+    
+    // Check if project already exists
+    const existingProjects = await notion.databases.query({
+      database_id: projectDbId,
+      filter: {
+        property: 'Repository',
+        rich_text: { equals: repositoryData.name }
+      }
+    });
+    
+    if (existingProjects.results.length > 0) {
+      // Update existing project
+      await notion.pages.update({
+        page_id: existingProjects.results[0].id,
+        properties: projectEntry.properties
+      });
+      console.log(`📝 Updated project ${repositoryData.name} in Notion`);
+    } else {
+      // Create new project
+      await notion.pages.create(projectEntry);
+      console.log(`📝 Created project ${repositoryData.name} in Notion`);
+    }
+    
+    // Store individual stories if we have them
+    if (repositoryData.stories && repositoryData.stories.length > 0) {
+      await storeStoriesInNotion(repositoryData.stories, repositoryData.name);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error storing project progress in Notion:', error);
+    throw error;
+  }
+}
+
+// Store individual stories in Notion
+async function storeStoriesInNotion(stories, repositoryName) {
+  try {
+    // Ensure story progress database exists
+    const storyDbId = await ensureStoryProgressDatabase();
+    
+    for (const story of stories) {
+      const storyEntry = {
+        parent: { database_id: storyDbId },
+        properties: {
+          'Story Title': {
+            title: [{ text: { content: story.title } }]
+          },
+          'Repository': {
+            rich_text: [{ text: { content: repositoryName } }]
+          },
+          'Epic': {
+            rich_text: [{ text: { content: story.epic || 'Uncategorized' } }]
+          },
+          'Status': {
+            select: { name: String(story.status || 'Not Started') }
+          },
+          'Priority': {
+            select: { name: String(story.priority || 'Medium') }
+          },
+          'Story Points': {
+            number: story.storyPoints || 0
+          },
+          'Notes': {
+            rich_text: [{ text: { content: story.notes || '' } }]
+          },
+          'Last Updated': {
+            date: { start: new Date().toISOString() }
+          }
+        }
+      };
+      
+      // Check if story already exists
+      const existingStories = await notion.databases.query({
+        database_id: storyDbId,
+        filter: {
+          and: [
+            {
+              property: 'Repository',
+              rich_text: { equals: repositoryName }
+            },
+            {
+              property: 'Story Title',
+              title: { equals: story.title }
+            }
+          ]
+        }
+      });
+      
+      if (existingStories.results.length > 0) {
+        // Update existing story
+        await notion.pages.update({
+          page_id: existingStories.results[0].id,
+          properties: storyEntry.properties
+        });
+      } else {
+        // Create new story
+        await notion.pages.create(storyEntry);
+      }
+    }
+    
+    console.log(`📝 Stored ${stories.length} stories for ${repositoryName} in Notion`);
+  } catch (error) {
+    console.error('❌ Error storing stories in Notion:', error);
+    throw error;
+  }
+}
+
+// Ensure project progress database exists
+async function ensureProjectProgressDatabase() {
+  const dbId = process.env.NOTION_PROJECT_PROGRESS_DATABASE_ID;
   
-  for (const line of lines) {
-    if (line.includes('🔄 Processing repository:')) {
-      const repoName = line.split(':')[1]?.trim();
-      if (repoName) {
-        currentRepo = { name: repoName, status: 'unknown', prdCount: 0 };
-        repos.push(currentRepo);
-      }
-    }
-    
-    if (line.includes('📁 Found') && line.includes('potential PRD files')) {
-      const match = line.match(/Found (\d+) potential PRD files/);
-      if (match && currentRepo) {
-        const count = parseInt(match[1]);
-        currentRepo.status = count > 0 ? 'prd-found' : 'prd-missing';
-        currentRepo.prdCount = count;
-      }
-    }
-    
-    if (line.includes('⚠️ PRD') && line.includes('does not match expected schema')) {
-      if (currentRepo) currentRepo.status = 'prd-needs-update';
+  if (dbId) {
+    try {
+      await notion.databases.retrieve({ database_id: dbId });
+      console.log(`✅ Using existing project progress database: ${dbId}`);
+      return dbId;
+    } catch (error) {
+      console.warn('⚠️ Project progress database ID invalid, searching for existing database');
     }
   }
   
-  return repos;
+  // Search for existing Project Progress database
+  try {
+    const searchResponse = await notion.search({
+      query: 'Project Progress',
+      filter: {
+        property: 'object',
+        value: 'database'
+      }
+    });
+    
+    if (searchResponse.results.length > 0) {
+      const existingDb = searchResponse.results[0];
+      console.log(`✅ Found existing project progress database: ${existingDb.id}`);
+      return existingDb.id;
+    }
+  } catch (error) {
+    console.warn('⚠️ Error searching for existing database:', error.message);
+  }
+  
+  // Only create new database if none exists
+  console.log('📝 Creating new project progress database...');
+  const response = await notion.databases.create({
+    parent: { page_id: process.env.NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID },
+    title: [{ text: { content: 'Project Progress' } }],
+    properties: {
+      'Project Name': { title: {} },
+      'Repository': { rich_text: {} },
+      'Status': { 
+        select: { 
+          options: [
+            { name: 'not-processed', color: 'gray' },
+            { name: 'prd-only', color: 'blue' },
+            { name: 'tasks-only', color: 'yellow' },
+            { name: 'prd-and-tasks', color: 'green' },
+            { name: 'no-files', color: 'red' }
+          ]
+        }
+      },
+      'Progress': { number: { format: 'percent' } },
+      'Stories Total': { number: {} },
+      'Stories Completed': { number: {} },
+      'Tasks Total': { number: {} },
+      'Tasks Completed': { number: {} },
+      'Last Updated': { date: {} },
+      'Has PRD': { checkbox: {} },
+      'Has Task List': { checkbox: {} }
+    }
+  });
+  
+  console.log(`✅ Created new project progress database: ${response.id}`);
+  return response.id;
+}
+
+// Ensure story progress database exists
+async function ensureStoryProgressDatabase() {
+  const dbId = process.env.NOTION_STORY_PROGRESS_DATABASE_ID;
+  
+  if (dbId) {
+    try {
+      await notion.databases.retrieve({ database_id: dbId });
+      console.log(`✅ Using existing story progress database: ${dbId}`);
+      return dbId;
+    } catch (error) {
+      console.warn('⚠️ Story progress database ID invalid, searching for existing database');
+    }
+  }
+  
+  // Search for existing Story Progress database
+  try {
+    const searchResponse = await notion.search({
+      query: 'Story Progress',
+      filter: {
+        property: 'object',
+        value: 'database'
+      }
+    });
+    
+    if (searchResponse.results.length > 0) {
+      const existingDb = searchResponse.results[0];
+      console.log(`✅ Found existing story progress database: ${existingDb.id}`);
+      return existingDb.id;
+    }
+  } catch (error) {
+    console.warn('⚠️ Error searching for existing database:', error.message);
+  }
+  
+  // Only create new database if none exists
+  console.log('📝 Creating new story progress database...');
+  const response = await notion.databases.create({
+    parent: { page_id: process.env.NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID },
+    title: [{ text: { content: 'Story Progress' } }],
+    properties: {
+      'Story Title': { title: {} },
+      'Repository': { rich_text: {} },
+      'Epic': { rich_text: {} },
+      'Status': { 
+        select: { 
+          options: [
+            { name: 'Not Started', color: 'gray' },
+            { name: 'In Progress', color: 'yellow' },
+            { name: 'Completed', color: 'green' },
+            { name: 'Blocked', color: 'red' }
+          ]
+        }
+      },
+      'Priority': { 
+        select: { 
+          options: [
+            { name: 'Low', color: 'gray' },
+            { name: 'Medium', color: 'yellow' },
+            { name: 'High', color: 'red' },
+            { name: 'Critical', color: 'red' }
+          ]
+        }
+      },
+      'Story Points': { number: {} },
+      'Notes': { rich_text: {} },
+      'Last Updated': { date: {} }
+    }
+  });
+  
+  console.log(`✅ Created new story progress database: ${response.id}`);
+  return response.id;
 }
 
 // Color palette management endpoints
@@ -1715,119 +2289,7 @@ app.post('/api/color-palette/reset-colors', asyncHandler(async (req, res) => {
   }
 }));
 
-// Get all repositories with PRD status
-app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
-  try {
-    console.log('📊 Getting repository PRD status...');
-    
-    // Import and run the standardize-prds script to get current status
-    const { spawn } = require('child_process');
-    const standardizeProcess = spawn('node', ['standardize-prds.js'], {
-      stdio: 'pipe'
-    });
-    
-    let output = '';
-    let errorOutput = '';
-    
-    standardizeProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    standardizeProcess.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-    
-    standardizeProcess.on('close', (code) => {
-      if (code === 0) {
-        // Parse the output to extract repository information
-        const repos = parseRepositoryOutput(output);
-        
-        // Add manually linked PRDs to the repository list
-        const prdLinksPath = path.join(__dirname, 'data', 'prd-links.json');
-        if (fs.existsSync(prdLinksPath)) {
-          try {
-            const prdLinksData = fs.readFileSync(prdLinksPath, 'utf8');
-            const prdLinks = JSON.parse(prdLinksData);
-            
-            // Add manually linked repositories to the list
-            for (const link of prdLinks) {
-              const repoName = link.repoName;
-              const existingRepo = repos.find(repo => repo.name === repoName);
-              
-              if (existingRepo) {
-                // Update existing repo to show it has a linked PRD
-                existingRepo.status = 'prd-linked';
-                existingRepo.prdCount = 1;
-                existingRepo.manuallyLinked = true;
-                existingRepo.projectName = link.projectName;
-              } else {
-                // Add new repo entry for manually linked PRD
-                repos.push({
-                  name: repoName,
-                  status: 'prd-linked',
-                  prdCount: 1,
-                  manuallyLinked: true,
-                  projectName: link.projectName
-                });
-              }
-            }
-          } catch (error) {
-            console.warn('⚠️ Error reading PRD links:', error.message);
-          }
-        }
-        
-        res.json({
-          success: true,
-          repositories: repos
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          error: 'Failed to get repository status',
-          output: output,
-          errorOutput: errorOutput
-        });
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Error getting repository status:', error);
-    res.status(500).json({ 
-      error: 'Error getting repository status',
-      details: error.message 
-    });
-  }
-}));
 
-// Clean up bad PRD story entries (null titles)
-app.post('/api/prd-stories/cleanup', asyncHandler(async (req, res) => {
-  try {
-    console.log('🧹 Cleaning up bad PRD story entries...');
-    
-    const { getPrdStoryData } = require('./notion');
-    const allStories = await getPrdStoryData();
-    
-    // Find stories with null/empty titles
-    const badStories = allStories.filter(story => !story.title || story.title.trim() === '');
-    
-    console.log(`🗑️ Found ${badStories.length} stories with null/empty titles to clean up`);
-    
-    // For now, just return the count - in a real implementation, you'd delete these from Notion
-    res.json({
-      success: true,
-      message: `Found ${badStories.length} stories with null/empty titles that need cleanup`,
-      badStoriesCount: badStories.length,
-      totalStories: allStories.length
-    });
-    
-  } catch (error) {
-    console.error('❌ Error cleaning up PRD stories:', error);
-    res.status(500).json({ 
-      error: 'Error cleaning up PRD stories',
-      details: error.message 
-    });
-  }
-}));
 
 // Link PRD file manually
 app.post('/api/prd-stories/link-prd', asyncHandler(async (req, res) => {
@@ -2018,3 +2480,4 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 server.timeout = 30000; // 30 seconds
 server.keepAliveTimeout = 65000; // 65 seconds
 server.headersTimeout = 66000; // 66 seconds
+

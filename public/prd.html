@@ -217,6 +217,75 @@
             padding: 0.5rem;
             border-bottom: 1px solid #eee;
         }
+        
+        .repo-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        .btn-loading {
+            background: #6c757d;
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.7;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+            cursor: not-allowed;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        
+        .btn-ignore {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-ignore:hover {
+            background: #f1b0b7;
+            border-color: #f1b0b7;
+            transform: scale(1.05);
+        }
+        
+        .btn-unignore {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-unignore:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+        
+        .repo-status.ignored {
+            background: #f8d7da;
+            color: #721c24;
+        }
 
         .repo-item:last-child {
             border-bottom: none;
@@ -249,13 +318,19 @@
         
         .project-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 0.5rem;
             margin-bottom: 1rem;
             padding: 1rem;
             background: #f8f9fa;
             border-radius: 8px;
             border-left: 4px solid #007bff;
+        }
+        
+        .project-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .project-header h3 {
@@ -282,6 +357,43 @@
         .status-count.review { background: #fff3cd; color: #856404; }
         .status-count.idea { background: #e2e3e5; color: #383d41; }
         .status-count.done { background: #d1ecf1; color: #0c5460; }
+        
+        .project-progress {
+            margin-top: 0.5rem;
+            width: 100%;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+        
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .progress-percentage {
+            font-weight: 600;
+            color: #28a745;
+        }
+        
+        .progress-details {
+            font-size: 0.75rem;
+        }
         
         .project-stories {
             display: grid;
@@ -450,10 +562,8 @@
         <button id="refresh-btn" class="btn">🔄 Refresh</button>
         <button id="scan-repos-btn" class="btn primary">🔍 Scan Repos</button>
         <button id="link-prd-btn" class="btn secondary">🔗 Link PRD</button>
-        <button id="cleanup-btn" class="btn warning">🧹 Cleanup</button>
-        <button id="standardize-btn" class="btn secondary">🚀 Standardize</button>
         <button id="add-story-btn" class="btn success">➕ Add Story</button>
-        <button id="watcher-status-btn" class="btn secondary">📡 Status</button>
+        <button id="toggle-ignored-btn" class="btn secondary">🚫 Show Ignored</button>
         
         <div class="filters">
             <div class="filter-group">
@@ -537,6 +647,9 @@
     <script>
         let stories = [];
         let projects = new Set();
+        let projectProgress = new Map();
+        let showingIgnored = false;
+        let ignoredRepos = [];
         
         // Load stories and repository overview on page load
         document.addEventListener('DOMContentLoaded', () => {
@@ -549,10 +662,8 @@
             document.getElementById('refresh-btn').addEventListener('click', loadStories);
             document.getElementById('scan-repos-btn').addEventListener('click', scanAllRepositories);
             document.getElementById('link-prd-btn').addEventListener('click', showLinkPrdForm);
-            document.getElementById('cleanup-btn').addEventListener('click', cleanupStories);
-            document.getElementById('standardize-btn').addEventListener('click', standardizePrds);
             document.getElementById('add-story-btn').addEventListener('click', showAddStoryForm);
-            document.getElementById('watcher-status-btn').addEventListener('click', checkWatcherStatus);
+            document.getElementById('toggle-ignored-btn').addEventListener('click', toggleIgnoredView);
             document.getElementById('project-filter').addEventListener('change', filterStories);
             document.getElementById('status-filter').addEventListener('change', filterStories);
         }
@@ -587,6 +698,36 @@
                 showLoading(false);
                 showError(`Error loading stories: ${error.message}`);
                 updateStatus('Failed to load stories', 'error');
+            }
+        }
+        
+        async function loadProjectProgress() {
+            try {
+                console.log('📊 Loading project progress data...');
+                
+                const response = await fetch('/api/project-progress');
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Store progress data in a Map for easy lookup
+                    projectProgress.clear();
+                    result.data.forEach(project => {
+                        if (project.progress) {
+                            projectProgress.set(project.repository, project.progress);
+                        }
+                    });
+                    
+                    console.log(`📈 Loaded progress data for ${projectProgress.size} projects`);
+                    
+                    // Update display if stories are already loaded
+                    if (stories.length > 0) {
+                        displayStories();
+                    }
+                } else {
+                    console.warn('⚠️ Failed to load project progress:', result.error);
+                }
+            } catch (error) {
+                console.error('❌ Error loading project progress:', error.message);
             }
         }
         
@@ -635,15 +776,35 @@
                     return acc;
                 }, {});
                 
+                // Get progress data for this project
+                const progress = projectProgress.get(project);
+                const progressHtml = progress ? `
+                    <div class="project-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress.progressPercentage}%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="progress-percentage">${progress.progressPercentage}%</span>
+                            <span class="progress-details">
+                                ${progress.totalStories > 0 ? `${progress.completedStories}/${progress.totalStories} stories` : ''}
+                                ${progress.totalTasks > 0 ? ` • ${progress.completedTasks}/${progress.totalTasks} tasks` : ''}
+                            </span>
+                        </div>
+                    </div>
+                ` : '';
+                
                 html += `
                     <div class="project-group">
                         <div class="project-header">
-                            <h3>${project}</h3>
-                            <div class="project-stats">
-                                ${Object.entries(projectStatusCounts).map(([status, count]) => 
-                                    `<span class="status-count status-${status.toLowerCase()}">${status}: ${count}</span>`
-                                ).join(' ')}
+                            <div class="project-header-top">
+                                <h3>${project}</h3>
+                                <div class="project-stats">
+                                    ${Object.entries(projectStatusCounts).map(([status, count]) => 
+                                        `<span class="status-count status-${status.toLowerCase()}">${status}: ${count}</span>`
+                                    ).join(' ')}
+                                </div>
                             </div>
+                            ${progressHtml}
                         </div>
                         <div class="project-stories">
                             ${projectStories.map(story => `
@@ -712,75 +873,8 @@
             stats.style.display = 'grid';
         }
         
-        async function cleanupStories() {
-            try {
-                updateStatus('Checking for bad story entries...', '');
-                
-                const response = await fetch('/api/prd-stories/cleanup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`Found ${result.badStoriesCount} stories with null titles (${result.totalStories} total)`, 'warning');
-                    
-                    if (result.badStoriesCount > 0) {
-                        if (confirm(`Found ${result.badStoriesCount} stories with null titles. These are being filtered out. Would you like to re-extract stories from your PRDs?`)) {
-                            // Re-extract from linked PRDs
-                            updateStatus('Re-extracting stories from linked PRDs...', '');
-                            setTimeout(loadStories, 1000);
-                        }
-                    }
-                } else {
-                    throw new Error(result.error || 'Cleanup check failed');
-                }
-            } catch (error) {
-                updateStatus(`Cleanup check failed: ${error.message}`, 'error');
-            }
-        }
         
-        async function standardizePrds() {
-            try {
-                updateStatus('Starting PRD standardization...', '');
-                
-                const response = await fetch('/api/prd-stories/standardize', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`Standardized ${result.repositories} repositories, found ${result.count} stories`, 'success');
-                    // Reload stories to show new ones
-                    setTimeout(loadStories, 1000);
-                } else {
-                    throw new Error(result.error || 'Standardization failed');
-                }
-            } catch (error) {
-                updateStatus(`Standardization failed: ${error.message}`, 'error');
-            }
-        }
         
-        async function checkWatcherStatus() {
-            try {
-                const response = await fetch('/api/prd-stories/status');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const status = result.data;
-                    updateStatus(`Watcher: ${status.isRunning ? 'Running' : 'Stopped'}, Last check: ${formatDate(status.lastCheck)}`, 'success');
-                } else {
-                    throw new Error(result.error || 'Failed to get watcher status');
-                }
-            } catch (error) {
-                updateStatus(`Failed to get watcher status: ${error.message}`, 'error');
-            }
-        }
         
         function showAddStoryForm() {
             // Simple prompt-based form for now
@@ -847,27 +941,55 @@
         }
 
         async function scanAllRepositories() {
+            const button = document.getElementById('scan-repos-btn');
+            const originalText = button.textContent;
+            
             try {
-                updateStatus('🔍 Scanning repositories...', '');
-                document.getElementById('scan-repos-btn').disabled = true;
-                document.getElementById('scan-repos-btn').textContent = '🔍 Scanning...';
+                // Show loading state
+                button.disabled = true;
+                button.textContent = '⏳ Scanning All...';
+                button.className = 'btn primary btn-loading';
                 
-                const response = await fetch('/api/prd-stories/standardize', { method: 'POST' });
-                const result = await response.json();
+                updateStatus('🔍 Scanning all repositories...', '');
                 
-                if (result.success) {
-                    updateStatus('✅ Scan completed', 'success');
-                    const repoInfo = parseRepositoryScanOutput(result.output);
-                    displayRepositoryOverview(repoInfo);
-                    setTimeout(loadStories, 1000);
+                // Since we don't have a bulk scan endpoint, we'll scan each repository individually
+                const reposResponse = await fetch('/api/prd-stories/repositories');
+                const reposResult = await reposResponse.json();
+                
+                if (reposResult.success) {
+                    const repos = reposResult.repositories.filter(repo => repo.status === 'not-processed');
+                    let processed = 0;
+                    
+                    for (const repo of repos) {
+                        try {
+                            const response = await fetch('/api/prd-stories/process-repo', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ repository: repo.name })
+                            });
+                            
+                            if (response.ok) {
+                                processed++;
+                                updateStatus(`🔍 Scanning all repositories... (${processed}/${repos.length})`, '');
+                            }
+                        } catch (error) {
+                            console.warn(`Failed to scan ${repo.name}:`, error.message);
+                        }
+                    }
+                    
+                    updateStatus(`✅ Scanned ${processed} repositories`, 'success');
+                    loadRepositoryOverview();
+                    loadStories();
                 } else {
-                    throw new Error(result.error || 'Scan failed');
+                    throw new Error(reposResult.error || 'Failed to get repositories');
                 }
             } catch (error) {
                 updateStatus(`❌ Scan failed: ${error.message}`, 'error');
             } finally {
-                document.getElementById('scan-repos-btn').disabled = false;
-                document.getElementById('scan-repos-btn').textContent = '🔍 Scan Repos';
+                // Reset button
+                button.disabled = false;
+                button.textContent = originalText;
+                button.className = 'btn primary';
             }
         }
         
@@ -904,17 +1026,41 @@
         
         function displayRepositoryOverview(repos) {
             document.getElementById('total-repos').textContent = repos.length;
-            document.getElementById('repos-with-prd').textContent = repos.filter(r => r.status === 'prd-found').length;
-            document.getElementById('repos-without-prd').textContent = repos.filter(r => r.status === 'prd-missing').length;
+            document.getElementById('repos-with-prd').textContent = repos.filter(r => r.status === 'prd-found' || r.status === 'prd-only' || r.status === 'prd-and-tasks').length;
+            document.getElementById('repos-without-prd').textContent = repos.filter(r => r.status === 'prd-missing' || r.status === 'not-processed').length;
             document.getElementById('repos-needing-update').textContent = repos.filter(r => r.status === 'prd-needs-update').length;
             
             const container = document.getElementById('repositories-list');
             container.innerHTML = repos.map(repo => `
                 <div class="repo-item">
                     <div class="repo-name">${repo.name}</div>
-                    <div class="repo-status ${getRepoStatusClass(repo.status)}">${getRepoStatusText(repo)}</div>
+                    <div class="repo-actions">
+                        <div class="repo-status ${getRepoStatusClass(repo.status)}">${getRepoStatusText(repo)}</div>
+                        <button class="btn btn-sm process-repo-btn" data-repo="${repo.name}" ${repo.status === 'not-processed' ? '' : 'disabled'}>
+                            ${repo.status === 'not-processed' ? '🔍 Scan' : '✅ Scanned'}
+                        </button>
+                        <button class="btn btn-sm btn-ignore ignore-repo-btn" data-repo="${repo.name}" title="Ignore this repository">
+                            ❌
+                        </button>
+                    </div>
                 </div>
             `).join('');
+            
+            // Add event listeners for process buttons
+            container.querySelectorAll('.process-repo-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const repoName = e.target.getAttribute('data-repo');
+                    processRepository(repoName);
+                });
+            });
+            
+            // Add event listeners for ignore buttons
+            container.querySelectorAll('.ignore-repo-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const repoName = e.target.getAttribute('data-repo');
+                    ignoreRepository(repoName);
+                });
+            });
             
             document.getElementById('repositories-overview').style.display = 'block';
         }
@@ -935,7 +1081,207 @@
                 case 'prd-missing': return '❌ No PRD';
                 case 'prd-needs-update': return '⚠️ Update needed';
                 case 'prd-linked': return `🔗 Linked (${repo.projectName || 'Unknown'})`;
+                case 'prd-only': return `📄 PRD Only (${repo.prdCount})`;
+                case 'tasks-only': return `✅ Tasks Only (${repo.taskCount})`;
+                case 'prd-and-tasks': return `📄✅ PRD + Tasks (${repo.prdCount}/${repo.taskCount})`;
+                case 'no-files': return '❌ No Files';
+                case 'not-processed': return '⏳ Not Processed';
                 default: return '❓ Unknown';
+            }
+        }
+        
+        async function processRepository(repoName) {
+            const button = document.querySelector(`[data-repo="${repoName}"]`);
+            const originalText = button.textContent;
+            
+            try {
+                // Show loading state
+                button.disabled = true;
+                button.textContent = '⏳ Scanning...';
+                button.className = 'btn btn-sm btn-loading';
+                
+                updateStatus(`Scanning ${repoName}...`, '');
+                
+                const response = await fetch('/api/prd-stories/process-repo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repository: repoName })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`✅ Scanned ${repoName}: ${result.repository.prdCount} PRD, ${result.repository.taskCount} tasks`, 'success');
+                    
+                    // Update the repository in the list
+                    const repoItem = button.closest('.repo-item');
+                    const statusDiv = repoItem.querySelector('.repo-status');
+                    
+                    statusDiv.textContent = getRepoStatusText(result.repository);
+                    statusDiv.className = `repo-status ${getRepoStatusClass(result.repository.status)}`;
+                    button.textContent = '✅ Scanned';
+                    button.className = 'btn btn-sm btn-success';
+                    
+                    // Reload stories if we found any
+                    if (result.repository.storyCount > 0) {
+                        setTimeout(loadStories, 1000);
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to scan repository');
+                }
+            } catch (error) {
+                // Reset button on error
+                button.disabled = false;
+                button.textContent = originalText;
+                button.className = 'btn btn-sm process-repo-btn';
+                updateStatus(`❌ Failed to scan ${repoName}: ${error.message}`, 'error');
+            }
+        }
+        
+        async function ignoreRepository(repoName) {
+            try {
+                if (!confirm(`Are you sure you want to ignore "${repoName}"? It will be moved to the ignored list.`)) {
+                    return;
+                }
+                
+                updateStatus(`Ignoring ${repoName}...`, '');
+                
+                const response = await fetch('/api/prd-stories/ignore-repo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repository: repoName })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`✅ Ignored ${repoName}`, 'success');
+                    
+                    // Remove the repository from the current list
+                    const repoItem = document.querySelector(`[data-repo="${repoName}"]`).closest('.repo-item');
+                    repoItem.remove();
+                    
+                    // Update the counts
+                    loadRepositoryOverview();
+                } else {
+                    throw new Error(result.error || 'Failed to ignore repository');
+                }
+            } catch (error) {
+                updateStatus(`❌ Failed to ignore ${repoName}: ${error.message}`, 'error');
+            }
+        }
+        
+        async function toggleIgnoredView() {
+            const button = document.getElementById('toggle-ignored-btn');
+            const reposOverview = document.getElementById('repositories-overview');
+            const storiesContainer = document.getElementById('stories-container');
+            
+            if (!showingIgnored) {
+                // Show ignored repositories
+                try {
+                    updateStatus('Loading ignored repositories...', '');
+                    
+                    const response = await fetch('/api/prd-stories/ignored');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        ignoredRepos = result.repositories;
+                        displayIgnoredRepositories();
+                        
+                        button.textContent = '📋 Show Active';
+                        button.className = 'btn primary';
+                        showingIgnored = true;
+                        
+                        // Hide stories and show ignored repos
+                        storiesContainer.style.display = 'none';
+                        reposOverview.style.display = 'block';
+                        
+                        updateStatus(`Showing ${ignoredRepos.length} ignored repositories`, 'success');
+                    } else {
+                        throw new Error(result.error || 'Failed to load ignored repositories');
+                    }
+                } catch (error) {
+                    updateStatus(`❌ Failed to load ignored repositories: ${error.message}`, 'error');
+                }
+            } else {
+                // Show active repositories
+                button.textContent = '🚫 Show Ignored';
+                button.className = 'btn secondary';
+                showingIgnored = false;
+                
+                // Show stories and hide ignored repos
+                storiesContainer.style.display = 'block';
+                loadRepositoryOverview();
+                updateStatus('Showing active repositories', 'success');
+            }
+        }
+        
+        function displayIgnoredRepositories() {
+            const container = document.getElementById('repositories-list');
+            
+            if (ignoredRepos.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Ignored Repositories</h3>
+                        <p>Repositories that you ignore will appear here. You can unignore them at any time.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = ignoredRepos.map(repo => `
+                <div class="repo-item">
+                    <div class="repo-name">${repo.name}</div>
+                    <div class="repo-actions">
+                        <div class="repo-status ignored">🚫 Ignored</div>
+                        <button class="btn btn-sm btn-unignore unignore-repo-btn" data-repo="${repo.name}">
+                            🔄 Unignore
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add event listeners for unignore buttons
+            container.querySelectorAll('.unignore-repo-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const repoName = e.target.getAttribute('data-repo');
+                    unignoreRepository(repoName);
+                });
+            });
+        }
+        
+        async function unignoreRepository(repoName) {
+            try {
+                if (!confirm(`Are you sure you want to unignore "${repoName}"? It will be added back to the active repository list.`)) {
+                    return;
+                }
+                
+                updateStatus(`Unignoring ${repoName}...`, '');
+                
+                const response = await fetch('/api/prd-stories/unignore-repo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repository: repoName })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`✅ Unignored ${repoName}`, 'success');
+                    
+                    // Remove from local list
+                    ignoredRepos = ignoredRepos.filter(repo => repo.name !== repoName);
+                    displayIgnoredRepositories();
+                    
+                    // If we're showing ignored repos, refresh the display
+                    if (showingIgnored) {
+                        updateStatus(`Showing ${ignoredRepos.length} ignored repositories`, 'success');
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to unignore repository');
+                }
+            } catch (error) {
+                updateStatus(`❌ Failed to unignore ${repoName}: ${error.message}`, 'error');
             }
         }
         
