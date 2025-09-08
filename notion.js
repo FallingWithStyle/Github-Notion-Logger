@@ -74,6 +74,11 @@ const SCAN_CACHE_SCHEMA = {
   "Task Count": { number: {} },
   "Progress": { number: { format: 'percent' } },
   "Cache Data": { rich_text: {} }, // JSON string of full scan result
+  "Cache Data 2": { rich_text: {} }, // Additional chunks for large data
+  "Cache Data 3": { rich_text: {} },
+  "Cache Data 4": { rich_text: {} },
+  "Cache Data 5": { rich_text: {} },
+  "Chunk Count": { number: {} }, // Number of chunks used
   "Status": { 
     select: { 
       options: [
@@ -1459,7 +1464,17 @@ async function cacheScanResult(repository, scanData) {
     }
     
     const now = new Date().toISOString();
-    const cacheData = JSON.stringify(scanData);
+    
+    // Chunk the cache data to work within Notion's 2000 character limit
+    const fullDataJson = JSON.stringify(scanData);
+    const chunks = [];
+    const maxChunkSize = 1800; // Leave some buffer below 2000 limit
+    
+    for (let i = 0; i < fullDataJson.length; i += maxChunkSize) {
+      chunks.push(fullDataJson.slice(i, i + maxChunkSize));
+    }
+    
+    console.log(`📦 Chunking cache data: ${fullDataJson.length} chars into ${chunks.length} chunks`);
     
     // Check if entry already exists
     const existingEntries = await notion.databases.query({
@@ -1494,8 +1509,8 @@ async function cacheScanResult(repository, scanData) {
       "Progress": {
         number: scanData.progress ? scanData.progress.progressPercentage : 0
       },
-      "Cache Data": {
-        rich_text: [{ type: "text", text: { content: cacheData } }]
+      "Chunk Count": {
+        number: chunks.length
       },
       "Status": {
         select: { name: 'cached' }
@@ -1504,6 +1519,14 @@ async function cacheScanResult(repository, scanData) {
         date: { start: now }
       }
     };
+    
+    // Add cache data chunks
+    const cacheFields = ["Cache Data", "Cache Data 2", "Cache Data 3", "Cache Data 4", "Cache Data 5"];
+    for (let i = 0; i < Math.min(chunks.length, cacheFields.length); i++) {
+      entryData[cacheFields[i]] = {
+        rich_text: [{ type: "text", text: { content: chunks[i] } }]
+      };
+    }
     
     if (existingEntries.results.length > 0) {
       // Update existing entry
@@ -1568,9 +1591,9 @@ async function getCachedScanResult(repository) {
     
     const entry = response.results[0];
     const lastScanned = entry.properties["Last Scanned"]?.date?.start;
-    const cacheData = entry.properties["Cache Data"]?.rich_text?.[0]?.text?.content;
+    const chunkCount = entry.properties["Chunk Count"]?.number || 1;
     
-    if (!lastScanned || !cacheData) {
+    if (!lastScanned) {
       return null;
     }
     
@@ -1583,9 +1606,26 @@ async function getCachedScanResult(repository) {
       return null;
     }
     
+    // Reassemble cache data from chunks
+    const cacheFields = ["Cache Data", "Cache Data 2", "Cache Data 3", "Cache Data 4", "Cache Data 5"];
+    const chunks = [];
+    
+    for (let i = 0; i < Math.min(chunkCount, cacheFields.length); i++) {
+      const chunk = entry.properties[cacheFields[i]]?.rich_text?.[0]?.text?.content;
+      if (chunk) {
+        chunks.push(chunk);
+      }
+    }
+    
+    if (chunks.length === 0) {
+      console.log(`📋 No cache data found for ${repository}`);
+      return null;
+    }
+    
     try {
-      const scanData = JSON.parse(cacheData);
-      console.log(`📋 Using cached scan result for ${repository} (age: ${Math.round(cacheAge / 1000)}s)`);
+      const fullCacheData = chunks.join('');
+      const scanData = JSON.parse(fullCacheData);
+      console.log(`📋 Using cached scan result for ${repository} (age: ${Math.round(cacheAge / 1000)}s, ${chunks.length} chunks)`);
       return scanData;
     } catch (parseError) {
       console.error('❌ Error parsing cached scan data:', parseError);
