@@ -245,3 +245,4 @@
 - Keep tasks directly under the Story they belong to
 - Match Story IDs (`Story 1.1`, etc.) with the PRD for easy alignment
 - Update frequently to keep the Task List and PRD in sync
+

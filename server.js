@@ -102,7 +102,7 @@ app.get('/commit-log.json', (req, res) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 8100;
+const PORT = process.env.PORT || 8080;
 const SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 
 // Validate required environment variables
