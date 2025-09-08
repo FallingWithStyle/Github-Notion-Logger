@@ -40,6 +40,7 @@ class PrdTaskProcessor {
   constructor() {
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+    // Notion cache functions will be imported dynamically
   }
 
   async getAllRepositories() {
@@ -79,96 +80,214 @@ class PrdTaskProcessor {
 
   async findProjectFiles(repoName) {
     try {
+      console.log(`🔍 Starting file search for repository: ${repoName}`);
+      console.log(`🔍 Owner: ${owner}, Repository: ${repoName}`);
+      
       const files = {
         prd: null,
         taskList: null
       };
 
-      // Search for PRD files with specific patterns
+      // First try using repository contents API (more reliable and faster)
+      console.log(`📁 Using repository contents API to find files...`);
       try {
-        const prdQueries = [
-          `repo:${owner}/${repoName} filename:PRD.md`,
-          `repo:${owner}/${repoName} filename:prd.md`,
-          `repo:${owner}/${repoName} filename:README.md`,
-          `repo:${owner}/${repoName} filename:REQUIREMENTS.md`,
-          `repo:${owner}/${repoName} filename:requirements.md`
-        ];
+        const response = await octokit.repos.getContent({
+          owner,
+          repo: repoName,
+          path: ''
+        });
 
-        for (const query of prdQueries) {
-          try {
-            const response = await octokit.search.code({
-              q: query,
-              per_page: 10,
-              visibility: 'all'
-            });
-
-            if (response.data.items.length > 0) {
-              const prdFile = response.data.items[0]; // Take the first match
-              files.prd = {
-                name: prdFile.name,
-                path: prdFile.path,
-                sha: prdFile.sha,
-                url: prdFile.html_url
-              };
-              break; // Found a PRD file, stop searching
-            }
-          } catch (error) {
-            if (error.status !== 422) { // 422 is "validation failed" for empty results
-              console.warn(`⚠️ Error searching for PRD with query "${query}":`, error.message);
-            }
-          }
+        if (Array.isArray(response.data)) {
+          console.log(`📁 Found ${response.data.length} files in repository root`);
           
-          // Small delay between queries
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Look for PRD files
+          const prdFiles = response.data.filter(item => 
+            item.type === 'file' && (
+              item.name === 'PRD.md' ||
+              item.name === 'prd.md' ||
+              item.name === 'README.md' ||
+              item.name === 'REQUIREMENTS.md' ||
+              item.name === 'requirements.md'
+            )
+          );
+
+          if (prdFiles.length > 0) {
+            const prdFile = prdFiles[0];
+            files.prd = {
+              name: prdFile.name,
+              path: prdFile.path,
+              sha: prdFile.sha,
+              url: prdFile.html_url
+            };
+            console.log(`✅ Found PRD file via contents API: ${prdFile.name} at ${prdFile.path}`);
+          }
+
+          // Look for task-list files
+          const taskFiles = response.data.filter(item => 
+            item.type === 'file' && (
+              item.name === 'task-list.md' ||
+              item.name === 'tasks.md' ||
+              item.name === 'TODO.md' ||
+              item.name === 'todo.md'
+            )
+          );
+
+          if (taskFiles.length > 0) {
+            const taskFile = taskFiles[0];
+            files.taskList = {
+              name: taskFile.name,
+              path: taskFile.path,
+              sha: taskFile.sha,
+              url: taskFile.html_url
+            };
+            console.log(`✅ Found task-list file via contents API: ${taskFile.name} at ${taskFile.path}`);
+          }
         }
       } catch (error) {
-        console.warn(`⚠️ Error searching for PRD files in ${repoName}:`, error.message);
+        console.warn(`⚠️ Error using contents API for ${repoName}:`, error.message);
+        console.log(`🔄 Falling back to search API...`);
+        
+        // Fallback to search API if contents API fails
+        await this.findProjectFilesWithSearch(repoName, files);
       }
 
-      // Search for task-list files with specific patterns
-      try {
-        const taskQueries = [
-          `repo:${owner}/${repoName} filename:task-list.md`,
-          `repo:${owner}/${repoName} filename:tasks.md`,
-          `repo:${owner}/${repoName} filename:TODO.md`,
-          `repo:${owner}/${repoName} filename:todo.md`
-        ];
-
-        for (const query of taskQueries) {
-          try {
-            const response = await octokit.search.code({
-              q: query,
-              per_page: 10,
-              visibility: 'all'
-            });
-
-            if (response.data.items.length > 0) {
-              const taskFile = response.data.items[0]; // Take the first match
-              files.taskList = {
-                name: taskFile.name,
-                path: taskFile.path,
-                sha: taskFile.sha,
-                url: taskFile.html_url
-              };
-              break; // Found a task-list file, stop searching
-            }
-          } catch (error) {
-            if (error.status !== 422) { // 422 is "validation failed" for empty results
-              console.warn(`⚠️ Error searching for task-list with query "${query}":`, error.message);
-            }
-          }
-          
-          // Small delay between queries
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      } catch (error) {
-        console.warn(`⚠️ Error searching for task-list files in ${repoName}:`, error.message);
-      }
+      console.log(`📋 File search results for ${repoName}:`);
+      console.log(`   PRD file: ${files.prd ? `${files.prd.name} (${files.prd.path})` : 'None found'}`);
+      console.log(`   Task file: ${files.taskList ? `${files.taskList.name} (${files.taskList.path})` : 'None found'}`);
 
       return files;
     } catch (error) {
       console.error(`❌ Error finding project files in ${repoName}:`, error.message);
       return { prd: null, taskList: null };
+    }
+  }
+
+  async findProjectFilesWithSearch(repoName, files) {
+    // Search for PRD files with specific patterns
+    console.log(`📄 Searching for PRD files in ${owner}/${repoName}...`);
+    try {
+      const prdQueries = [
+        `repo:${owner}/${repoName} filename:PRD.md`,
+        `repo:${owner}/${repoName} filename:prd.md`,
+        `repo:${owner}/${repoName} filename:README.md`,
+        `repo:${owner}/${repoName} filename:REQUIREMENTS.md`,
+        `repo:${owner}/${repoName} filename:requirements.md`
+      ];
+
+      for (let i = 0; i < prdQueries.length; i++) {
+        const query = prdQueries[i];
+        console.log(`🔍 PRD Query ${i + 1}/${prdQueries.length}: "${query}"`);
+        
+        try {
+          const response = await octokit.search.code({
+            q: query,
+            per_page: 10,
+            visibility: 'all'
+          });
+
+          console.log(`📊 PRD Query response: ${response.data.total_count} total results, ${response.data.items.length} items returned`);
+          
+          if (response.data.items.length > 0) {
+            const prdFile = response.data.items[0]; // Take the first match
+            files.prd = {
+              name: prdFile.name,
+              path: prdFile.path,
+              sha: prdFile.sha,
+              url: prdFile.html_url
+            };
+            console.log(`✅ Found PRD file: ${prdFile.name} at ${prdFile.path}`);
+            console.log(`🔗 PRD URL: ${prdFile.html_url}`);
+            break; // Found a PRD file, stop searching
+          } else {
+            console.log(`❌ No PRD files found with query: "${query}"`);
+          }
+        } catch (error) {
+          if (error.status === 403) {
+            console.warn(`🚫 Rate limit hit for PRD search. Waiting 30 seconds before retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds for rate limit reset
+            // Retry the same query
+            i--;
+            continue;
+          } else if (error.status !== 422) { // 422 is "validation failed" for empty results
+            console.warn(`⚠️ Error searching for PRD with query "${query}":`, error.message);
+          } else {
+            console.log(`ℹ️ No results for query "${query}" (422 - validation failed)`);
+          }
+        }
+        
+        // Increased delay between queries to avoid rate limits
+        if (i < prdQueries.length - 1) {
+          console.log(`⏳ Waiting 5 seconds before next PRD query...`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️ Error searching for PRD files in ${repoName}:`, error.message);
+    }
+
+    // Wait between PRD and task-list searches to avoid rate limits
+    console.log(`⏳ Waiting 10 seconds before searching for task-list files...`);
+    await new Promise(resolve => setTimeout(resolve, 10000));
+
+    // Search for task-list files with specific patterns
+    console.log(`📋 Searching for task-list files in ${owner}/${repoName}...`);
+    try {
+      const taskQueries = [
+        `repo:${owner}/${repoName} filename:task-list.md`,
+        `repo:${owner}/${repoName} filename:tasks.md`,
+        `repo:${owner}/${repoName} filename:TODO.md`,
+        `repo:${owner}/${repoName} filename:todo.md`
+      ];
+
+      for (let i = 0; i < taskQueries.length; i++) {
+        const query = taskQueries[i];
+        console.log(`🔍 Task Query ${i + 1}/${taskQueries.length}: "${query}"`);
+        
+        try {
+          const response = await octokit.search.code({
+            q: query,
+            per_page: 10,
+            visibility: 'all'
+          });
+
+          console.log(`📊 Task Query response: ${response.data.total_count} total results, ${response.data.items.length} items returned`);
+          
+          if (response.data.items.length > 0) {
+            const taskFile = response.data.items[0]; // Take the first match
+            files.taskList = {
+              name: taskFile.name,
+              path: taskFile.path,
+              sha: taskFile.sha,
+              url: taskFile.html_url
+            };
+            console.log(`✅ Found task-list file: ${taskFile.name} at ${taskFile.path}`);
+            console.log(`🔗 Task URL: ${taskFile.html_url}`);
+            break; // Found a task-list file, stop searching
+          } else {
+            console.log(`❌ No task-list files found with query: "${query}"`);
+          }
+        } catch (error) {
+          if (error.status === 403) {
+            console.warn(`🚫 Rate limit hit for task search. Waiting 30 seconds before retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds for rate limit reset
+            // Retry the same query
+            i--;
+            continue;
+          } else if (error.status !== 422) { // 422 is "validation failed" for empty results
+            console.warn(`⚠️ Error searching for task-list with query "${query}":`, error.message);
+          } else {
+            console.log(`ℹ️ No results for query "${query}" (422 - validation failed)`);
+          }
+        }
+        
+        // Increased delay between queries to avoid rate limits
+        if (i < taskQueries.length - 1) {
+          console.log(`⏳ Waiting 5 seconds before next task query...`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️ Error searching for task-list files in ${repoName}:`, error.message);
     }
   }
 
@@ -369,9 +488,21 @@ class PrdTaskProcessor {
 
   async processRepository(repoName) {
     try {
-      console.log(`🔄 Scanning repository: ${repoName}`);
+      console.log(`🔄 Starting repository processing: ${repoName}`);
+      console.log(`🔄 Repository: ${repoName}, Owner: ${owner}`);
+      
+      // Check if we have a recent cached result
+      const cachedResult = await this.getCachedScanResult(repoName);
+      if (cachedResult) {
+        console.log(`📋 Using cached scan result for ${repoName}`);
+        return cachedResult;
+      }
       
       const files = await this.findProjectFiles(repoName);
+      console.log(`📋 File search completed for ${repoName}:`);
+      console.log(`   PRD found: ${!!files.prd}`);
+      console.log(`   Task-list found: ${!!files.taskList}`);
+      
       const result = {
         repository: repoName,
         hasPrd: !!files.prd,
@@ -384,31 +515,74 @@ class PrdTaskProcessor {
 
       // Process PRD file
       if (files.prd) {
-        const prdContent = await this.getFileContent(repoName, files.prd.path, files.prd.sha);
-        if (prdContent) {
-          result.stories = this.parsePrdContent(prdContent, repoName);
-          console.log(`📝 Found ${result.stories.length} stories in PRD`);
+        console.log(`📄 Processing PRD file: ${files.prd.name} (${files.prd.path})`);
+        try {
+          const prdContent = await this.getFileContent(repoName, files.prd.path, files.prd.sha);
+          if (prdContent) {
+            console.log(`📄 PRD content retrieved, length: ${prdContent.length} characters`);
+            result.stories = this.parsePrdContent(prdContent, repoName);
+            console.log(`📝 Parsed ${result.stories.length} stories from PRD`);
+            if (result.stories.length > 0) {
+              console.log(`📝 First few stories:`, result.stories.slice(0, 3).map(s => s.title));
+            }
+          } else {
+            console.log(`❌ Failed to retrieve PRD content`);
+          }
+        } catch (error) {
+          console.error(`❌ Error processing PRD file:`, error.message);
         }
+      } else {
+        console.log(`❌ No PRD file found for ${repoName}`);
       }
 
       // Process task-list file
       if (files.taskList) {
-        const taskContent = await this.getFileContent(repoName, files.taskList.path, files.taskList.sha);
-        if (taskContent) {
-          result.tasks = this.parseTaskListContent(taskContent, repoName);
-          console.log(`✅ Found ${result.tasks.length} tasks in task-list`);
+        console.log(`📋 Processing task-list file: ${files.taskList.name} (${files.taskList.path})`);
+        try {
+          const taskContent = await this.getFileContent(repoName, files.taskList.path, files.taskList.sha);
+          if (taskContent) {
+            console.log(`📋 Task-list content retrieved, length: ${taskContent.length} characters`);
+            result.tasks = this.parseTaskListContent(taskContent, repoName);
+            console.log(`✅ Parsed ${result.tasks.length} tasks from task-list`);
+            if (result.tasks.length > 0) {
+              console.log(`✅ First few tasks:`, result.tasks.slice(0, 3).map(t => t.title));
+            }
+          } else {
+            console.log(`❌ Failed to retrieve task-list content`);
+          }
+        } catch (error) {
+          console.error(`❌ Error processing task-list file:`, error.message);
         }
+      } else {
+        console.log(`❌ No task-list file found for ${repoName}`);
       }
 
       // Calculate progress
       if (result.stories.length > 0 || result.tasks.length > 0) {
+        console.log(`📊 Calculating progress for ${repoName}...`);
         result.progress = this.calculateProgress(result.stories, result.tasks);
-        console.log(`📊 Progress: ${result.progress.progressPercentage}% (${result.progress.completedStories}/${result.progress.totalStories} stories, ${result.progress.completedTasks}/${result.progress.totalTasks} tasks)`);
+        console.log(`📊 Progress calculated: ${result.progress.progressPercentage}% (${result.progress.completedStories}/${result.progress.totalStories} stories, ${result.progress.completedTasks}/${result.progress.totalTasks} tasks)`);
+      } else {
+        console.log(`❌ No stories or tasks found for ${repoName} - no progress to calculate`);
       }
+
+      console.log(`✅ Repository processing completed for ${repoName}`);
+      console.log(`📋 Final result:`, {
+        repository: result.repository,
+        hasPrd: result.hasPrd,
+        hasTaskList: result.hasTaskList,
+        storyCount: result.stories.length,
+        taskCount: result.tasks.length,
+        progressPercentage: result.progress?.progressPercentage || 0
+      });
+
+      // Cache the result for future use
+      await this.cacheScanResult(repoName, result);
 
       return result;
     } catch (error) {
       console.error(`❌ Error processing repository ${repoName}:`, error.message);
+      console.error(`❌ Error stack:`, error.stack);
       return {
         repository: repoName,
         hasPrd: false,
@@ -474,24 +648,47 @@ class PrdTaskProcessor {
     }
   }
 
-  // Cache management
-  getCachedData(key) {
-    const cached = this.cache.get(key);
-    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-      return cached.data;
+  // Notion-based cache management
+  async getCachedScanResult(repoName) {
+    try {
+      const { getCachedScanResult } = require('./notion');
+      return await getCachedScanResult(repoName);
+    } catch (error) {
+      console.error('❌ Error getting cached scan result from Notion:', error.message);
+      return null;
     }
-    return null;
   }
 
-  setCachedData(key, data) {
-    this.cache.set(key, {
-      data: data,
-      timestamp: Date.now()
-    });
+  async hasRecentScan(repoName) {
+    try {
+      const { hasRecentScanCache } = require('./notion');
+      return await hasRecentScanCache(repoName);
+    } catch (error) {
+      console.error('❌ Error checking scan cache:', error.message);
+      return false;
+    }
   }
 
-  clearCache() {
-    this.cache.clear();
+  async cacheScanResult(repoName, result) {
+    try {
+      const { cacheScanResult } = require('./notion');
+      await cacheScanResult(repoName, result);
+      console.log(`💾 Cached scan result for ${repoName} in Notion`);
+    } catch (error) {
+      console.error('❌ Error caching scan result in Notion:', error.message);
+    }
+  }
+
+  async clearCache() {
+    try {
+      const { clearScanCache } = require('./notion');
+      const clearedCount = await clearScanCache();
+      console.log(`🗑️ Cleared ${clearedCount} scan cache entries from Notion`);
+      return clearedCount;
+    } catch (error) {
+      console.error('❌ Error clearing scan cache:', error.message);
+      return 0;
+    }
   }
 }
 

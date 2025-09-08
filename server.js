@@ -555,9 +555,14 @@ app.get('/week', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'week.html'));
 });
 
-// Serve the PRD story tracking page
-app.get('/prd', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'prd.html'));
+// Serve the projects page
+app.get('/projects', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'projects.html'));
+});
+
+// Serve the progress dashboard page
+app.get('/progress', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'progress.html'));
 });
 
 // API endpoint to get 28-day project data for weekly planning
@@ -1187,7 +1192,7 @@ app.get('/api/project-progress/:repository', asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error fetching detailed progress:', error);
-    res.status(500).json({
+    res.status(500).json({ 
       success: false,
       error: 'Failed to fetch detailed progress',
       details: error.message 
@@ -1210,6 +1215,30 @@ app.post('/api/project-progress/clear-cache', asyncHandler(async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to clear progress cache',
+      details: error.message 
+    });
+  }
+}));
+
+// Clear scan cache
+app.post('/api/prd-stories/clear-cache', asyncHandler(async (req, res) => {
+  try {
+    const PrdTaskProcessor = require('./prd-task-processor');
+    const processor = new PrdTaskProcessor();
+    
+    const clearedCount = await processor.clearCache();
+    console.log(`🗑️ Scan cache cleared: ${clearedCount} entries`);
+    
+    res.json({
+      success: true,
+      message: `Scan cache cleared successfully (${clearedCount} entries removed)`,
+      clearedCount
+    });
+  } catch (error) {
+    console.error('❌ Error clearing scan cache:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear scan cache',
       details: error.message 
     });
   }
@@ -1244,16 +1273,36 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
     // Filter out ignored repositories
     const filteredRepos = repos.filter(repo => !ignoredNames.has(repo.name));
     
-    // Return simple repository list
-    const repositories = filteredRepos.map(repo => ({
-      name: repo.name,
-      status: 'not-processed', // Will be updated when user clicks to process
-      prdCount: 0,
-      taskCount: 0,
-      storyCount: 0,
-      progress: 0,
-      lastUpdated: repo.updated_at
-    }));
+    // Check cache status for each repository
+    const repositories = [];
+    for (const repo of filteredRepos) {
+      const hasRecentScan = await processor.hasRecentScan(repo.name);
+      const cachedResult = await processor.getCachedScanResult(repo.name);
+      
+      if (hasRecentScan && cachedResult) {
+        repositories.push({
+          name: repo.name,
+          status: cachedResult.hasPrd ? (cachedResult.hasTaskList ? 'prd-and-tasks' : 'prd-only') : (cachedResult.hasTaskList ? 'tasks-only' : 'no-files'),
+          prdCount: cachedResult.hasPrd ? 1 : 0,
+          taskCount: cachedResult.tasks ? cachedResult.tasks.length : 0,
+          storyCount: cachedResult.stories ? cachedResult.stories.length : 0,
+          progress: cachedResult.progress ? cachedResult.progress.progressPercentage : 0,
+          lastUpdated: cachedResult.lastUpdated || repo.updated_at,
+          cached: true
+        });
+      } else {
+        repositories.push({
+          name: repo.name,
+          status: 'not-processed',
+          prdCount: 0,
+          taskCount: 0,
+          storyCount: 0,
+          progress: 0,
+          lastUpdated: repo.updated_at,
+          cached: false
+        });
+      }
+    }
     
     res.json({
       success: true,
@@ -1323,7 +1372,7 @@ app.post('/api/prd-stories/process-repo', asyncHandler(async (req, res) => {
     }
   } catch (error) {
     console.error('❌ Error processing repository:', error);
-    res.status(500).json({
+    res.status(500).json({ 
       success: false,
       error: 'Failed to scan repository',
       details: error.message 
@@ -1403,14 +1452,14 @@ app.get('/api/prd-stories/ignored', asyncHandler(async (req, res) => {
       }
     }
     
-    res.json({
-      success: true,
+        res.json({
+          success: true,
       repositories: ignoredRepos
-    });
+        });
   } catch (error) {
     console.error('❌ Error getting ignored repositories:', error);
-    res.status(500).json({
-      success: false,
+        res.status(500).json({
+          success: false,
       error: 'Failed to get ignored repositories',
       details: error.message 
     });
@@ -1438,7 +1487,7 @@ app.post('/api/prd-stories/unignore-repo', asyncHandler(async (req, res) => {
       try {
         const data = fs.readFileSync(ignoredPath, 'utf8');
         ignoredRepos = JSON.parse(data);
-      } catch (error) {
+  } catch (error) {
         console.warn('⚠️ Error reading ignored repos file:', error.message);
       }
     }
@@ -1465,7 +1514,7 @@ app.post('/api/prd-stories/unignore-repo', asyncHandler(async (req, res) => {
     }
   } catch (error) {
     console.error('❌ Error unignoring repository:', error);
-    res.status(500).json({
+    res.status(500).json({ 
       success: false,
       error: 'Failed to unignore repository',
       details: error.message 
@@ -1494,9 +1543,9 @@ app.post('/api/prd-stories', asyncHandler(async (req, res) => {
       repository,
       notes
     });
-    
-    res.json({
-      success: true,
+      
+      res.json({
+        success: true,
       message: 'Story added successfully',
       data: result
     });

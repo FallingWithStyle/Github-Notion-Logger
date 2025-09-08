@@ -48,6 +48,9 @@ const WEEKLY_PLANNING_SCHEMA = {
 // PRD tracking database ID (will be created if doesn't exist)
 let prdTrackingDatabaseId = null;
 
+// Scan cache database ID (will be created if doesn't exist)
+let scanCacheDatabaseId = null;
+
 // PRD tracking database schema
 const PRD_TRACKING_SCHEMA = {
   "Story Title": { title: {} },  // Only one title property allowed
@@ -57,6 +60,29 @@ const PRD_TRACKING_SCHEMA = {
   "Story Points": { select: {} },
   "Repository": { rich_text: {} },
   "Notes": { rich_text: {} },
+  "Created": { date: {} },
+  "Last Updated": { date: {} }
+};
+
+// Scan cache database schema
+const SCAN_CACHE_SCHEMA = {
+  "Repository": { title: {} },
+  "Last Scanned": { date: {} },
+  "Has PRD": { checkbox: {} },
+  "Has Task List": { checkbox: {} },
+  "Story Count": { number: {} },
+  "Task Count": { number: {} },
+  "Progress": { number: { format: 'percent' } },
+  "Cache Data": { rich_text: {} }, // JSON string of full scan result
+  "Status": { 
+    select: { 
+      options: [
+        { name: 'cached', color: 'green' },
+        { name: 'expired', color: 'yellow' },
+        { name: 'not-scanned', color: 'gray' }
+      ]
+    }
+  },
   "Created": { date: {} },
   "Last Updated": { date: {} }
 };
@@ -491,6 +517,12 @@ async function ensurePrdTrackingDatabase() {
   console.log('🔄 Environment variables:');
   console.log('   - NOTION_API_KEY:', process.env.NOTION_API_KEY ? 'SET' : 'NOT SET');
   console.log('   - NOTION_PRD_TRACKING_DATABASE_ID:', process.env.NOTION_PRD_TRACKING_DATABASE_ID || 'NOT SET');
+  
+  // Use environment variable if available
+  if (process.env.NOTION_PRD_TRACKING_DATABASE_ID) {
+    prdTrackingDatabaseId = process.env.NOTION_PRD_TRACKING_DATABASE_ID;
+    console.log('🔄 Using environment variable database ID:', prdTrackingDatabaseId);
+  }
   
   // Always check the database schema, even if we have a cached ID
   if (prdTrackingDatabaseId) {
@@ -1302,6 +1334,362 @@ async function addMissingShaValues() {
   }
 }
 
+// Ensure scan cache database exists
+async function ensureScanCacheDatabase() {
+  console.log('🔄 Ensuring scan cache database exists...');
+  console.log('🔄 Current database ID:', scanCacheDatabaseId);
+  
+  // Use environment variable if available
+  if (process.env.NOTION_SCAN_CACHE_DATABASE_ID) {
+    scanCacheDatabaseId = process.env.NOTION_SCAN_CACHE_DATABASE_ID;
+    console.log('🔄 Using environment variable database ID:', scanCacheDatabaseId);
+  }
+  
+  // Always check the database schema, even if we have a cached ID
+  if (scanCacheDatabaseId) {
+    console.log('🔄 Checking existing database schema for ID:', scanCacheDatabaseId);
+    try {
+      const db = await notion.databases.retrieve({ database_id: scanCacheDatabaseId });
+      console.log('🔄 Existing database properties:', Object.keys(db.properties));
+      
+      // Check if all required properties exist
+      const requiredProps = ['Repository', 'Last Scanned', 'Has PRD', 'Has Task List', 'Story Count', 'Task Count', 'Progress', 'Cache Data', 'Status', 'Created', 'Last Updated'];
+      const missingProps = requiredProps.filter(prop => !db.properties[prop]);
+      
+      if (missingProps.length > 0) {
+        console.log('⚠️ Database schema is outdated. Missing properties:', missingProps);
+        console.log('🔄 Updating database schema...');
+        
+        // Update the database schema
+        await notion.databases.update({
+          database_id: scanCacheDatabaseId,
+          properties: SCAN_CACHE_SCHEMA
+        });
+        
+        console.log('✅ Database schema updated successfully');
+        return scanCacheDatabaseId;
+      } else {
+        console.log('✅ Database schema is up to date');
+        return scanCacheDatabaseId;
+      }
+    } catch (error) {
+      console.error('❌ Error checking/updating database schema:', error);
+      // If there's an error, try to recreate the database
+      console.log('🔄 Attempting to recreate database...');
+      scanCacheDatabaseId = null;
+    }
+  }
+
+  try {
+    console.log('🔄 Searching for existing scan cache database...');
+    // Check if database already exists by searching for it
+    const response = await notion.search({
+      query: "Scan Cache",
+      filter: {
+        property: "object",
+        value: "database"
+      }
+    });
+
+    if (response.results.length > 0) {
+      console.log('🔄 Found existing scan cache database');
+      scanCacheDatabaseId = response.results[0].id;
+      console.log('🔄 Using existing database ID:', scanCacheDatabaseId);
+      
+      // Verify the database has the correct schema
+      return await ensureScanCacheDatabase();
+    }
+
+    console.log('🔄 No existing database found, creating new one...');
+    
+    // Create the database using the same parent as other databases
+    let parentId = process.env.NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID || commitFromGithubLogDatabaseId;
+    let parentType = "page_id";
+    
+    // Check if the parent ID is actually a database ID
+    try {
+      const parentCheck = await notion.databases.retrieve({ database_id: parentId });
+      console.log('⚠️ Parent ID is actually a database ID, not a page ID');
+      console.log('🔄 Attempting to find a page within this database to use as parent...');
+      
+      // Query the database to find a page we can use as parent
+      const pagesResponse = await notion.databases.query({
+        database_id: parentId,
+        page_size: 1
+      });
+      
+      if (pagesResponse.results.length > 0) {
+        parentId = pagesResponse.results[0].id;
+        parentType = "page_id";
+        console.log(`✅ Found page within database to use as parent: ${parentId}`);
+      } else {
+        // If no pages exist, we'll need to create a page first or use a different approach
+        console.log('❌ No pages found in the database to use as parent');
+        console.log('🔄 Using the database itself as parent (this may fail)...');
+        parentType = "database_id";
+      }
+    } catch (error) {
+      // If it's not a database, assume it's a page ID
+      console.log('✅ Parent ID appears to be a valid page ID');
+    }
+    
+    const newDatabase = await notion.databases.create({
+      parent: { type: parentType, [parentType === "page_id" ? "page_id" : "database_id"]: parentId },
+      title: [{ type: "text", text: { content: "Scan Cache" } }],
+      properties: SCAN_CACHE_SCHEMA,
+      description: [{ type: "text", text: { content: "Repository scan cache for PRD and task-list files" } }]
+    });
+
+    scanCacheDatabaseId = newDatabase.id;
+    console.log('✅ Created new scan cache database with ID:', scanCacheDatabaseId);
+    return scanCacheDatabaseId;
+  } catch (error) {
+    console.error('❌ Error ensuring scan cache database:', error);
+    throw error;
+  }
+}
+
+// Cache scan result in Notion
+async function cacheScanResult(repository, scanData) {
+  try {
+    await ensureScanCacheDatabase();
+    
+    if (!scanCacheDatabaseId) {
+      throw new Error('Failed to get valid scan cache database ID');
+    }
+    
+    const now = new Date().toISOString();
+    const cacheData = JSON.stringify(scanData);
+    
+    // Check if entry already exists
+    const existingEntries = await notion.databases.query({
+      database_id: scanCacheDatabaseId,
+      filter: {
+        property: "Repository",
+        title: {
+          equals: repository
+        }
+      }
+    });
+    
+    const entryData = {
+      "Repository": {
+        title: [{ type: "text", text: { content: repository } }]
+      },
+      "Last Scanned": {
+        date: { start: now }
+      },
+      "Has PRD": {
+        checkbox: scanData.hasPrd || false
+      },
+      "Has Task List": {
+        checkbox: scanData.hasTaskList || false
+      },
+      "Story Count": {
+        number: scanData.stories ? scanData.stories.length : 0
+      },
+      "Task Count": {
+        number: scanData.tasks ? scanData.tasks.length : 0
+      },
+      "Progress": {
+        number: scanData.progress ? scanData.progress.progressPercentage : 0
+      },
+      "Cache Data": {
+        rich_text: [{ type: "text", text: { content: cacheData } }]
+      },
+      "Status": {
+        select: { name: 'cached' }
+      },
+      "Last Updated": {
+        date: { start: now }
+      }
+    };
+    
+    if (existingEntries.results.length > 0) {
+      // Update existing entry
+      const existingEntry = existingEntries.results[0];
+      
+      // Add Created date only if it doesn't exist
+      if (!existingEntry.properties["Created"]?.date?.start) {
+        entryData["Created"] = {
+          date: { start: now }
+        };
+      }
+      
+      await notion.pages.update({
+        page_id: existingEntry.id,
+        properties: entryData
+      });
+      
+      console.log(`✅ Updated scan cache for ${repository}`);
+    } else {
+      // Create new entry
+      entryData["Created"] = {
+        date: { start: now }
+      };
+      
+      await notion.pages.create({
+        parent: { database_id: scanCacheDatabaseId },
+        properties: entryData
+      });
+      
+      console.log(`✅ Cached scan result for ${repository}`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error caching scan result:', error);
+    throw error;
+  }
+}
+
+// Get cached scan result from Notion
+async function getCachedScanResult(repository) {
+  try {
+    await ensureScanCacheDatabase();
+    
+    if (!scanCacheDatabaseId) {
+      return null;
+    }
+    
+    const response = await notion.databases.query({
+      database_id: scanCacheDatabaseId,
+      filter: {
+        property: "Repository",
+        title: {
+          equals: repository
+        }
+      }
+    });
+    
+    if (response.results.length === 0) {
+      return null;
+    }
+    
+    const entry = response.results[0];
+    const lastScanned = entry.properties["Last Scanned"]?.date?.start;
+    const cacheData = entry.properties["Cache Data"]?.rich_text?.[0]?.text?.content;
+    
+    if (!lastScanned || !cacheData) {
+      return null;
+    }
+    
+    // Check if cache is still valid (5 minutes)
+    const cacheAge = Date.now() - new Date(lastScanned).getTime();
+    const CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+    
+    if (cacheAge > CACHE_TIMEOUT) {
+      console.log(`📋 Cache expired for ${repository} (age: ${Math.round(cacheAge / 1000)}s)`);
+      return null;
+    }
+    
+    try {
+      const scanData = JSON.parse(cacheData);
+      console.log(`📋 Using cached scan result for ${repository} (age: ${Math.round(cacheAge / 1000)}s)`);
+      return scanData;
+    } catch (parseError) {
+      console.error('❌ Error parsing cached scan data:', parseError);
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ Error getting cached scan result:', error);
+    return null;
+  }
+}
+
+// Check if repository has recent scan cache
+async function hasRecentScanCache(repository) {
+  try {
+    const cachedResult = await getCachedScanResult(repository);
+    return cachedResult !== null;
+  } catch (error) {
+    console.error('❌ Error checking scan cache:', error);
+    return false;
+  }
+}
+
+// Clear all scan cache entries
+async function clearScanCache() {
+  try {
+    await ensureScanCacheDatabase();
+    
+    if (!scanCacheDatabaseId) {
+      throw new Error('Failed to get valid scan cache database ID');
+    }
+    
+    // Get all entries
+    let hasMore = true;
+    let startCursor = undefined;
+    let totalArchived = 0;
+    
+    while (hasMore) {
+      const response = await notion.databases.query({
+        database_id: scanCacheDatabaseId,
+        page_size: 100,
+        start_cursor: startCursor
+      });
+      
+      // Archive all entries
+      for (const entry of response.results) {
+        try {
+          await notion.pages.update({
+            page_id: entry.id,
+            archived: true
+          });
+          totalArchived++;
+        } catch (error) {
+          console.error(`❌ Error archiving cache entry ${entry.id}:`, error.message);
+        }
+      }
+      
+      hasMore = response.has_more;
+      startCursor = response.next_cursor;
+    }
+    
+    console.log(`✅ Cleared scan cache: ${totalArchived} entries archived`);
+    return totalArchived;
+  } catch (error) {
+    console.error('❌ Error clearing scan cache:', error);
+    throw error;
+  }
+}
+
+// Get all cached repositories
+async function getAllCachedRepositories() {
+  try {
+    await ensureScanCacheDatabase();
+    
+    if (!scanCacheDatabaseId) {
+      return [];
+    }
+    
+    const response = await notion.databases.query({
+      database_id: scanCacheDatabaseId,
+      sorts: [
+        { property: "Last Scanned", direction: "descending" }
+      ]
+    });
+    
+    const repositories = response.results.map(entry => ({
+      repository: entry.properties["Repository"]?.title?.[0]?.text?.content || "",
+      lastScanned: entry.properties["Last Scanned"]?.date?.start || "",
+      hasPrd: entry.properties["Has PRD"]?.checkbox || false,
+      hasTaskList: entry.properties["Has Task List"]?.checkbox || false,
+      storyCount: entry.properties["Story Count"]?.number || 0,
+      taskCount: entry.properties["Task Count"]?.number || 0,
+      progress: entry.properties["Progress"]?.number || 0,
+      status: entry.properties["Status"]?.select?.name || "unknown",
+      cached: true
+    }));
+    
+    console.log(`📊 Retrieved ${repositories.length} cached repositories`);
+    return repositories;
+  } catch (error) {
+    console.error('❌ Error getting cached repositories:', error);
+    return [];
+  }
+}
+
 module.exports = { 
   logCommitsToNotion, 
   getMostRecentCommitDate,
@@ -1316,5 +1704,11 @@ module.exports = {
   addPrdStoryEntry,
   getPrdStoryData,
   updatePrdStoryEntry,
-  ensurePrdTrackingDatabase
+  ensurePrdTrackingDatabase,
+  ensureScanCacheDatabase,
+  cacheScanResult,
+  getCachedScanResult,
+  hasRecentScanCache,
+  clearScanCache,
+  getAllCachedRepositories
 };

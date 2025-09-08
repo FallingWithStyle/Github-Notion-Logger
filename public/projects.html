@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRD Story Tracking</title>
+    <title>Projects - Repository Discovery</title>
     <style>
         * {
             margin: 0;
@@ -548,22 +548,22 @@
 </head>
 <body>
     <div class="header">
-        <h1>📋 PRD Story Tracking</h1>
-        <p>Monitor and manage feature development across all your projects</p>
+        <h1>📁 Projects</h1>
+        <p>Discover and scan repositories for PRD and task files</p>
     </div>
     
     <div class="nav-links">
         <a href="/" class="nav-link">📊 Activity View</a>
         <a href="/week" class="nav-link">📅 Weekly Planning</a>
-        <a href="/prd" class="nav-link active">📋 PRD Stories</a>
+        <a href="/projects" class="nav-link active">📁 Projects</a>
+        <a href="/progress" class="nav-link">📊 Progress</a>
     </div>
     
     <div class="controls">
         <button id="refresh-btn" class="btn">🔄 Refresh</button>
         <button id="scan-repos-btn" class="btn primary">🔍 Scan Repos</button>
-        <button id="link-prd-btn" class="btn secondary">🔗 Link PRD</button>
-        <button id="add-story-btn" class="btn success">➕ Add Story</button>
         <button id="toggle-ignored-btn" class="btn secondary">🚫 Show Ignored</button>
+        <button id="clear-cache-btn" class="btn secondary">🗑️ Clear Cache</button>
         
         <div class="filters">
             <div class="filter-group">
@@ -661,9 +661,8 @@
         function setupEventListeners() {
             document.getElementById('refresh-btn').addEventListener('click', loadStories);
             document.getElementById('scan-repos-btn').addEventListener('click', scanAllRepositories);
-            document.getElementById('link-prd-btn').addEventListener('click', showLinkPrdForm);
-            document.getElementById('add-story-btn').addEventListener('click', showAddStoryForm);
             document.getElementById('toggle-ignored-btn').addEventListener('click', toggleIgnoredView);
+            document.getElementById('clear-cache-btn').addEventListener('click', clearScanCache);
             document.getElementById('project-filter').addEventListener('change', filterStories);
             document.getElementById('status-filter').addEventListener('change', filterStories);
         }
@@ -876,51 +875,6 @@
         
         
         
-        function showAddStoryForm() {
-            // Simple prompt-based form for now
-            const projectName = prompt('Project Name:');
-            if (!projectName) return;
-            
-            const storyTitle = prompt('Story Title:');
-            if (!storyTitle) return;
-            
-            const status = prompt('Status (Idea/Planning/Active/Review/Done):', 'Idea');
-            const priority = prompt('Priority (1-5):', '3');
-            const storyPoints = prompt('Story Points (1,2,3,5,8,13,21):', '');
-            const notes = prompt('Notes (optional):', '');
-            
-            addStory({
-                projectName,
-                storyTitle,
-                status,
-                priority: parseInt(priority) || 3,
-                storyPoints: storyPoints || null,
-                notes
-            });
-        }
-        
-        async function addStory(storyData) {
-            try {
-                updateStatus('Adding story...', '');
-                
-                const response = await fetch('/api/prd-stories', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(storyData)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus('Story added successfully', 'success');
-                    loadStories(); // Reload to show new story
-                } else {
-                    throw new Error(result.error || 'Failed to add story');
-                }
-            } catch (error) {
-                updateStatus(`Failed to add story: ${error.message}`, 'error');
-            }
-        }
         
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
@@ -1337,6 +1291,35 @@
                 }
             } catch (error) {
                 updateStatus(`❌ Failed to link PRD: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearScanCache() {
+            try {
+                if (!confirm('Are you sure you want to clear the scan cache? This will remove all cached scan results and force re-scanning of all repositories.')) {
+                    return;
+                }
+                
+                updateStatus('🗑️ Clearing scan cache...', '');
+                
+                const response = await fetch('/api/prd-stories/clear-cache', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`✅ ${result.message}`, 'success');
+                    // Refresh the repository overview to show updated cache status
+                    setTimeout(() => {
+                        loadRepositoryOverview();
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || 'Failed to clear scan cache');
+                }
+            } catch (error) {
+                updateStatus(`❌ Failed to clear scan cache: ${error.message}`, 'error');
             }
         }
 

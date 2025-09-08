@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-link {
+            color: #667eea;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            background: #f0f2ff;
+        }
+
+        .nav-link.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn.success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .project-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .project-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-complete {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-progress {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-no-files {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .project-body {
+            padding: 1.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .project-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .incomplete-stories {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .story-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .story-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .story-item:last-child {
+            border-bottom: none;
+        }
+
+        .story-info h4 {
+            font-size: 1rem;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .story-info p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .story-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-idea {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .status-planning {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-active {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-review {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Progress Dashboard</h1>
+        <p>High-level overview of all project progress and incomplete stories</p>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/" class="nav-link">📊 Activity View</a>
+        <a href="/week" class="nav-link">📅 Weekly Planning</a>
+        <a href="/projects" class="nav-link">📁 Projects</a>
+        <a href="/progress" class="nav-link active">📊 Progress</a>
+    </div>
+    
+    <div class="container">
+        <div class="controls">
+            <button id="refresh-btn" class="btn primary">🔄 Refresh Data</button>
+            <button id="scan-all-btn" class="btn secondary">🔍 Scan All Projects</button>
+        </div>
+
+        <div id="status-message"></div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Projects</h3>
+                <div class="value" id="total-projects">-</div>
+                <div class="label">Repositories tracked</div>
+            </div>
+            <div class="stat-card">
+                <h3>Complete Projects</h3>
+                <div class="value" id="complete-projects">-</div>
+                <div class="label">100% progress</div>
+            </div>
+            <div class="stat-card">
+                <h3>Incomplete Stories</h3>
+                <div class="value" id="incomplete-stories">-</div>
+                <div class="label">Across all projects</div>
+            </div>
+            <div class="stat-card">
+                <h3>Overall Progress</h3>
+                <div class="value" id="overall-progress">-</div>
+                <div class="label">Average completion</div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="status-filter">Project Status:</label>
+                <select id="status-filter">
+                    <option value="">All Statuses</option>
+                    <option value="complete">Complete</option>
+                    <option value="progress">In Progress</option>
+                    <option value="no-files">No Files</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="search-filter">Search:</label>
+                <input type="text" id="search-filter" placeholder="Project name...">
+            </div>
+        </div>
+
+        <div id="projects-container">
+            <div class="loading">Loading project data...</div>
+        </div>
+
+        <div class="incomplete-stories">
+            <div class="section-header">
+                ⚠️ Incomplete Stories Across All Projects
+            </div>
+            <div id="incomplete-stories-list" class="story-list">
+                <div class="loading">Loading incomplete stories...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allProjects = [];
+        let filteredProjects = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadProgressData();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('refresh-btn').addEventListener('click', loadProgressData);
+            document.getElementById('scan-all-btn').addEventListener('click', scanAllProjects);
+            document.getElementById('status-filter').addEventListener('change', filterProjects);
+            document.getElementById('search-filter').addEventListener('input', filterProjects);
+        }
+
+        async function loadProgressData() {
+            try {
+                updateStatus('Loading progress data...', '');
+                showLoading(true);
+
+                // Load repositories and their progress
+                const reposResponse = await fetch('/api/prd-stories/repositories');
+                const reposData = await reposResponse.json();
+
+                if (!reposData.success) {
+                    throw new Error(reposData.error || 'Failed to load repositories');
+                }
+
+                allProjects = reposData.repositories || [];
+                filteredProjects = [...allProjects];
+
+                updateStats();
+                displayProjects();
+                loadIncompleteStories();
+
+                updateStatus('Progress data loaded successfully', 'success');
+            } catch (error) {
+                console.error('Error loading progress data:', error);
+                updateStatus(`Failed to load progress data: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function scanAllProjects() {
+            try {
+                updateStatus('Scanning all projects...', '');
+                document.getElementById('scan-all-btn').disabled = true;
+                document.getElementById('scan-all-btn').textContent = '⏳ Scanning...';
+
+                const projectsToScan = allProjects.filter(p => !p.ignored);
+                let completed = 0;
+
+                for (const project of projectsToScan) {
+                    try {
+                        await scanProject(project.name);
+                        completed++;
+                        updateStatus(`Scanning projects... ${completed}/${projectsToScan.length}`, '');
+                    } catch (error) {
+                        console.warn(`Failed to scan ${project.name}:`, error);
+                    }
+                }
+
+                // Reload data after scanning
+                await loadProgressData();
+                updateStatus(`Successfully scanned ${completed} projects`, 'success');
+            } catch (error) {
+                console.error('Error scanning projects:', error);
+                updateStatus(`Failed to scan projects: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('scan-all-btn').disabled = false;
+                document.getElementById('scan-all-btn').textContent = '🔍 Scan All Projects';
+            }
+        }
+
+        async function scanProject(projectName) {
+            const response = await fetch('/api/prd-stories/process-repo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repository: projectName })
+            });
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Scan failed');
+            }
+        }
+
+        function updateStats() {
+            const totalProjects = allProjects.length;
+            const completeProjects = allProjects.filter(p => p.progress === 100).length;
+            const incompleteStories = allProjects.reduce((sum, p) => sum + (p.storyCount - (p.progressDetails?.completedStories || 0)), 0);
+            const overallProgress = totalProjects > 0 ? Math.round(allProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / totalProjects) : 0;
+
+            document.getElementById('total-projects').textContent = totalProjects;
+            document.getElementById('complete-projects').textContent = completeProjects;
+            document.getElementById('incomplete-stories').textContent = incompleteStories;
+            document.getElementById('overall-progress').textContent = `${overallProgress}%`;
+        }
+
+        function displayProjects() {
+            const container = document.getElementById('projects-container');
+            
+            if (filteredProjects.length === 0) {
+                container.innerHTML = '<div class="loading">No projects found matching your filters.</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="projects-grid">
+                    ${filteredProjects.map(project => createProjectCard(project)).join('')}
+                </div>
+            `;
+        }
+
+        function createProjectCard(project) {
+            const statusClass = getStatusClass(project.status);
+            const progress = project.progress || 0;
+            const storyCount = project.storyCount || 0;
+            const taskCount = project.taskCount || 0;
+            const completedStories = project.progressDetails?.completedStories || 0;
+            const completedTasks = project.progressDetails?.completedTasks || 0;
+
+            return `
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-name">${project.name}</div>
+                        <span class="project-status ${statusClass}">${project.status || 'unknown'}</span>
+                    </div>
+                    <div class="project-body">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="project-stats">
+                            <div class="stat">
+                                <div class="stat-value">${completedStories}/${storyCount}</div>
+                                <div class="stat-label">Stories</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${completedTasks}/${taskCount}</div>
+                                <div class="stat-label">Tasks</div>
+                            </div>
+                        </div>
+                        <div class="project-actions">
+                            <button class="btn btn-sm primary" onclick="scanProject('${project.name}')">🔍 Scan</button>
+                            <a href="/projects" class="btn btn-sm secondary">📋 Details</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'prd-and-tasks': return 'status-complete';
+                case 'prd-only':
+                case 'tasks-only': return 'status-progress';
+                case 'no-files': return 'status-no-files';
+                default: return 'status-no-files';
+            }
+        }
+
+        async function loadIncompleteStories() {
+            try {
+                // This would need a new API endpoint to get incomplete stories across all projects
+                // For now, we'll show a placeholder
+                const container = document.getElementById('incomplete-stories-list');
+                container.innerHTML = '<div class="loading">Incomplete stories feature coming soon...</div>';
+            } catch (error) {
+                console.error('Error loading incomplete stories:', error);
+            }
+        }
+
+        function filterProjects() {
+            const statusFilter = document.getElementById('status-filter').value;
+            const searchFilter = document.getElementById('search-filter').value.toLowerCase();
+
+            filteredProjects = allProjects.filter(project => {
+                const matchesStatus = !statusFilter || project.status === statusFilter;
+                const matchesSearch = !searchFilter || project.name.toLowerCase().includes(searchFilter);
+                return matchesStatus && matchesSearch;
+            });
+
+            displayProjects();
+        }
+
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = type ? `status-message ${type}` : 'status-message';
+        }
+
+        function showLoading(show) {
+            const container = document.getElementById('projects-container');
+            if (show) {
+                container.innerHTML = '<div class="loading">Loading project data...</div>';
+            }
+        }
+    </script>
+</body>
+</html>
