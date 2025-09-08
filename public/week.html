@@ -975,9 +975,11 @@
                     weeklyFocus = data.weeklyFocus || { primary: '', tangent: '' };
                     console.log('📥 Loaded saved data from localStorage');
                     console.log('🔍 weeklyFocus loaded:', weeklyFocus);
+                } else {
+                    console.log('📥 No saved data found in localStorage');
                 }
-                
-            } else {
+            } catch (error) {
+                console.error('❌ Error loading saved data:', error);
                 console.log('📥 No saved data found in localStorage');
             }
             
@@ -988,10 +990,6 @@
                 if (checkbox) {
                     checkbox.checked = ignoreDone === 'true';
                 }
-            }
-            
-            } catch (error) {
-                console.warn('⚠️ Could not load saved data:', error);
             }
             
             // Test sorting logic on page load
@@ -1137,7 +1135,7 @@
                     const serverCategories = result.categories || [];
                     categories = [...new Set([...savedCategories, ...serverCategories])];
                     
-                    // Apply saved categories and status to project data
+                    // Apply saved categories, status, and ratings to project data
                     projectData.forEach(project => {
                         const savedProject = userAnswers[project.name];
                         if (savedProject) {
@@ -1149,6 +1147,28 @@
                                 project.status = savedProject.status;
                                 console.log(`📝 Applied status "${savedProject.status}" to ${project.name}`);
                             }
+                            if (savedProject.head) {
+                                project.head = savedProject.head;
+                                console.log(`📝 Applied head rating "${savedProject.head}" to ${project.name}`);
+                            }
+                            if (savedProject.heart) {
+                                project.heart = savedProject.heart;
+                                console.log(`📝 Applied heart rating "${savedProject.heart}" to ${project.name}`);
+                            }
+                        }
+                    });
+                    
+                    // Ensure userAnswers is properly populated for UI display
+                    projectData.forEach(project => {
+                        if (!userAnswers[project.name]) {
+                            userAnswers[project.name] = {};
+                        }
+                        // Ensure head/heart ratings are in userAnswers for UI display
+                        if (project.head && !userAnswers[project.name].head) {
+                            userAnswers[project.name].head = project.head;
+                        }
+                        if (project.heart && !userAnswers[project.name].heart) {
+                            userAnswers[project.name].heart = project.heart;
                         }
                     });
                     
@@ -1161,6 +1181,9 @@
                         const answers = userAnswers[projectName];
                         console.log(`🔍 ${projectName}:`, answers);
                     });
+                    
+                    // Show the current project after data is loaded
+                    showCurrentProject();
                     
                     if (projectData.length === 0) {
                         updateStatus('No project activity found in the last 28 days. Try fetching data from Notion first.');
@@ -1211,6 +1234,11 @@
             console.log(`   - User answer status: ${getAnswer(project.name, 'status')}`);
             console.log(`   - Project category: ${project.category}`);
             console.log(`   - User answer category: ${getAnswer(project.name, 'category')}`);
+            console.log(`   - Project head: ${project.head}`);
+            console.log(`   - User answer head: ${getAnswer(project.name, 'head')}`);
+            console.log(`   - Project heart: ${project.heart}`);
+            console.log(`   - User answer heart: ${getAnswer(project.name, 'heart')}`);
+            console.log(`   - Full userAnswers for ${project.name}:`, userAnswers[project.name]);
             
             const lastActivity = project.lastActivity ? new Date(project.lastActivity).toLocaleDateString() : 'Unknown';
             
@@ -1263,8 +1291,8 @@
                 
                 <div class="questions">
                     <div class="question">
-                        <label>🧠 Head - How logical is it to proceed now? (timing, external factors, other people):</label>
-                        <div class="rating-bubbles" data-question="head" data-project="${project.name}">
+                        <label>❤️ Heart - How excited are you about this project right now?:</label>
+                        <div class="rating-bubbles" data-question="heart" data-project="${project.name}">
                             <div class="rating-bubble" data-rating="1">1</div>
                             <div class="rating-bubble" data-rating="2">2</div>
                             <div class="rating-bubble" data-rating="3">3</div>
@@ -1278,8 +1306,8 @@
                     </div>
                     
                     <div class="question">
-                        <label>❤️ Heart - How excited are you about this project right now?:</label>
-                        <div class="rating-bubbles" data-question="heart" data-project="${project.name}">
+                        <label>🧠 Head - How logical is it to proceed now? (timing, external factors, other people):</label>
+                        <div class="rating-bubbles" data-question="head" data-project="${project.name}">
                             <div class="rating-bubble" data-rating="1">1</div>
                             <div class="rating-bubble" data-rating="2">2</div>
                             <div class="rating-bubble" data-rating="3">3</div>
@@ -1304,8 +1332,10 @@
             // Set up rating bubble event listeners first
             setupRatingBubbles();
             
-            // Highlight previously selected ratings
-            highlightSelectedRatings();
+            // Highlight previously selected ratings with a small delay to ensure DOM is ready
+            setTimeout(() => {
+                highlightSelectedRatings();
+            }, 100);
             
             // Now update progress indicator after everything is loaded
             // Small delay to ensure DOM is fully updated
@@ -1497,16 +1527,35 @@
         
         // Highlight previously selected ratings
         function highlightSelectedRatings() {
-            const currentProject = projectData[currentProjectIndex];
-            if (!currentProject) return;
+            const filteredProjects = getFilteredProjects();
+            const currentProject = filteredProjects[currentProjectIndex];
+            
+            if (!currentProject) {
+                console.log('❌ No current project for highlighting ratings');
+                return;
+            }
+            
+            console.log(`🎯 Highlighting ratings for project: ${currentProject.name}`);
+            console.log(`🎯 Current project index: ${currentProjectIndex}`);
+            console.log(`🎯 Filtered projects length: ${filteredProjects.length}`);
             
             ['head', 'heart'].forEach(question => {
                 const answer = getAnswer(currentProject.name, question);
+                console.log(`🔍 Looking for ${question} rating: ${answer}`);
+                
                 if (answer) {
                     const bubble = document.querySelector(`[data-question="${question}"][data-project="${currentProject.name}"] .rating-bubble[data-rating="${answer}"]`);
+                    console.log(`🔍 Found bubble for ${question}:`, bubble);
+                    
                     if (bubble) {
                         bubble.classList.add('selected');
+                        console.log(`✅ Added 'selected' class to ${question} rating ${answer}`);
+                    } else {
+                        console.log(`❌ No bubble found for ${question} rating ${answer}`);
+                        console.log(`🔍 Selector used: [data-question="${question}"][data-project="${currentProject.name}"] .rating-bubble[data-rating="${answer}"]`);
                     }
+                } else {
+                    console.log(`❌ No answer found for ${question}`);
                 }
             });
         }
@@ -1645,7 +1694,9 @@
         
         // Get user answer
         function getAnswer(projectName, question) {
-            return userAnswers[projectName]?.[question] || '';
+            const answer = userAnswers[projectName]?.[question] || '';
+            console.log(`🔍 getAnswer(${projectName}, ${question}):`, answer);
+            return answer;
         }
         
         
