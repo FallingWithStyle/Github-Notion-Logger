@@ -301,6 +301,58 @@
             font-size: 14px;
         }
         
+        .progress-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .ignore-done-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            user-select: none;
+        }
+        
+        .ignore-done-checkbox input[type="checkbox"] {
+            display: none;
+        }
+        
+        .ignore-done-checkbox .checkmark {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ddd;
+            border-radius: 3px;
+            background: white;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .ignore-done-checkbox input[type="checkbox"]:checked + .checkmark {
+            background: #3498db;
+            border-color: #3498db;
+        }
+        
+        .ignore-done-checkbox input[type="checkbox"]:checked + .checkmark::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 1px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .ignore-done-checkbox:hover .checkmark {
+            border-color: #3498db;
+        }
+        
         .weekly-plan {
             background: white;
             border-radius: 12px;
@@ -835,7 +887,16 @@
     
     <div id="error" class="error hidden"></div>
     
-    <div id="progress-indicator" class="progress-indicator hidden"></div>
+    <div id="progress-indicator" class="progress-indicator hidden">
+        <div class="progress-controls">
+            <span id="progress-text"></span>
+            <label class="ignore-done-checkbox">
+                <input type="checkbox" id="ignore-done-projects" checked>
+                <span class="checkmark"></span>
+                Ignore done/retired projects
+            </label>
+        </div>
+    </div>
     
     <div id="project-container" class="project-card hidden"></div>
     
@@ -914,9 +975,21 @@
                     weeklyFocus = data.weeklyFocus || { primary: '', tangent: '' };
                     console.log('📥 Loaded saved data from localStorage');
                     console.log('🔍 weeklyFocus loaded:', weeklyFocus);
-                } else {
-                    console.log('📥 No saved data found in localStorage');
                 }
+                
+            } else {
+                console.log('📥 No saved data found in localStorage');
+            }
+            
+            // Load checkbox state
+            const ignoreDone = localStorage.getItem('ignoreDoneProjects');
+            if (ignoreDone !== null) {
+                const checkbox = document.getElementById('ignore-done-projects');
+                if (checkbox) {
+                    checkbox.checked = ignoreDone === 'true';
+                }
+            }
+            
             } catch (error) {
                 console.warn('⚠️ Could not load saved data:', error);
             }
@@ -1123,12 +1196,13 @@
         
         // Show current project
         function showCurrentProject() {
-            if (currentProjectIndex >= projectData.length) {
+            const filteredProjects = getFilteredProjects();
+            if (currentProjectIndex >= filteredProjects.length) {
                 showCompletionMessage();
                 return;
             }
             
-            const project = projectData[currentProjectIndex];
+            const project = filteredProjects[currentProjectIndex];
             const container = document.getElementById('project-container');
             
             // Debug logging for current project
@@ -1221,7 +1295,7 @@
                 
                 <div class="navigation-buttons">
                     <button class="btn" onclick="previousProject()" ${currentProjectIndex === 0 ? 'disabled' : ''}>← Previous</button>
-                    <button class="btn" onclick="nextProject()">${currentProjectIndex === projectData.length - 1 ? 'Finish' : 'Next →'}</button>
+                    <button class="btn" onclick="nextProject()">${currentProjectIndex === filteredProjects.length - 1 ? 'Finish' : 'Next →'}</button>
                 </div>
             `;
             
@@ -1246,8 +1320,9 @@
             // Hide project container but keep progress indicator visible
             document.getElementById('project-container').classList.add('hidden');
             
-            // Check if all projects have been rated
-            const unratedProjects = projectData.filter(project => {
+            // Check if all filtered projects have been rated
+            const filteredProjects = getFilteredProjects();
+            const unratedProjects = filteredProjects.filter(project => {
                 const answers = userAnswers[project.name] || {};
                 return !answers.head || !answers.heart;
             });
@@ -1273,9 +1348,10 @@
         
         // Go back to incomplete projects
         function goBackToIncomplete() {
-            // Find first incomplete project
-            for (let i = 0; i < projectData.length; i++) {
-                const project = projectData[i];
+            // Find first incomplete project in filtered list
+            const filteredProjects = getFilteredProjects();
+            for (let i = 0; i < filteredProjects.length; i++) {
+                const project = filteredProjects[i];
                 const answers = userAnswers[project.name] || {};
                 if (!answers.head || !answers.heart) {
                     currentProjectIndex = i;
@@ -1288,14 +1364,63 @@
             }
         }
         
+        // Get filtered projects based on checkbox state, sorted by heart value (highest to lowest)
+        function getFilteredProjects() {
+            const ignoreDone = document.getElementById('ignore-done-projects').checked;
+            let filteredProjects = projectData;
+            
+            if (ignoreDone) {
+                // Filter out projects with status 'done' or 'retired'
+                filteredProjects = projectData.filter(project => {
+                    const status = project.status?.toLowerCase();
+                    return status !== 'done' && status !== 'retired';
+                });
+            }
+            
+            // Sort by heart value (highest to lowest)
+            const sortedProjects = filteredProjects.sort((a, b) => {
+                const aHeart = parseInt(userAnswers[a.name]?.heart) || 0;
+                const bHeart = parseInt(userAnswers[b.name]?.heart) || 0;
+                
+                // Primary sort: heart value (highest first)
+                if (aHeart !== bHeart) {
+                    return bHeart - aHeart;
+                }
+                
+                // Secondary sort: head value (highest first) for tie-breaking
+                const aHead = parseInt(userAnswers[a.name]?.head) || 0;
+                const bHead = parseInt(userAnswers[b.name]?.head) || 0;
+                if (aHead !== bHead) {
+                    return bHead - aHead;
+                }
+                
+                // Tertiary sort: alphabetical for final tie-breaking
+                return a.name.localeCompare(b.name);
+            });
+            
+            // Debug logging for sorting
+            if (sortedProjects.length > 0) {
+                console.log('🔄 Projects sorted by heart value (highest to lowest):');
+                sortedProjects.forEach((project, index) => {
+                    const heart = parseInt(userAnswers[project.name]?.heart) || 0;
+                    const head = parseInt(userAnswers[project.name]?.head) || 0;
+                    console.log(`  ${index + 1}. ${project.name} (Heart: ${heart}, Head: ${head})`);
+                });
+            }
+            
+            return sortedProjects;
+        }
+        
         // Update progress indicator
         function updateProgressIndicator() {
             const progressEl = document.getElementById('progress-indicator');
-            progressEl.innerHTML = `Project ${currentProjectIndex + 1} of ${projectData.length}`;
+            const progressTextEl = document.getElementById('progress-text');
+            const filteredProjects = getFilteredProjects();
+            progressTextEl.innerHTML = `Project ${currentProjectIndex + 1} of ${filteredProjects.length}`;
             progressEl.classList.remove('hidden');
             
             // Check if current project is fully rated
-            const currentProject = projectData[currentProjectIndex];
+            const currentProject = filteredProjects[currentProjectIndex];
             if (currentProject) {
                 const answers = userAnswers[currentProject.name] || {};
                 const isRated = answers.head && answers.heart;
@@ -1303,7 +1428,7 @@
                 // Update navigation button text
                 const nextButton = document.querySelector('.navigation-buttons .btn:last-child');
                 if (nextButton) {
-                    if (currentProjectIndex === projectData.length - 1) {
+                    if (currentProjectIndex === filteredProjects.length - 1) {
                         nextButton.textContent = isRated ? 'Finish' : 'Complete Ratings First';
                     } else {
                         nextButton.textContent = isRated ? 'Next →' : 'Rate All Questions First';
@@ -1324,7 +1449,8 @@
         
         // Navigate to next project
         function nextProject() {
-            if (currentProjectIndex < projectData.length - 1) {
+            const filteredProjects = getFilteredProjects();
+            if (currentProjectIndex < filteredProjects.length - 1) {
                 currentProjectIndex++;
                 showCurrentProject();
             } else {
@@ -2208,6 +2334,16 @@
         document.getElementById('save-plan-btn').addEventListener('click', saveWeeklyPlan);
         document.getElementById('sync-notion-btn').addEventListener('click', syncToNotion);
         document.getElementById('load-plans-btn').addEventListener('click', loadPreviousPlans);
+        
+        // Checkbox event listener
+        document.getElementById('ignore-done-projects').addEventListener('change', function() {
+            // Save checkbox state to localStorage
+            localStorage.setItem('ignoreDoneProjects', this.checked);
+            
+            // Reset to first project and refresh view
+            currentProjectIndex = 0;
+            showCurrentProject();
+        });
         
         // Focus input event listeners
         document.getElementById('save-focus-btn').addEventListener('click', saveFocus);
