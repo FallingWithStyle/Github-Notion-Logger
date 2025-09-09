@@ -655,6 +655,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadStories();
             loadRepositoryOverview();
+            loadProjectProgress();
             setupEventListeners();
         });
         
@@ -934,6 +935,7 @@
                     updateStatus(`✅ Scanned ${processed} repositories`, 'success');
                     loadRepositoryOverview();
                     loadStories();
+                    loadProjectProgress();
                 } else {
                     throw new Error(reposResult.error || 'Failed to get repositories');
                 }
@@ -1078,7 +1080,10 @@
                     
                     // Reload stories if we found any
                     if (result.repository.storyCount > 0) {
-                        setTimeout(loadStories, 1000);
+                        setTimeout(() => {
+                            loadStories();
+                            loadProjectProgress();
+                        }, 1000);
                     }
                 } else {
                     throw new Error(result.error || 'Failed to scan repository');

@@ -1334,6 +1334,31 @@ app.post('/api/prd-stories/process-repo', asyncHandler(async (req, res) => {
       progressDetails: result.progress
     };
     
+    // Update progress cache
+    const progressData = {
+      repository: repositoryData.name,
+      progress: result.progress,
+      lastUpdated: result.lastUpdated
+    };
+    
+    // Update cache for this specific repository
+    progressCache.set(repository, {
+      data: [progressData],
+      timestamp: Date.now()
+    });
+    
+    // Update cache for 'all' repositories
+    const allCached = progressCache.get('all');
+    if (allCached) {
+      const existingIndex = allCached.data.findIndex(p => p.repository === repository);
+      if (existingIndex >= 0) {
+        allCached.data[existingIndex] = progressData;
+      } else {
+        allCached.data.push(progressData);
+      }
+      allCached.timestamp = Date.now();
+    }
+
     // Return response immediately
     res.json({
       success: true,
