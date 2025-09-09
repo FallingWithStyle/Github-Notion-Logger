@@ -328,6 +328,21 @@ class PrdTaskProcessor {
       /^\d+\.\s+([A-Z][^-\n]+?)(?:\s*[-–—]\s*([^\n]+))?$/gm
     ];
 
+    // Common PRD section headers to exclude from story extraction
+    const sectionHeaderPatterns = [
+      /^\d+\.\s+(Executive Summary|Goals and Background Context|Requirements|User Experience|Technical Specifications|Constraints and Assumptions|Success Criteria|Timeline and Milestones|Appendices|Project Metadata|Template Usage Notes)/i,
+      /^(Executive Summary|Goals and Background Context|Requirements|User Experience|Technical Specifications|Constraints and Assumptions|Success Criteria|Timeline and Milestones|Appendices|Project Metadata|Template Usage Notes)$/i,
+      /^\d+\.\d+\s+(Functional Requirements|Non-Functional Requirements)/i,
+      /^(Functional Requirements|Non-Functional Requirements)$/i,
+      /^\d+\.\s+[A-Z][a-z]+\s+(and|&)\s+[A-Z][a-z]+/i, // Pattern like "Goals and Background Context"
+      /^\d+\.\s+[A-Z][a-z]+\s+[A-Z][a-z]+/i, // Pattern like "Executive Summary"
+      /^[A-Z]{2,3}\d*:/i, // Pattern like "FR1:", "NFR1:", "AC1:"
+      /^\d+\.\d+\s+[A-Z]/i, // Pattern like "3.2 Non" (incomplete section headers)
+      /^Project\s+[A-Z]/i, // Pattern like "Project Title Here"
+      /^Epic\s+\d+:/i, // Pattern like "Epic 1:" (should be handled by epic pattern)
+      /^[A-Z][a-z]+\s+[A-Z]+\s+[A-Z]+$/i // Pattern like "Test Project PRD"
+    ];
+
     const statusOnlyWords = ['IMPLEMENTED', 'DESIGNED', 'PLANNED', 'REVIEW', 'ACTIVE', 'DONE', 'TODO', 'IN PROGRESS'];
     const seenTitles = new Set();
 
@@ -344,6 +359,14 @@ class PrdTaskProcessor {
 
         // Skip if title is generic
         if (title.toLowerCase().includes('status') || title.toLowerCase().includes('progress')) {
+          continue;
+        }
+
+        // Skip if title matches common PRD section headers
+        const isSectionHeader = sectionHeaderPatterns.some(headerPattern => 
+          headerPattern.test(title) || headerPattern.test(match[0])
+        );
+        if (isSectionHeader) {
           continue;
         }
 
@@ -663,21 +686,47 @@ class PrdTaskProcessor {
       }
 
       const results = [];
-      const batchSize = 3; // Process 3 repositories at a time
+      const batchSize = 2; // Reduced batch size to 2 for faster processing
+      const maxRepos = 10; // Limit to first 10 repositories to avoid timeout
+      const limitedRepos = repos.slice(0, maxRepos);
       
-      for (let i = 0; i < repos.length; i += batchSize) {
-        const batch = repos.slice(i, i + batchSize);
-        console.log(`\n📦 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(repos.length/batchSize)} (${batch.length} repos)`);
+      console.log(`📊 Processing ${limitedRepos.length} repositories (limited from ${repos.length} total)`);
+      
+      for (let i = 0; i < limitedRepos.length; i += batchSize) {
+        const batch = limitedRepos.slice(i, i + batchSize);
+        console.log(`\n📦 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(limitedRepos.length/batchSize)} (${batch.length} repos)`);
         
-        // Process batch in parallel
-        const batchPromises = batch.map(repo => this.processRepository(repo.name));
+        // Process batch in parallel with individual timeouts
+        const batchPromises = batch.map(async (repo) => {
+          try {
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Repository processing timeout')), 15000)
+            );
+            
+            const processPromise = this.processRepository(repo.name);
+            return await Promise.race([processPromise, timeoutPromise]);
+          } catch (error) {
+            console.warn(`⚠️ Failed to process ${repo.name}:`, error.message);
+            return {
+              repository: repo.name,
+              hasPrd: false,
+              hasTaskList: false,
+              stories: [],
+              tasks: [],
+              progress: null,
+              error: error.message,
+              lastUpdated: new Date()
+            };
+          }
+        });
+        
         const batchResults = await Promise.all(batchPromises);
         results.push(...batchResults);
         
-        // Delay between batches to avoid rate limits
-        if (i + batchSize < repos.length) {
-          console.log('⏳ Waiting 5 seconds before next batch...');
-          await new Promise(resolve => setTimeout(resolve, 5000));
+        // Shorter delay between batches
+        if (i + batchSize < limitedRepos.length) {
+          console.log('⏳ Waiting 2 seconds before next batch...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 

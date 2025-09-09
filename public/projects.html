@@ -685,8 +685,11 @@
                     updateStats();
                     showLoading(false);
                     
-                    // Show deduplication info if duplicates were removed
+                    // Show filtering and deduplication info
                     let statusMessage = `Loaded ${stories.length} stories`;
+                    if (result.archivedVersionsRemoved > 0) {
+                        statusMessage += ` (archived ${result.archivedVersionsRemoved} old PRD versions)`;
+                    }
                     if (result.duplicatesRemoved > 0) {
                         statusMessage += ` (removed ${result.duplicatesRemoved} duplicates)`;
                     }

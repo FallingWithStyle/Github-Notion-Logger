@@ -1029,18 +1029,48 @@ app.get('/api/prd-stories', asyncHandler(async (req, res) => {
     const { getPrdStoryData } = require('./notion');
     const allStories = await getPrdStoryData(projectName, status);
     
+    // Filter to only use the latest PRD version for each project
+    const latestProjectVersions = new Map();
+    const filteredStories = [];
+    
+    // Group stories by base project name (without version info)
+    allStories.forEach(story => {
+      const baseProjectName = story.projectName.replace(/\s+v?\d+(\.\d+)?\s*$/i, '').trim();
+      const storyDate = new Date(story.created || story.lastUpdated);
+      
+      if (!latestProjectVersions.has(baseProjectName) || 
+          storyDate > latestProjectVersions.get(baseProjectName).date) {
+        latestProjectVersions.set(baseProjectName, {
+          projectName: story.projectName,
+          date: storyDate
+        });
+      }
+    });
+    
+    // Filter stories to only include those from the latest PRD version
+    allStories.forEach(story => {
+      const baseProjectName = story.projectName.replace(/\s+v?\d+(\.\d+)?\s*$/i, '').trim();
+      const latestVersion = latestProjectVersions.get(baseProjectName);
+      
+      if (latestVersion && story.projectName === latestVersion.projectName) {
+        filteredStories.push(story);
+      }
+    });
+    
+    console.log(`📊 Filtered to latest PRD versions: ${filteredStories.length} stories (from ${allStories.length} total)`);
+    
     // Deduplicate stories based on title and project
     const seenStories = new Map();
     const deduplicatedStories = [];
     
-    for (const story of allStories) {
+    for (const story of filteredStories) {
       // Skip stories with null/empty titles
-      if (!story.title || story.title.trim() === '') {
+      if (!story.storyTitle || story.storyTitle.trim() === '') {
         continue;
       }
       
       // Create a key for deduplication
-      const key = `${story.projectName || 'Unknown'}-${story.title.toLowerCase().trim()}`;
+      const key = `${story.projectName || 'Unknown'}-${story.storyTitle.toLowerCase().trim()}`;
       
       if (!seenStories.has(key)) {
         seenStories.set(key, true);
@@ -1076,7 +1106,9 @@ app.get('/api/prd-stories', asyncHandler(async (req, res) => {
       data: deduplicatedStories,
       count: deduplicatedStories.length,
       originalCount: allStories.length,
-      duplicatesRemoved: allStories.length - deduplicatedStories.length
+      filteredCount: filteredStories.length,
+      duplicatesRemoved: filteredStories.length - deduplicatedStories.length,
+      archivedVersionsRemoved: allStories.length - filteredStories.length
     });
     
   } catch (error) {
@@ -1121,8 +1153,22 @@ app.get('/api/project-progress', asyncHandler(async (req, res) => {
       const result = await processor.processRepository(repository);
       results = [result];
     } else {
-      // Process all repositories
-      results = await processor.processAllRepositories();
+      // For all repositories, use a timeout and return partial results if needed
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Processing timeout')), 25000)
+      );
+      
+      try {
+        const processPromise = processor.processAllRepositories();
+        results = await Promise.race([processPromise, timeoutPromise]);
+      } catch (timeoutError) {
+        if (timeoutError.message === 'Processing timeout') {
+          console.warn('⚠️ Processing timeout, returning empty results');
+          results = [];
+        } else {
+          throw timeoutError;
+        }
+      }
     }
     
     // Cache the results
@@ -1273,16 +1319,101 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
     // Filter out ignored repositories
     const filteredRepos = repos.filter(repo => !ignoredNames.has(repo.name));
     
-    // Return simple repository list without cache checking (too expensive)
-    const repositories = filteredRepos.map(repo => ({
-      name: repo.name,
-      status: 'not-processed',
-      prdCount: 0,
-      taskCount: 0,
-      storyCount: 0,
-      progress: 0,
-      lastUpdated: repo.updated_at,
-      cached: false
+    // Get cached repositories to check their status
+    const { getAllCachedRepositories } = require('./notion');
+    const cachedRepos = await getAllCachedRepositories();
+    const cachedRepoMap = new Map();
+    
+    cachedRepos.forEach(cachedRepo => {
+      cachedRepoMap.set(cachedRepo.repository, cachedRepo);
+    });
+    
+    // Build repository list with cache status
+    const repositories = await Promise.all(filteredRepos.map(async repo => {
+      const cachedRepo = cachedRepoMap.get(repo.name);
+      
+      if (cachedRepo) {
+        // Repository has been processed and cached
+        let status = 'not-processed';
+        if (cachedRepo.hasPrd && cachedRepo.hasTaskList) {
+          status = 'prd-and-tasks';
+        } else if (cachedRepo.hasPrd) {
+          status = 'prd-only';
+        } else if (cachedRepo.hasTaskList) {
+          status = 'tasks-only';
+        } else {
+          status = 'no-files';
+        }
+        
+        // Get detailed progress data from cache
+        let progressDetails = null;
+        try {
+          const { getCachedScanResult } = require('./notion');
+          const detailedCacheData = await getCachedScanResult(repo.name);
+          if (detailedCacheData && detailedCacheData.progress) {
+            progressDetails = detailedCacheData.progress;
+          } else {
+            // Calculate progress details from basic data when cache is expired
+            const storyCount = cachedRepo.storyCount || 0;
+            const taskCount = cachedRepo.taskCount || 0;
+            const progressPercentage = cachedRepo.progress || 0;
+            
+            // Estimate completed stories and tasks based on progress percentage
+            const completedStories = Math.round((storyCount * progressPercentage) / 100);
+            const completedTasks = Math.round((taskCount * progressPercentage) / 100);
+            
+            progressDetails = {
+              totalStories: storyCount,
+              completedStories: completedStories,
+              totalTasks: taskCount,
+              completedTasks: completedTasks,
+              progressPercentage: progressPercentage
+            };
+          }
+        } catch (error) {
+          console.warn(`⚠️ Could not get detailed progress for ${repo.name}:`, error.message);
+          // Fallback to basic calculation
+          const storyCount = cachedRepo.storyCount || 0;
+          const taskCount = cachedRepo.taskCount || 0;
+          const progressPercentage = cachedRepo.progress || 0;
+          
+          const completedStories = Math.round((storyCount * progressPercentage) / 100);
+          const completedTasks = Math.round((taskCount * progressPercentage) / 100);
+          
+          progressDetails = {
+            totalStories: storyCount,
+            completedStories: completedStories,
+            totalTasks: taskCount,
+            completedTasks: completedTasks,
+            progressPercentage: progressPercentage
+          };
+        }
+        
+        return {
+          name: repo.name,
+          status: status,
+          prdCount: cachedRepo.hasPrd ? 1 : 0,
+          taskCount: cachedRepo.taskCount || 0,
+          storyCount: cachedRepo.storyCount || 0,
+          progress: cachedRepo.progress || 0,
+          progressDetails: progressDetails,
+          lastUpdated: cachedRepo.lastScanned || repo.updated_at,
+          cached: true
+        };
+      } else {
+        // Repository has not been processed
+        return {
+          name: repo.name,
+          status: 'not-processed',
+          prdCount: 0,
+          taskCount: 0,
+          storyCount: 0,
+          progress: 0,
+          progressDetails: null,
+          lastUpdated: repo.updated_at,
+          cached: false
+        };
+      }
     }));
     
     res.json({
@@ -1618,6 +1749,21 @@ function extractStoriesFromContent(content, projectName) {
     /^\d+\.\s+([A-Z][^-\n]+?)(?:\s*[-–—]\s*([^\n]+))?$/gm
   ];
   
+  // Common PRD section headers to exclude from story extraction
+  const sectionHeaderPatterns = [
+    /^\d+\.\s+(Executive Summary|Goals and Background Context|Requirements|User Experience|Technical Specifications|Constraints and Assumptions|Success Criteria|Timeline and Milestones|Appendices|Project Metadata|Template Usage Notes)/i,
+    /^(Executive Summary|Goals and Background Context|Requirements|User Experience|Technical Specifications|Constraints and Assumptions|Success Criteria|Timeline and Milestones|Appendices|Project Metadata|Template Usage Notes)$/i,
+    /^\d+\.\d+\s+(Functional Requirements|Non-Functional Requirements)/i,
+    /^(Functional Requirements|Non-Functional Requirements)$/i,
+    /^\d+\.\s+[A-Z][a-z]+\s+(and|&)\s+[A-Z][a-z]+/i, // Pattern like "Goals and Background Context"
+    /^\d+\.\s+[A-Z][a-z]+\s+[A-Z][a-z]+/i, // Pattern like "Executive Summary"
+    /^[A-Z]{2,3}\d*:/i, // Pattern like "FR1:", "NFR1:", "AC1:"
+    /^\d+\.\d+\s+[A-Z]/i, // Pattern like "3.2 Non" (incomplete section headers)
+    /^Project\s+[A-Z]/i, // Pattern like "Project Title Here"
+    /^Epic\s+\d+:/i, // Pattern like "Epic 1:" (should be handled by epic pattern)
+    /^[A-Z][a-z]+\s+[A-Z]+\s+[A-Z]+$/i // Pattern like "Test Project PRD"
+  ];
+  
   // Status indicators to avoid extracting as titles
   const statusOnlyWords = ['IMPLEMENTED', 'DESIGNED', 'PLANNED', 'REVIEW', 'ACTIVE', 'DONE', 'TODO', 'IN PROGRESS'];
   
@@ -1651,6 +1797,14 @@ function extractStoriesFromContent(content, projectName) {
       
       // Skip if title is too short or generic
       if (title.length < 5 || title.toLowerCase().includes('status') || title.toLowerCase().includes('progress')) {
+        continue;
+      }
+      
+      // Skip if title matches common PRD section headers
+      const isSectionHeader = sectionHeaderPatterns.some(headerPattern => 
+        headerPattern.test(title) || headerPattern.test(match[0])
+      );
+      if (isSectionHeader) {
         continue;
       }
       
@@ -1789,6 +1943,43 @@ async function storeStoriesInNotion(stories, repositoryName) {
     // Ensure story progress database exists
     const storyDbId = await ensureStoryProgressDatabase();
     
+    // Get all existing stories for this repository
+    const existingStories = await notion.databases.query({
+      database_id: storyDbId,
+      filter: {
+        property: 'Repository',
+        rich_text: { equals: repositoryName }
+      }
+    });
+    
+    const currentStoryTitles = new Set(stories.map(story => story.title.toLowerCase().trim()));
+    const storiesToArchive = [];
+    
+    // Find stories that no longer exist in the current PRD
+    for (const existingStory of existingStories.results) {
+      const existingTitle = existingStory.properties['Story Title']?.title?.[0]?.text?.content;
+      if (existingTitle && !currentStoryTitles.has(existingTitle.toLowerCase().trim())) {
+        storiesToArchive.push(existingStory);
+      }
+    }
+    
+    // Archive old stories that are no longer in the PRD
+    if (storiesToArchive.length > 0) {
+      console.log(`🗑️ Archiving ${storiesToArchive.length} old stories that are no longer in PRD for ${repositoryName}`);
+      for (const storyToArchive of storiesToArchive) {
+        try {
+          await notion.pages.update({
+            page_id: storyToArchive.id,
+            archived: true
+          });
+          console.log(`🗑️ Archived old story: ${storyToArchive.properties['Story Title']?.title?.[0]?.text?.content}`);
+        } catch (error) {
+          console.error(`❌ Failed to archive old story:`, error.message);
+        }
+      }
+    }
+    
+    // Process current stories (add new ones or update existing ones)
     for (const story of stories) {
       const storyEntry = {
         parent: { database_id: storyDbId },
@@ -1821,7 +2012,7 @@ async function storeStoriesInNotion(stories, repositoryName) {
       };
       
       // Check if story already exists
-      const existingStories = await notion.databases.query({
+      const existingStoriesForTitle = await notion.databases.query({
         database_id: storyDbId,
         filter: {
           and: [
@@ -1837,10 +2028,10 @@ async function storeStoriesInNotion(stories, repositoryName) {
         }
       });
       
-      if (existingStories.results.length > 0) {
+      if (existingStoriesForTitle.results.length > 0) {
         // Update existing story
         await notion.pages.update({
-          page_id: existingStories.results[0].id,
+          page_id: existingStoriesForTitle.results[0].id,
           properties: storyEntry.properties
         });
       } else {
@@ -1849,7 +2040,7 @@ async function storeStoriesInNotion(stories, repositoryName) {
       }
     }
     
-    console.log(`📝 Stored ${stories.length} stories for ${repositoryName} in Notion`);
+    console.log(`📝 Stored ${stories.length} stories for ${repositoryName} in Notion (archived ${storiesToArchive.length} old stories)`);
   } catch (error) {
     console.error('❌ Error storing stories in Notion:', error);
     throw error;
