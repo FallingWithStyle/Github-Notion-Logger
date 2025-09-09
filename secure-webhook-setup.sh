@@ -1,15 +1,26 @@
 #!/bin/bash
 
-# Bulk webhook setup script for GitHub repositories
-# This script will add webhooks to all repositories for the Notion Logger
+# Secure webhook setup script for GitHub repositories
+# This script reads the webhook secret from environment variables
 
 WEBHOOK_URL="https://notion-logger.fly.dev/webhook"
-WEBHOOK_SECRET="e07f74decef15ef3"
 CONTENT_TYPE="json"
 
-echo "🚀 Starting bulk webhook setup for Notion Logger..."
+# Check if webhook secret is provided
+if [ -z "$GITHUB_WEBHOOK_SECRET" ]; then
+    echo "❌ Error: GITHUB_WEBHOOK_SECRET environment variable is required"
+    echo "💡 Run: export GITHUB_WEBHOOK_SECRET=\$(fly secrets list | grep GITHUB_WEBHOOK_SECRET | awk '{print \$2}')"
+    exit 1
+fi
+
+echo "🚀 Starting secure webhook setup for Notion Logger..."
 echo "📡 Webhook URL: $WEBHOOK_URL"
+echo "🔐 Using webhook secret from environment variable"
 echo ""
+
+# Get list of repositories
+echo "📋 Fetching repository list..."
+gh repo list --limit 50 --json name,owner --jq '.[] | "\(.owner.login)/\(.name)"' > temp_repos.txt
 
 # Read repositories from file
 while IFS= read -r repo; do
@@ -33,7 +44,7 @@ while IFS= read -r repo; do
         --field name="web" \
         --field config[url]="$WEBHOOK_URL" \
         --field config[content_type]="$CONTENT_TYPE" \
-        --field config[secret]="$WEBHOOK_SECRET" \
+        --field config[secret]="$GITHUB_WEBHOOK_SECRET" \
         --field events[]="push" \
         --field active="true" 2>&1)
     
@@ -46,10 +57,13 @@ while IFS= read -r repo; do
     # Small delay to avoid rate limiting
     sleep 1
     
-done < repos.txt
+done < temp_repos.txt
+
+# Clean up temp file
+rm temp_repos.txt
 
 echo ""
-echo "🎉 Bulk webhook setup completed!"
+echo "🎉 Secure webhook setup completed!"
 echo "📊 Check the output above for any errors."
 echo ""
 echo "💡 To verify webhooks were created, you can run:"

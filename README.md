@@ -107,12 +107,42 @@ The Wanderlog feature provides AI-powered daily summaries of your development wo
 #### Testing Wanderlog
 
 ```bash
-# Run the test script
+# Test commit filtering logic (no API keys required)
+node test-wanderlog-simple.js
+
+# Test with specific date (requires API keys)
+node test-wanderlog-specific-date.js --date 2024-01-15
+node test-wanderlog-specific-date.js --date yesterday --create
+
+# Full integration test (requires API keys)
 node test-wanderlog.js
 
 # Or trigger manually via API
 curl -X POST http://localhost:3000/api/wanderlog/process
 ```
+
+#### Specific Date Testing
+
+The `test-wanderlog-specific-date.js` script allows you to test the Wanderlog system with commits from any specific date:
+
+```bash
+# Test with a specific date (dry run)
+node test-wanderlog-specific-date.js --date 2024-01-15
+
+# Test with a specific date and create Notion entry
+node test-wanderlog-specific-date.js --date 2024-01-15 --create
+
+# Test with yesterday's commits
+node test-wanderlog-specific-date.js --date yesterday
+
+# Test with today's commits
+node test-wanderlog-specific-date.js --date today
+```
+
+This is particularly useful for:
+- Testing the system with historical data
+- Creating Wanderlog entries for missed days
+- Debugging specific commit processing issues
 
 #### Wanderlog Database Schema
 
