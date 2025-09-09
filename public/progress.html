@@ -72,6 +72,47 @@
             gap: 1rem;
             margin-bottom: 2rem;
             flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.25rem;
+            background: #f8f9fa;
+            padding: 0.25rem;
+            border-radius: 6px;
+        }
+
+        .view-toggle .btn {
+            margin: 0;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .view-toggle .btn.active {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .sort-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sort-controls label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .sort-controls select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background: white;
         }
 
         .btn {
@@ -154,6 +195,111 @@
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
+        }
+
+        .projects-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .project-bar {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1rem 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            gap: 1rem;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+
+        .project-bar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .project-bar-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .project-bar-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .project-bar-status {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            width: fit-content;
+        }
+
+        .project-bar-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 120px;
+        }
+
+        .project-bar-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .project-bar-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .project-bar-progress-text {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+        }
+
+        .project-bar-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .project-bar-stat-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .project-bar-stat-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .project-bar-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .project-bar .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
         }
 
         .project-card {
@@ -386,6 +532,15 @@
             
             .controls {
                 flex-direction: column;
+                align-items: stretch;
+            }
+
+            .view-toggle {
+                justify-content: center;
+            }
+
+            .sort-controls {
+                justify-content: center;
             }
             
             .stats-grid {
@@ -394,6 +549,25 @@
             
             .projects-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .project-bar {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+                text-align: center;
+            }
+
+            .project-bar-info {
+                align-items: center;
+            }
+
+            .project-bar-stats {
+                flex-direction: row;
+                justify-content: space-around;
+            }
+
+            .project-bar-actions {
+                justify-content: center;
             }
         }
     </style>
@@ -415,6 +589,21 @@
         <div class="controls">
             <button id="refresh-btn" class="btn primary">🔄 Refresh Data</button>
             <button id="scan-all-btn" class="btn secondary">🔍 Scan All Projects</button>
+            <div class="view-toggle">
+                <button id="bar-view-btn" class="btn secondary active">📊 Bar View</button>
+                <button id="card-view-btn" class="btn secondary">📋 Card View</button>
+            </div>
+            <div class="sort-controls">
+                <label for="sort-select">Sort by:</label>
+                <select id="sort-select">
+                    <option value="completion-desc">Completion % (High to Low)</option>
+                    <option value="completion-asc">Completion % (Low to High)</option>
+                    <option value="name-asc">Name (A to Z)</option>
+                    <option value="name-desc">Name (Z to A)</option>
+                    <option value="stories-desc">Stories (Most to Least)</option>
+                    <option value="stories-asc">Stories (Least to Most)</option>
+                </select>
+            </div>
         </div>
 
         <div id="status-message"></div>
@@ -475,6 +664,8 @@
     <script>
         let allProjects = [];
         let filteredProjects = [];
+        let currentView = 'bar'; // Default to bar view
+        let currentSort = 'completion-desc'; // Default sort
 
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
@@ -486,6 +677,9 @@
             document.getElementById('scan-all-btn').addEventListener('click', scanAllProjects);
             document.getElementById('status-filter').addEventListener('change', filterProjects);
             document.getElementById('search-filter').addEventListener('input', filterProjects);
+            document.getElementById('bar-view-btn').addEventListener('click', () => switchView('bar'));
+            document.getElementById('card-view-btn').addEventListener('click', () => switchView('card'));
+            document.getElementById('sort-select').addEventListener('change', handleSortChange);
         }
 
         async function loadProgressData() {
@@ -581,9 +775,93 @@
                 return;
             }
 
-            container.innerHTML = `
-                <div class="projects-grid">
-                    ${filteredProjects.map(project => createProjectCard(project)).join('')}
+            // Sort projects before displaying
+            const sortedProjects = sortProjects([...filteredProjects]);
+
+            if (currentView === 'bar') {
+                container.innerHTML = `
+                    <div class="projects-bar">
+                        ${sortedProjects.map(project => createProjectBar(project)).join('')}
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="projects-grid">
+                        ${sortedProjects.map(project => createProjectCard(project)).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            // Update button states
+            document.getElementById('bar-view-btn').classList.toggle('active', view === 'bar');
+            document.getElementById('card-view-btn').classList.toggle('active', view === 'card');
+            
+            // Redisplay projects with new view
+            displayProjects();
+        }
+
+        function handleSortChange() {
+            currentSort = document.getElementById('sort-select').value;
+            displayProjects();
+        }
+
+        function sortProjects(projects) {
+            return projects.sort((a, b) => {
+                switch (currentSort) {
+                    case 'completion-desc':
+                        return (b.progress || 0) - (a.progress || 0);
+                    case 'completion-asc':
+                        return (a.progress || 0) - (b.progress || 0);
+                    case 'name-asc':
+                        return a.name.localeCompare(b.name);
+                    case 'name-desc':
+                        return b.name.localeCompare(a.name);
+                    case 'stories-desc':
+                        return (b.storyCount || 0) - (a.storyCount || 0);
+                    case 'stories-asc':
+                        return (a.storyCount || 0) - (b.storyCount || 0);
+                    default:
+                        return 0;
+                }
+            });
+        }
+
+        function createProjectBar(project) {
+            const statusClass = getStatusClass(project.status);
+            const progress = project.progress || 0;
+            const storyCount = project.storyCount || 0;
+            const taskCount = project.taskCount || 0;
+            const completedStories = project.progressDetails?.completedStories || 0;
+            const completedTasks = project.progressDetails?.completedTasks || 0;
+
+            return `
+                <div class="project-bar">
+                    <div class="project-bar-info">
+                        <div class="project-bar-name">${project.name}</div>
+                        <span class="project-bar-status ${statusClass}">${project.status || 'unknown'}</span>
+                    </div>
+                    <div class="project-bar-progress">
+                        <div class="project-bar-progress-bar">
+                            <div class="project-bar-progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="project-bar-progress-text">${progress}% Complete</div>
+                    </div>
+                    <div class="project-bar-stats">
+                        <div class="project-bar-stat-value">${completedStories}/${storyCount}</div>
+                        <div class="project-bar-stat-label">Stories</div>
+                    </div>
+                    <div class="project-bar-stats">
+                        <div class="project-bar-stat-value">${completedTasks}/${taskCount}</div>
+                        <div class="project-bar-stat-label">Tasks</div>
+                    </div>
+                    <div class="project-bar-actions">
+                        <button class="btn btn-sm primary" onclick="scanProject('${project.name}')">🔍 Scan</button>
+                        <a href="/projects" class="btn btn-sm secondary">📋 Details</a>
+                    </div>
                 </div>
             `;
         }
