@@ -30,6 +30,20 @@ app.use(bodyParser.json({
   limit: '10mb' // Limit payload size
 }));
 
+// Add CORS support for external API access
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 // Add request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
@@ -101,7 +115,7 @@ app.get('/commit-log.json', (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Note: Static file serving moved to after API routes to prevent conflicts
 
 const PORT = process.env.PORT || 8080;
 const SECRET = process.env.GITHUB_WEBHOOK_SECRET;
@@ -544,6 +558,9 @@ app.get('/api/fetch-notion-data', asyncHandler(async (req, res) => {
     });
   }
 }));
+
+// Serve static files from public directory (after API routes)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve the commit visualizer page
 app.get('/', (req, res) => {
@@ -2185,6 +2202,170 @@ async function ensureStoryProgressDatabase() {
   console.log(`✅ Created new story progress database: ${response.id}`);
   return response.id;
 }
+
+// Projects API endpoint for external consumption (e.g., Wanderjob)
+app.get('/api/projects', asyncHandler(async (req, res) => {
+  try {
+    console.log('📊 Fetching projects data for external API...');
+    
+    // Read existing commit log
+    let commitLog = [];
+    if (fs.existsSync(COMMIT_LOG_PATH)) {
+      try {
+        const data = fs.readFileSync(COMMIT_LOG_PATH, 'utf8');
+        commitLog = JSON.parse(data);
+      } catch (error) {
+        console.error('❌ Error reading commit log:', error.message);
+        return res.status(500).json({ error: 'Failed to read commit log' });
+      }
+    }
+    
+    // Calculate date range (90 days ago from today for better project visibility)
+    const today = new Date();
+    const ninetyDaysAgo = new Date(today);
+    ninetyDaysAgo.setDate(today.getDate() - 90);
+    const startDate = ninetyDaysAgo.toISOString().split('T')[0];
+    
+    // Filter data to last 90 days
+    const recentData = commitLog.filter(day => day.date >= startDate);
+    
+    // Aggregate data by project
+    const projectData = {};
+    
+    recentData.forEach(day => {
+      Object.entries(day.projects).forEach(([projectName, commitCount]) => {
+        if (!projectData[projectName]) {
+          projectData[projectName] = {
+            name: projectName,
+            totalCommits: 0,
+            activityDates: [],
+            lastActivity: null,
+            category: null,
+            status: 'unknown'
+          };
+        }
+        
+        projectData[projectName].totalCommits += commitCount;
+        projectData[projectName].activityDates.push(day.date);
+        
+        const activityDate = new Date(day.date);
+        if (!projectData[projectName].lastActivity || activityDate > new Date(projectData[projectName].lastActivity)) {
+          projectData[projectName].lastActivity = day.date;
+        }
+      });
+    });
+    
+    // Load category and status data from weekly planning data
+    try {
+      const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+      if (fs.existsSync(weeklyPlansPath)) {
+        const weeklyPlansData = fs.readFileSync(weeklyPlansPath, 'utf8');
+        const weeklyPlans = JSON.parse(weeklyPlansData);
+        
+        // Get the most recent weekly plan
+        if (weeklyPlans.length > 0) {
+          const latestPlan = weeklyPlans[weeklyPlans.length - 1];
+          const userAnswers = latestPlan.planData?.userAnswers || {};
+          
+          // Apply categories and status to projects
+          Object.values(projectData).forEach(project => {
+            const savedProject = userAnswers[project.name];
+            if (savedProject) {
+              if (savedProject.category) {
+                project.category = savedProject.category;
+              }
+              if (savedProject.status) {
+                project.status = savedProject.status;
+              }
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not load category data from weekly plans:', error.message);
+    }
+    
+    // Get project colors
+    const { getAllProjectColors } = require('./color-palette');
+    const projectColorMap = getAllProjectColors();
+    
+    // Get progress data from Notion cache if available
+    const { getAllCachedRepositories } = require('./notion');
+    let cachedRepos = [];
+    try {
+      cachedRepos = await getAllCachedRepositories();
+    } catch (error) {
+      console.warn('⚠️ Could not load cached repository data:', error.message);
+    }
+    
+    const cachedRepoMap = new Map();
+    cachedRepos.forEach(cachedRepo => {
+      cachedRepoMap.set(cachedRepo.repository, cachedRepo);
+    });
+    
+    // Build final project list
+    const projects = Object.values(projectData).map(project => {
+      const cachedRepo = cachedRepoMap.get(project.name);
+      const colorData = projectColorMap[project.name];
+      
+      // Determine project status based on activity and planning data
+      let status = project.status;
+      if (status === 'unknown') {
+        const daysSinceActivity = project.lastActivity ? 
+          Math.floor((new Date() - new Date(project.lastActivity)) / (1000 * 60 * 60 * 24)) : 999;
+        
+        if (daysSinceActivity <= 7) {
+          status = 'active';
+        } else if (daysSinceActivity <= 30) {
+          status = 'planning';
+        } else {
+          status = 'paused';
+        }
+      }
+      
+      return {
+        name: project.name,
+        status: status,
+        progress: cachedRepo ? (cachedRepo.progress || 0) : 0,
+        category: project.category || 'Miscellaneous / Standalone',
+        lastActivity: project.lastActivity,
+        totalCommits: project.totalCommits,
+        hasPrd: cachedRepo ? cachedRepo.hasPrd : false,
+        hasTaskList: cachedRepo ? cachedRepo.hasTaskList : false,
+        storiesTotal: cachedRepo ? (cachedRepo.storyCount || 0) : 0,
+        storiesCompleted: cachedRepo ? Math.round(((cachedRepo.storyCount || 0) * (cachedRepo.progress || 0)) / 100) : 0,
+        color: colorData ? colorData.hex : '#6B7280',
+        repository: project.name
+      };
+    });
+    
+    // Sort projects by activity (most recent first)
+    projects.sort((a, b) => {
+      if (!a.lastActivity && !b.lastActivity) return 0;
+      if (!a.lastActivity) return 1;
+      if (!b.lastActivity) return -1;
+      return new Date(b.lastActivity) - new Date(a.lastActivity);
+    });
+    
+    res.json({
+      success: true,
+      projects: projects,
+      lastUpdated: new Date().toISOString(),
+      totalProjects: projects.length,
+      dateRange: {
+        start: startDate,
+        end: today.toISOString().split('T')[0]
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching projects data:', error);
+    res.status(500).json({ 
+      error: 'Error fetching projects data',
+      details: error.message 
+    });
+  }
+}));
 
 // Color palette management endpoints
 app.get('/api/color-palette/stats', asyncHandler(async (req, res) => {
