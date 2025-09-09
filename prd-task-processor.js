@@ -486,6 +486,56 @@ class PrdTaskProcessor {
     return progress;
   }
 
+  updateStoryStatusFromTasks(stories, tasks) {
+    console.log(`🔍 Debug: Found ${stories.length} stories and ${tasks.length} tasks`);
+    
+    // Group tasks by story context
+    const tasksByStory = {};
+    tasks.forEach(task => {
+      if (task.storyContext) {
+        if (!tasksByStory[task.storyContext]) {
+          tasksByStory[task.storyContext] = [];
+        }
+        tasksByStory[task.storyContext].push(task);
+        console.log(`🔍 Task "${task.description}" belongs to story context: "${task.storyContext}"`);
+      } else {
+        console.log(`🔍 Task "${task.description}" has no story context`);
+      }
+    });
+
+    console.log(`🔍 Story contexts found:`, Object.keys(tasksByStory));
+    console.log(`🔍 Story titles:`, stories.map(s => s.title));
+
+    // Create stories from task-list story contexts and update their status
+    const taskListStories = [];
+    Object.keys(tasksByStory).forEach(storyContext => {
+      const storyTasks = tasksByStory[storyContext];
+      const completedTasks = storyTasks.filter(task => task.completed).length;
+      const totalTasks = storyTasks.length;
+      
+      const story = {
+        title: storyContext,
+        description: `Story with ${totalTasks} tasks`,
+        status: completedTasks === totalTasks && totalTasks > 0 ? 'Done' : 
+                completedTasks > 0 ? 'Active' : 'Planning',
+        completedTasks: completedTasks,
+        totalTasks: totalTasks,
+        repository: storyTasks[0]?.repository || 'unknown',
+        source: 'task-list'
+      };
+      
+      taskListStories.push(story);
+      console.log(`📊 Story "${storyContext}": ${completedTasks}/${totalTasks} tasks completed -> Status: ${story.status}`);
+    });
+
+    // Replace the PRD stories with task-list stories for more accurate tracking
+    stories.length = 0;
+    stories.push(...taskListStories);
+    
+    console.log(`✅ Updated stories from task-list: ${taskListStories.length} stories with proper task-based status`);
+  }
+
+
   async processRepository(repoName) {
     try {
       console.log(`🔄 Starting repository processing: ${repoName}`);
@@ -555,6 +605,12 @@ class PrdTaskProcessor {
         }
       } else {
         console.log(`❌ No task-list file found for ${repoName}`);
+      }
+
+      // Update story status based on task completion
+      if (result.stories.length > 0 && result.tasks.length > 0) {
+        console.log(`🔄 Updating story status based on task completion...`);
+        this.updateStoryStatusFromTasks(result.stories, result.tasks);
       }
 
       // Calculate progress
