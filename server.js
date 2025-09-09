@@ -8,6 +8,7 @@ const { logCommitsToNotion, addWeeklyPlanningEntry, addOrUpdateWeeklyPlanningEnt
 const timezoneConfig = require('./timezone-config');
 const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('./color-palette');
 const { Client } = require('@notionhq/client');
+const { scheduleDailyProcessing, runManualProcessing } = require('./wanderlog-processor');
 
 dotenv.config();
 const app = express();
@@ -2207,6 +2208,89 @@ async function ensureStoryProgressDatabase() {
 // COMMIT LOGGING API ENDPOINTS FOR WANDERJOB
 // ============================================================================
 
+// Rate limiting for backfill operations
+const backfillAttempts = new Map();
+const BACKFILL_LIMITS = {
+  perHour: 5,        // Max 5 backfills per hour
+  perDay: 20,        // Max 20 backfills per day
+  cooldown: 300000   // 5 minutes between attempts
+};
+
+// Helper function to check rate limits
+function checkBackfillRateLimit(apiKey) {
+  const now = Date.now();
+  const hourAgo = now - (60 * 60 * 1000);
+  const dayAgo = now - (24 * 60 * 60 * 1000);
+  
+  if (!backfillAttempts.has(apiKey)) {
+    backfillAttempts.set(apiKey, []);
+  }
+  
+  const attempts = backfillAttempts.get(apiKey);
+  
+  // Clean old attempts
+  const recentAttempts = attempts.filter(timestamp => timestamp > hourAgo);
+  const dailyAttempts = attempts.filter(timestamp => timestamp > dayAgo);
+  
+  backfillAttempts.set(apiKey, recentAttempts);
+  
+  // Check rate limits
+  if (recentAttempts.length >= BACKFILL_LIMITS.perHour) {
+    return { allowed: false, reason: 'Hourly limit exceeded', retryAfter: 3600 };
+  }
+  
+  if (dailyAttempts.length >= BACKFILL_LIMITS.perDay) {
+    return { allowed: false, reason: 'Daily limit exceeded', retryAfter: 86400 };
+  }
+  
+  // Check cooldown
+  const lastAttempt = recentAttempts[recentAttempts.length - 1];
+  if (lastAttempt && (now - lastAttempt) < BACKFILL_LIMITS.cooldown) {
+    return { allowed: false, reason: 'Cooldown period active', retryAfter: Math.ceil((BACKFILL_LIMITS.cooldown - (now - lastAttempt)) / 1000) };
+  }
+  
+  return { allowed: true };
+}
+
+// Helper function to validate date range
+function validateBackfillDate(date) {
+  const today = new Date();
+  const maxBackfillDate = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000)); // 30 days ago
+  const minBackfillDate = new Date(today.getTime() - (24 * 60 * 60 * 1000)); // 24 hours ago (default)
+  
+  const requestDate = new Date(date);
+  
+  if (requestDate > today) {
+    return { valid: false, reason: 'Cannot backfill future dates' };
+  }
+  
+  if (requestDate < maxBackfillDate) {
+    return { valid: false, reason: 'Cannot backfill dates older than 30 days' };
+  }
+  
+  return { valid: true, date: requestDate };
+}
+
+// Helper function to authenticate API key
+function authenticateBackfillKey(req) {
+  const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+  const expectedKey = process.env.BACKFILL_API_KEY;
+  
+  if (!expectedKey) {
+    return { authenticated: false, reason: 'Backfill API key not configured' };
+  }
+  
+  if (!apiKey) {
+    return { authenticated: false, reason: 'API key required' };
+  }
+  
+  if (apiKey !== expectedKey) {
+    return { authenticated: false, reason: 'Invalid API key' };
+  }
+  
+  return { authenticated: true, apiKey: apiKey };
+}
+
 // POST /api/commits - Log commits (extend existing webhook logic)
 app.post('/api/commits', asyncHandler(async (req, res) => {
   try {
@@ -2288,6 +2372,7 @@ app.post('/api/commits', asyncHandler(async (req, res) => {
 app.get('/api/commits/:date', asyncHandler(async (req, res) => {
   try {
     const { date } = req.params;
+    const { backfill } = req.query;
     
     // Validate date format (YYYY-MM-DD)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -2295,6 +2380,61 @@ app.get('/api/commits/:date', asyncHandler(async (req, res) => {
         success: false,
         error: 'Invalid date format. Use YYYY-MM-DD' 
       });
+    }
+    
+    // Handle backfill request
+    if (backfill === 'true') {
+      // Authenticate API key
+      const auth = authenticateBackfillKey(req);
+      if (!auth.authenticated) {
+        return res.status(401).json({ 
+          success: false,
+          error: auth.reason 
+        });
+      }
+      
+      // Check rate limits
+      const rateLimit = checkBackfillRateLimit(auth.apiKey || 'default');
+      if (!rateLimit.allowed) {
+        return res.status(429).json({ 
+          success: false,
+          error: rateLimit.reason,
+          retryAfter: rateLimit.retryAfter
+        });
+      }
+      
+      // Validate date range
+      const dateValidation = validateBackfillDate(date);
+      if (!dateValidation.valid) {
+        return res.status(400).json({ 
+          success: false,
+          error: dateValidation.reason 
+        });
+      }
+      
+      console.log(`🔄 Backfilling commits for date: ${date}...`);
+      
+      // Trigger backfill for the date
+      try {
+        const { generateCommitLog } = require('./generate-commit-log');
+        await generateCommitLog(date, date);
+        
+        // Record the backfill attempt
+        const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '') || 'default';
+        if (!backfillAttempts.has(apiKey)) {
+          backfillAttempts.set(apiKey, []);
+        }
+        backfillAttempts.get(apiKey).push(Date.now());
+        
+        console.log(`✅ Backfill completed for ${date}`);
+      } catch (backfillError) {
+        console.error(`❌ Backfill failed for ${date}:`, backfillError.message);
+        return res.status(500).json({ 
+          success: false,
+          error: 'Backfill failed',
+          details: backfillError.message 
+        });
+      }
     }
     
     console.log(`📊 Fetching commits for date: ${date}...`);
@@ -2392,6 +2532,7 @@ app.get('/api/commits/:date', asyncHandler(async (req, res) => {
 app.get('/api/commits/summary/:date', asyncHandler(async (req, res) => {
   try {
     const { date } = req.params;
+    const { backfill } = req.query;
     
     // Validate date format (YYYY-MM-DD)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -2399,6 +2540,61 @@ app.get('/api/commits/summary/:date', asyncHandler(async (req, res) => {
         success: false,
         error: 'Invalid date format. Use YYYY-MM-DD' 
       });
+    }
+    
+    // Handle backfill request
+    if (backfill === 'true') {
+      // Authenticate API key
+      const auth = authenticateBackfillKey(req);
+      if (!auth.authenticated) {
+        return res.status(401).json({ 
+          success: false,
+          error: auth.reason 
+        });
+      }
+      
+      // Check rate limits
+      const rateLimit = checkBackfillRateLimit(auth.apiKey || 'default');
+      if (!rateLimit.allowed) {
+        return res.status(429).json({ 
+          success: false,
+          error: rateLimit.reason,
+          retryAfter: rateLimit.retryAfter
+        });
+      }
+      
+      // Validate date range
+      const dateValidation = validateBackfillDate(date);
+      if (!dateValidation.valid) {
+        return res.status(400).json({ 
+          success: false,
+          error: dateValidation.reason 
+        });
+      }
+      
+      console.log(`🔄 Backfilling commits for summary date: ${date}...`);
+      
+      // Trigger backfill for the date
+      try {
+        const { generateCommitLog } = require('./generate-commit-log');
+        await generateCommitLog(date, date);
+        
+        // Record the backfill attempt
+        const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '') || 'default';
+        if (!backfillAttempts.has(apiKey)) {
+          backfillAttempts.set(apiKey, []);
+        }
+        backfillAttempts.get(apiKey).push(Date.now());
+        
+        console.log(`✅ Backfill completed for summary ${date}`);
+      } catch (backfillError) {
+        console.error(`❌ Backfill failed for summary ${date}:`, backfillError.message);
+        return res.status(500).json({ 
+          success: false,
+          error: 'Backfill failed',
+          details: backfillError.message 
+        });
+      }
     }
     
     console.log(`📊 Generating daily summary for date: ${date}...`);
@@ -2544,6 +2740,109 @@ app.get('/api/commits/summary/:date', asyncHandler(async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: 'Error generating daily summary',
+      details: error.message 
+    });
+  }
+}));
+
+// POST /api/commits/backfill - Dedicated backfill endpoint
+app.post('/api/commits/backfill', asyncHandler(async (req, res) => {
+  try {
+    const { date, projects } = req.body;
+    
+    // Authenticate API key
+    const auth = authenticateBackfillKey(req);
+    if (!auth.authenticated) {
+      return res.status(401).json({ 
+        success: false,
+        error: auth.reason 
+      });
+    }
+    
+    // Check rate limits
+    const rateLimit = checkBackfillRateLimit(auth.apiKey || 'default');
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ 
+        success: false,
+        error: rateLimit.reason,
+        retryAfter: rateLimit.retryAfter
+      });
+    }
+    
+    // Validate date
+    if (!date) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Date is required' 
+      });
+    }
+    
+    // Validate date format (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid date format. Use YYYY-MM-DD' 
+      });
+    }
+    
+    // Validate date range
+    const dateValidation = validateBackfillDate(date);
+    if (!dateValidation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        error: dateValidation.reason 
+      });
+    }
+    
+    // Validate projects array (optional, but if provided, limit size)
+    if (projects && Array.isArray(projects)) {
+      const MAX_PROJECTS = 10;
+      if (projects.length > MAX_PROJECTS) {
+        return res.status(400).json({ 
+          success: false,
+          error: `Too many projects. Maximum ${MAX_PROJECTS} allowed` 
+        });
+      }
+    }
+    
+    console.log(`🔄 Starting dedicated backfill for date: ${date}${projects ? `, projects: ${projects.join(', ')}` : ''}...`);
+    
+    // Trigger backfill for the date
+    try {
+      const { generateCommitLog } = require('./generate-commit-log');
+      await generateCommitLog(date, date);
+      
+      // Record the backfill attempt
+      const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '') || 'default';
+      if (!backfillAttempts.has(apiKey)) {
+        backfillAttempts.set(apiKey, []);
+      }
+      backfillAttempts.get(apiKey).push(Date.now());
+      
+      console.log(`✅ Dedicated backfill completed for ${date}`);
+      
+      res.json({
+        success: true,
+        message: `Backfill completed for ${date}`,
+        date: date,
+        projects: projects || 'all',
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (backfillError) {
+      console.error(`❌ Dedicated backfill failed for ${date}:`, backfillError.message);
+      res.status(500).json({ 
+        success: false,
+        error: 'Backfill failed',
+        details: backfillError.message 
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in dedicated backfill endpoint:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
       details: error.message 
     });
   }
@@ -3207,6 +3506,24 @@ app.post('/api/prd-stories/link-prd', asyncHandler(async (req, res) => {
   }
 }));
 
+// Wanderlog API endpoints
+app.post('/api/wanderlog/process', asyncHandler(async (req, res) => {
+  try {
+    console.log('🔧 Manual Wanderlog processing triggered via API');
+    await runManualProcessing();
+    res.json({ 
+      success: true, 
+      message: 'Wanderlog processing completed successfully' 
+    });
+  } catch (error) {
+    console.error('❌ Error in manual Wanderlog processing:', error);
+    res.status(500).json({ 
+      error: 'Error processing Wanderlog',
+      details: error.message 
+    });
+  }
+}));
+
 // Global error handler
 app.use((error, req, res, next) => {
   console.error('❌ Unhandled error:', error);
@@ -3250,7 +3567,12 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔑 Webhook secret configured: ${SECRET ? 'Yes' : 'No'}`);
   console.log(`📝 Notion API key configured: ${process.env.NOTION_API_KEY ? 'Yes' : 'No'}`);
-      console.log(`🗄️ Notion commit database ID configured: ${process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID ? 'Yes' : 'No'}`);
+  console.log(`🗄️ Notion commit database ID configured: ${process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID ? 'Yes' : 'No'}`);
+  console.log(`🤖 OpenAI API key configured: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`🐙 GitHub token configured: ${process.env.GITHUB_TOKEN ? 'Yes' : 'No'}`);
+  
+  // Start Wanderlog daily processing
+  scheduleDailyProcessing();
 });
 
 // Add server timeout

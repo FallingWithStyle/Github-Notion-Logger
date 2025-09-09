@@ -16,6 +16,9 @@ GitHub Notion Logger is an automated system that monitors GitHub repositories, e
 - **Duplicate Prevention**: Smart duplicate detection and cleanup
 - **Performance Optimization**: Configurable batch processing and caching
 - **Multi-Repository Support**: Monitor multiple repositories simultaneously
+- **Wanderlog Daily Summaries**: AI-powered daily commit summaries with GPT-4o-mini
+- **Intelligent Commit Filtering**: Automatically filters out insignificant commits (typos, etc.)
+- **Automated Scheduling**: Daily processing at 6am EST with cron scheduling
 
 ## Getting Started
 
@@ -26,6 +29,7 @@ GitHub Notion Logger is an automated system that monitors GitHub repositories, e
 - GitHub Personal Access Token
 - Notion API Key
 - Notion database for commit tracking
+- OpenAI API Key (for Wanderlog summaries)
 
 ### Installation
 
@@ -47,6 +51,7 @@ GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
 GITHUB_TOKEN=your_github_personal_access_token
 GITHUB_OWNER=your_github_username_or_org
 GITHUB_REPO=your_repository_name
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 ### Development
@@ -88,6 +93,37 @@ View your commit activity at the root URL (`/`):
 - Color-coded project representation
 - Interactive hover effects
 - Responsive design for all devices
+
+### Wanderlog Daily Summaries
+
+The Wanderlog feature provides AI-powered daily summaries of your development work:
+
+- **Automatic Processing**: Runs daily at 6am EST via cron scheduling
+- **Smart Filtering**: Automatically filters out insignificant commits (typos, formatting, etc.)
+- **AI Summaries**: Uses GPT-4o-mini to create engaging, story-like summaries
+- **Notion Integration**: Creates entries in a dedicated Wanderlog database
+- **Manual Trigger**: Test the feature with `POST /api/wanderlog/process`
+
+#### Testing Wanderlog
+
+```bash
+# Run the test script
+node test-wanderlog.js
+
+# Or trigger manually via API
+curl -X POST http://localhost:3000/api/wanderlog/process
+```
+
+#### Wanderlog Database Schema
+
+The system automatically creates a "Wanderlog" database with:
+- **Title**: Engaging daily summary title
+- **Date**: The date being summarized
+- **Commit Count**: Number of significant commits
+- **Projects**: List of projects worked on
+- **Summary**: AI-generated story of the day's work
+- **Insights**: Key insights about focus and patterns
+- **Focus Areas**: Main themes and areas of focus
 
 ## Project Structure
 
