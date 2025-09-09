@@ -1436,7 +1436,8 @@
         
         // Establish locked project order on page load
         function establishLockedProjectOrder() {
-            const ignoreDone = document.getElementById('ignore-done-projects').checked;
+            const checkbox = document.getElementById('ignore-done-projects');
+            const ignoreDone = checkbox ? checkbox.checked : false;
             let filteredProjects = projectData;
             
             if (ignoreDone) {
@@ -1485,7 +1486,8 @@
 
         // Get filtered projects using the locked order (no re-sorting during workflow)
         function getFilteredProjects() {
-            const ignoreDone = document.getElementById('ignore-done-projects').checked;
+            const checkbox = document.getElementById('ignore-done-projects');
+            const ignoreDone = checkbox ? checkbox.checked : false;
             let filteredProjects = projectData;
             
             if (ignoreDone) {
@@ -2539,17 +2541,20 @@
         document.getElementById('load-plans-btn').addEventListener('click', loadPreviousPlans);
         
         // Checkbox event listener
-        document.getElementById('ignore-done-projects').addEventListener('change', function() {
-            // Save checkbox state to localStorage
-            localStorage.setItem('ignoreDoneProjects', this.checked);
-            
-            // Re-establish locked order when filter changes
-            establishLockedProjectOrder();
-            
-            // Reset to first project and refresh view
-            currentProjectIndex = 0;
-            showCurrentProject();
-        });
+        const ignoreDoneCheckbox = document.getElementById('ignore-done-projects');
+        if (ignoreDoneCheckbox) {
+            ignoreDoneCheckbox.addEventListener('change', function() {
+                // Save checkbox state to localStorage
+                localStorage.setItem('ignoreDoneProjects', this.checked);
+                
+                // Re-establish locked order when filter changes
+                establishLockedProjectOrder();
+                
+                // Reset to first project and refresh view
+                currentProjectIndex = 0;
+                showCurrentProject();
+            });
+        }
         
         // Focus input event listeners
         document.getElementById('save-focus-btn').addEventListener('click', saveFocus);
