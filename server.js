@@ -2203,6 +2203,356 @@ async function ensureStoryProgressDatabase() {
   return response.id;
 }
 
+// ============================================================================
+// COMMIT LOGGING API ENDPOINTS FOR WANDERJOB
+// ============================================================================
+
+// POST /api/commits - Log commits (extend existing webhook logic)
+app.post('/api/commits', asyncHandler(async (req, res) => {
+  try {
+    const { commits } = req.body;
+    
+    if (!commits || !Array.isArray(commits)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Missing or invalid commits array' 
+      });
+    }
+    
+    console.log(`📝 Logging ${commits.length} commits via API...`);
+    
+    // Process commits through existing Notion logging system
+    const results = [];
+    for (const commit of commits) {
+      try {
+        // Convert API format to webhook format for existing system
+        const webhookCommit = {
+          id: commit.hash || commit.id,
+          message: commit.message,
+          timestamp: commit.date,
+          author: {
+            name: commit.author || 'Unknown'
+          },
+          url: `https://github.com/${commit.projectId}/commit/${commit.hash || commit.id}`,
+          added: commit.additions || 0,
+          removed: commit.deletions || 0,
+          modified: commit.filesChanged || []
+        };
+        
+        // Use existing Notion logging function
+        const result = await logCommitsToNotion([webhookCommit], commit.projectId);
+        results.push({
+          id: commit.id,
+          success: true,
+          processed: result.processed,
+          skipped: result.skipped
+        });
+        
+      } catch (error) {
+        console.error(`❌ Error processing commit ${commit.id}:`, error.message);
+        results.push({
+          id: commit.id,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    const errorCount = results.filter(r => !r.success).length;
+    
+    console.log(`✅ API commit logging completed: ${successCount} success, ${errorCount} errors`);
+    
+    res.json({
+      success: true,
+      message: `Commits logged successfully`,
+      results: results,
+      summary: {
+        total: commits.length,
+        success: successCount,
+        errors: errorCount
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error logging commits via API:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error logging commits',
+      details: error.message 
+    });
+  }
+}));
+
+// GET /api/commits/{date} - Get commits for specific date
+app.get('/api/commits/:date', asyncHandler(async (req, res) => {
+  try {
+    const { date } = req.params;
+    
+    // Validate date format (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid date format. Use YYYY-MM-DD' 
+      });
+    }
+    
+    console.log(`📊 Fetching commits for date: ${date}...`);
+    
+    // Query Notion for commits on this date
+    const notion = new Client({ auth: process.env.NOTION_API_KEY });
+    const databaseId = process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID;
+    
+    // Calculate date range for the day (start and end of day in user's timezone)
+    const timezoneInfo = timezoneConfig.getTimezoneInfo();
+    const startOfDay = new Date(`${date}T00:00:00`);
+    const endOfDay = new Date(`${date}T23:59:59`);
+    
+    // Convert to user's timezone
+    const startOfDayLocal = new Date(startOfDay.toLocaleString('en-US', { timeZone: timezoneInfo.timezone }));
+    const endOfDayLocal = new Date(endOfDay.toLocaleString('en-US', { timeZone: timezoneInfo.timezone }));
+    
+    let allCommits = [];
+    let hasMore = true;
+    let startCursor = undefined;
+    
+    while (hasMore) {
+      const response = await notion.databases.query({
+        database_id: databaseId,
+        filter: {
+          and: [
+            {
+              property: "Date",
+              date: {
+                on_or_after: startOfDayLocal.toISOString()
+              }
+            },
+            {
+              property: "Date", 
+              date: {
+                on_or_before: endOfDayLocal.toISOString()
+              }
+            }
+          ]
+        },
+        page_size: 100,
+        start_cursor: startCursor
+      });
+      
+      // Process commits and convert to API format
+      for (const page of response.results) {
+        const properties = page.properties;
+        const commitMessage = properties["Commits"]?.rich_text?.[0]?.plain_text;
+        const projectName = properties["Project Name"]?.title?.[0]?.plain_text;
+        const commitDate = properties["Date"]?.date?.start;
+        const sha = properties["SHA"]?.rich_text?.[0]?.plain_text;
+        
+        if (commitMessage && projectName && commitDate) {
+          // Generate a consistent ID for the commit
+          const commitId = `${projectName}-${sha || page.id}-${Date.now()}`;
+          
+          allCommits.push({
+            id: commitId,
+            hash: sha || null,
+            message: commitMessage,
+            author: null, // Not stored in current system
+            date: commitDate,
+            projectId: projectName,
+            filesChanged: null, // Not stored in current system
+            additions: null, // Not stored in current system
+            deletions: null // Not stored in current system
+          });
+        }
+      }
+      
+      hasMore = response.has_more;
+      startCursor = response.next_cursor;
+    }
+    
+    console.log(`✅ Found ${allCommits.length} commits for ${date}`);
+    
+    res.json({
+      success: true,
+      commits: allCommits,
+      count: allCommits.length,
+      date: date
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching commits for date:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error fetching commits',
+      details: error.message 
+    });
+  }
+}));
+
+// GET /api/commits/summary/{date} - Get daily summary for specific date
+app.get('/api/commits/summary/:date', asyncHandler(async (req, res) => {
+  try {
+    const { date } = req.params;
+    
+    // Validate date format (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid date format. Use YYYY-MM-DD' 
+      });
+    }
+    
+    console.log(`📊 Generating daily summary for date: ${date}...`);
+    
+    // Get commits for this date using the existing endpoint logic
+    const notion = new Client({ auth: process.env.NOTION_API_KEY });
+    const databaseId = process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID;
+    
+    // Calculate date range for the day
+    const timezoneInfo = timezoneConfig.getTimezoneInfo();
+    const startOfDay = new Date(`${date}T00:00:00`);
+    const endOfDay = new Date(`${date}T23:59:59`);
+    
+    const startOfDayLocal = new Date(startOfDay.toLocaleString('en-US', { timeZone: timezoneInfo.timezone }));
+    const endOfDayLocal = new Date(endOfDay.toLocaleString('en-US', { timeZone: timezoneInfo.timezone }));
+    
+    let allCommits = [];
+    let hasMore = true;
+    let startCursor = undefined;
+    
+    while (hasMore) {
+      const response = await notion.databases.query({
+        database_id: databaseId,
+        filter: {
+          and: [
+            {
+              property: "Date",
+              date: {
+                on_or_after: startOfDayLocal.toISOString()
+              }
+            },
+            {
+              property: "Date", 
+              date: {
+                on_or_before: endOfDayLocal.toISOString()
+              }
+            }
+          ]
+        },
+        page_size: 100,
+        start_cursor: startCursor
+      });
+      
+      for (const page of response.results) {
+        const properties = page.properties;
+        const commitMessage = properties["Commits"]?.rich_text?.[0]?.plain_text;
+        const projectName = properties["Project Name"]?.title?.[0]?.plain_text;
+        const commitDate = properties["Date"]?.date?.start;
+        
+        if (commitMessage && projectName && commitDate) {
+          allCommits.push({
+            message: commitMessage,
+            projectName: projectName,
+            date: commitDate
+          });
+        }
+      }
+      
+      hasMore = response.has_more;
+      startCursor = response.next_cursor;
+    }
+    
+    // Generate summary data
+    const projectStats = {};
+    let totalCommits = allCommits.length;
+    let totalAdditions = 0; // Not available in current system
+    let totalDeletions = 0; // Not available in current system
+    
+    // Group by project
+    allCommits.forEach(commit => {
+      if (!projectStats[commit.projectName]) {
+        projectStats[commit.projectName] = {
+          projectId: commit.projectName,
+          projectName: commit.projectName,
+          commits: 0,
+          additions: 0,
+          deletions: 0
+        };
+      }
+      projectStats[commit.projectName].commits++;
+    });
+    
+    // Convert to array format
+    const projects = Object.values(projectStats);
+    
+    // Basic theme detection from commit messages
+    const themes = [];
+    const messages = allCommits.map(c => c.message.toLowerCase());
+    
+    if (messages.some(msg => msg.includes('feat') || msg.includes('feature'))) {
+      themes.push('Feature Development');
+    }
+    if (messages.some(msg => msg.includes('fix') || msg.includes('bug'))) {
+      themes.push('Bug Fixes');
+    }
+    if (messages.some(msg => msg.includes('refactor') || msg.includes('clean'))) {
+      themes.push('Code Refactoring');
+    }
+    if (messages.some(msg => msg.includes('ui') || msg.includes('component') || msg.includes('style'))) {
+      themes.push('UI/UX Improvements');
+    }
+    if (messages.some(msg => msg.includes('test') || msg.includes('spec'))) {
+      themes.push('Testing');
+    }
+    if (messages.some(msg => msg.includes('doc') || msg.includes('readme'))) {
+      themes.push('Documentation');
+    }
+    
+    // Default theme if none detected
+    if (themes.length === 0) {
+      themes.push('General Development');
+    }
+    
+    // Calculate top files (simplified - just count project activity)
+    const topFiles = projects
+      .sort((a, b) => b.commits - a.commits)
+      .slice(0, 5)
+      .map(project => ({
+        file: project.projectName,
+        changes: project.commits
+      }));
+    
+    const summary = {
+      date: date,
+      totalCommits: totalCommits,
+      totalAdditions: totalAdditions,
+      totalDeletions: totalDeletions,
+      projects: projects,
+      themes: themes,
+      summary: `Today had ${totalCommits} commits across ${projects.length} projects. The main focus was on ${projects[0]?.projectName || 'various projects'}. The work spanned ${themes.length} key areas: ${themes.join(', ').toLowerCase()}. Overall, this shows steady progress with focused, incremental improvements.`,
+      topFiles: topFiles
+    };
+    
+    console.log(`✅ Generated summary for ${date}: ${totalCommits} commits, ${projects.length} projects`);
+    
+    res.json({
+      success: true,
+      summary: summary
+    });
+    
+  } catch (error) {
+    console.error('❌ Error generating daily summary:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error generating daily summary',
+      details: error.message 
+    });
+  }
+}));
+
+// ============================================================================
+// EXISTING API ENDPOINTS
+// ============================================================================
+
 // Projects API endpoint for external consumption (e.g., Wanderjob)
 app.get('/api/projects', asyncHandler(async (req, res) => {
   try {

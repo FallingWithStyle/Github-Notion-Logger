@@ -115,6 +115,42 @@
             text-align: center;
         }
         
+        .tie-alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 15px 0;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .tie-alert-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tie-alert-icon {
+            font-size: 18px;
+        }
+        
+        .tie-alert-text {
+            color: #856404;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .project-header {
             display: flex;
             align-items: center;
@@ -962,6 +998,7 @@
             primary: '',
             tangent: ''
         };
+        let lockedProjectOrder = []; // Locked order established on page load
         
         // Load saved data from localStorage
         function loadSavedData() {
@@ -1182,6 +1219,9 @@
                         console.log(`🔍 ${projectName}:`, answers);
                     });
                     
+                    // Establish locked project order after data is loaded
+                    establishLockedProjectOrder();
+                    
                     // Show the current project after data is loaded
                     showCurrentProject();
                     
@@ -1394,8 +1434,8 @@
             }
         }
         
-        // Get filtered projects based on checkbox state, sorted by heart value (highest to lowest)
-        function getFilteredProjects() {
+        // Establish locked project order on page load
+        function establishLockedProjectOrder() {
             const ignoreDone = document.getElementById('ignore-done-projects').checked;
             let filteredProjects = projectData;
             
@@ -1407,7 +1447,7 @@
                 });
             }
             
-            // Sort by heart value (highest to lowest)
+            // Sort by heart value (highest to lowest) - this establishes the locked order
             const sortedProjects = filteredProjects.sort((a, b) => {
                 const aHeart = parseInt(userAnswers[a.name]?.heart) || 0;
                 const bHeart = parseInt(userAnswers[b.name]?.heart) || 0;
@@ -1428,17 +1468,52 @@
                 return a.name.localeCompare(b.name);
             });
             
-            // Debug logging for sorting
-            if (sortedProjects.length > 0) {
-                console.log('🔄 Projects sorted by heart value (highest to lowest):');
-                sortedProjects.forEach((project, index) => {
-                    const heart = parseInt(userAnswers[project.name]?.heart) || 0;
-                    const head = parseInt(userAnswers[project.name]?.head) || 0;
-                    console.log(`  ${index + 1}. ${project.name} (Heart: ${heart}, Head: ${head})`);
+            // Store the locked order
+            lockedProjectOrder = sortedProjects.map(project => project.name);
+            
+            // Debug logging for locked order
+            if (lockedProjectOrder.length > 0) {
+                console.log('🔒 Locked project order established:');
+                lockedProjectOrder.forEach((projectName, index) => {
+                    const project = projectData.find(p => p.name === projectName);
+                    const heart = parseInt(userAnswers[projectName]?.heart) || 0;
+                    const head = parseInt(userAnswers[projectName]?.head) || 0;
+                    console.log(`  ${index + 1}. ${projectName} (Heart: ${heart}, Head: ${head})`);
+                });
+            }
+        }
+
+        // Get filtered projects using the locked order (no re-sorting during workflow)
+        function getFilteredProjects() {
+            const ignoreDone = document.getElementById('ignore-done-projects').checked;
+            let filteredProjects = projectData;
+            
+            if (ignoreDone) {
+                // Filter out projects with status 'done' or 'retired'
+                filteredProjects = projectData.filter(project => {
+                    const status = project.status?.toLowerCase();
+                    return status !== 'done' && status !== 'retired';
                 });
             }
             
-            return sortedProjects;
+            // If locked order is not established yet, establish it
+            if (lockedProjectOrder.length === 0) {
+                establishLockedProjectOrder();
+            }
+            
+            // Return projects in the locked order, filtered by ignoreDone setting
+            const orderedProjects = lockedProjectOrder
+                .map(projectName => projectData.find(p => p.name === projectName))
+                .filter(project => {
+                    if (!project) return false;
+                    if (ignoreDone) {
+                        const status = project.status?.toLowerCase();
+                        return status !== 'done' && status !== 'retired';
+                    }
+                    return true;
+                });
+            
+            return orderedProjects;
         }
         
         // Update progress indicator
@@ -1690,8 +1765,85 @@
             }
             userAnswers[projectName][question] = answer;
             saveData();
+            
+            // Check for ties after updating the answer
+            checkForTies();
         }
         
+        // Check for ties in heart+head totals
+        function checkForTies() {
+            const filteredProjects = getFilteredProjects();
+            const currentProject = filteredProjects[currentProjectIndex];
+            
+            if (!currentProject) return;
+            
+            const projectTotals = [];
+            
+            // Calculate heart+head totals for all rated projects
+            filteredProjects.forEach(project => {
+                const answers = userAnswers[project.name] || {};
+                const heart = parseInt(answers.heart) || 0;
+                const head = parseInt(answers.head) || 0;
+                
+                if (heart > 0 && head > 0) {
+                    projectTotals.push({
+                        name: project.name,
+                        heart: heart,
+                        head: head,
+                        total: heart + head
+                    });
+                }
+            });
+            
+            // Get current project's total
+            const currentAnswers = userAnswers[currentProject.name] || {};
+            const currentHeart = parseInt(currentAnswers.heart) || 0;
+            const currentHead = parseInt(currentAnswers.head) || 0;
+            const currentTotal = currentHeart + currentHead;
+            
+            // Only show tie alert if current project has both ratings
+            if (currentHeart === 0 || currentHead === 0) {
+                // Clear previous tie alerts
+                const existingAlerts = document.querySelectorAll('.tie-alert');
+                existingAlerts.forEach(alert => alert.remove());
+                return;
+            }
+            
+            // Find projects with the same total as current project
+            const tiedProjects = projectTotals.filter(project => 
+                project.total === currentTotal && project.name !== currentProject.name
+            );
+            
+            // Clear previous tie alerts
+            const existingAlerts = document.querySelectorAll('.tie-alert');
+            existingAlerts.forEach(alert => alert.remove());
+            
+            // Display tie alert if there are tied projects
+            if (tiedProjects.length > 0) {
+                const projectNames = tiedProjects.map(p => p.name).join(', ');
+                const brainEmoji = '🧠';
+                const heartEmoji = '❤️';
+                
+                // Create tie alert element
+                const tieAlert = document.createElement('div');
+                tieAlert.className = 'tie-alert';
+                tieAlert.innerHTML = `
+                    <div class="tie-alert-content">
+                        <span class="tie-alert-icon">⚠️</span>
+                        <span class="tie-alert-text">
+                            Currently tied with ${projectNames} (${currentTotal}${brainEmoji}${heartEmoji})
+                        </span>
+                    </div>
+                `;
+                
+                // Add to the current project display
+                const projectContainer = document.getElementById('project-container');
+                if (projectContainer) {
+                    projectContainer.appendChild(tieAlert);
+                }
+            }
+        }
+
         // Get user answer
         function getAnswer(projectName, question) {
             const answer = userAnswers[projectName]?.[question] || '';
@@ -2390,6 +2542,9 @@
         document.getElementById('ignore-done-projects').addEventListener('change', function() {
             // Save checkbox state to localStorage
             localStorage.setItem('ignoreDoneProjects', this.checked);
+            
+            // Re-establish locked order when filter changes
+            establishLockedProjectOrder();
             
             // Reset to first project and refresh view
             currentProjectIndex = 0;
