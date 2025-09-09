@@ -1273,36 +1273,17 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
     // Filter out ignored repositories
     const filteredRepos = repos.filter(repo => !ignoredNames.has(repo.name));
     
-    // Check cache status for each repository
-    const repositories = [];
-    for (const repo of filteredRepos) {
-      const hasRecentScan = await processor.hasRecentScan(repo.name);
-      const cachedResult = await processor.getCachedScanResult(repo.name);
-      
-      if (hasRecentScan && cachedResult) {
-        repositories.push({
-          name: repo.name,
-          status: cachedResult.hasPrd ? (cachedResult.hasTaskList ? 'prd-and-tasks' : 'prd-only') : (cachedResult.hasTaskList ? 'tasks-only' : 'no-files'),
-          prdCount: cachedResult.hasPrd ? 1 : 0,
-          taskCount: cachedResult.tasks ? cachedResult.tasks.length : 0,
-          storyCount: cachedResult.stories ? cachedResult.stories.length : 0,
-          progress: cachedResult.progress ? cachedResult.progress.progressPercentage : 0,
-          lastUpdated: cachedResult.lastUpdated || repo.updated_at,
-          cached: true
-        });
-      } else {
-        repositories.push({
-          name: repo.name,
-          status: 'not-processed',
-          prdCount: 0,
-          taskCount: 0,
-          storyCount: 0,
-          progress: 0,
-          lastUpdated: repo.updated_at,
-          cached: false
-        });
-      }
-    }
+    // Return simple repository list without cache checking (too expensive)
+    const repositories = filteredRepos.map(repo => ({
+      name: repo.name,
+      status: 'not-processed',
+      prdCount: 0,
+      taskCount: 0,
+      storyCount: 0,
+      progress: 0,
+      lastUpdated: repo.updated_at,
+      cached: false
+    }));
     
     res.json({
       success: true,
