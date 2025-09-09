@@ -3524,6 +3524,285 @@ app.post('/api/wanderlog/process', asyncHandler(async (req, res) => {
   }
 }));
 
+// Get all Wanderlog entries
+app.get('/api/wanderlog', asyncHandler(async (req, res) => {
+  try {
+    console.log('📊 Fetching Wanderlog entries...');
+    
+    const { ensureWanderlogDatabase } = require('./wanderlog-processor');
+    await ensureWanderlogDatabase();
+    
+    if (!process.env.NOTION_WANDERLOG_DATABASE_ID) {
+      return res.status(404).json({ 
+        error: 'Wanderlog database not found',
+        message: 'Wanderlog database ID not configured' 
+      });
+    }
+    
+    const notion = new (require('@notionhq/client')).Client({ auth: process.env.NOTION_API_KEY });
+    
+    const response = await notion.databases.query({
+      database_id: process.env.NOTION_WANDERLOG_DATABASE_ID,
+      sorts: [
+        { property: "First Commit Date", direction: "descending" }
+      ]
+    });
+    
+    const wanderlogEntries = response.results.map(page => ({
+      id: page.id,
+      title: page.properties["Title"]?.title?.[0]?.text?.content || "",
+      created: page.properties["Created"]?.date?.start || "",
+      firstCommitDate: page.properties["First Commit Date"]?.date?.start || "",
+      commitCount: page.properties["Commit Count"]?.number || 0,
+      projects: page.properties["Projects"]?.rich_text?.[0]?.text?.content || "",
+      summary: page.properties["Summary"]?.rich_text?.[0]?.text?.content || "",
+      insights: page.properties["Insights"]?.rich_text?.[0]?.text?.content || "",
+      focusAreas: page.properties["Focus Areas"]?.rich_text?.[0]?.text?.content || ""
+    }));
+    
+    console.log(`📊 Retrieved ${wanderlogEntries.length} Wanderlog entries`);
+    res.json({
+      success: true,
+      count: wanderlogEntries.length,
+      entries: wanderlogEntries
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Wanderlog entries:', error);
+    res.status(500).json({ 
+      error: 'Error fetching Wanderlog entries',
+      details: error.message 
+    });
+  }
+}));
+
+// Get Wanderlog entries for a specific date range
+app.get('/api/wanderlog/range', asyncHandler(async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ 
+        error: 'Missing required parameters',
+        message: 'Both startDate and endDate are required (YYYY-MM-DD format)' 
+      });
+    }
+    
+    console.log(`📊 Fetching Wanderlog entries from ${startDate} to ${endDate}...`);
+    
+    const { ensureWanderlogDatabase } = require('./wanderlog-processor');
+    await ensureWanderlogDatabase();
+    
+    if (!process.env.NOTION_WANDERLOG_DATABASE_ID) {
+      return res.status(404).json({ 
+        error: 'Wanderlog database not found',
+        message: 'Wanderlog database ID not configured' 
+      });
+    }
+    
+    const notion = new (require('@notionhq/client')).Client({ auth: process.env.NOTION_API_KEY });
+    
+    const response = await notion.databases.query({
+      database_id: process.env.NOTION_WANDERLOG_DATABASE_ID,
+      filter: {
+        and: [
+          {
+            property: "First Commit Date",
+            date: {
+              greater_than_or_equal_to: startDate
+            }
+          },
+          {
+            property: "First Commit Date",
+            date: {
+              less_than_or_equal_to: endDate
+            }
+          }
+        ]
+      },
+      sorts: [
+        { property: "First Commit Date", direction: "descending" }
+      ]
+    });
+    
+    const wanderlogEntries = response.results.map(page => ({
+      id: page.id,
+      title: page.properties["Title"]?.title?.[0]?.text?.content || "",
+      created: page.properties["Created"]?.date?.start || "",
+      firstCommitDate: page.properties["First Commit Date"]?.date?.start || "",
+      commitCount: page.properties["Commit Count"]?.number || 0,
+      projects: page.properties["Projects"]?.rich_text?.[0]?.text?.content || "",
+      summary: page.properties["Summary"]?.rich_text?.[0]?.text?.content || "",
+      insights: page.properties["Insights"]?.rich_text?.[0]?.text?.content || "",
+      focusAreas: page.properties["Focus Areas"]?.rich_text?.[0]?.text?.content || ""
+    }));
+    
+    console.log(`📊 Retrieved ${wanderlogEntries.length} Wanderlog entries for date range`);
+    res.json({
+      success: true,
+      count: wanderlogEntries.length,
+      startDate,
+      endDate,
+      entries: wanderlogEntries
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Wanderlog entries by date range:', error);
+    res.status(500).json({ 
+      error: 'Error fetching Wanderlog entries by date range',
+      details: error.message 
+    });
+  }
+}));
+
+// Get Wanderlog entry for a specific date
+app.get('/api/wanderlog/date/:date', asyncHandler(async (req, res) => {
+  try {
+    const { date } = req.params;
+    
+    console.log(`📊 Fetching Wanderlog entry for date: ${date}...`);
+    
+    const { ensureWanderlogDatabase } = require('./wanderlog-processor');
+    await ensureWanderlogDatabase();
+    
+    if (!process.env.NOTION_WANDERLOG_DATABASE_ID) {
+      return res.status(404).json({ 
+        error: 'Wanderlog database not found',
+        message: 'Wanderlog database ID not configured' 
+      });
+    }
+    
+    const notion = new (require('@notionhq/client')).Client({ auth: process.env.NOTION_API_KEY });
+    
+    const response = await notion.databases.query({
+      database_id: process.env.NOTION_WANDERLOG_DATABASE_ID,
+      filter: {
+        property: "First Commit Date",
+        date: {
+          equals: date
+        }
+      }
+    });
+    
+    if (response.results.length === 0) {
+      return res.status(404).json({ 
+        error: 'Wanderlog entry not found',
+        message: `No Wanderlog entry found for date: ${date}` 
+      });
+    }
+    
+    const entry = response.results[0];
+    const wanderlogEntry = {
+      id: entry.id,
+      title: entry.properties["Title"]?.title?.[0]?.text?.content || "",
+      created: entry.properties["Created"]?.date?.start || "",
+      firstCommitDate: entry.properties["First Commit Date"]?.date?.start || "",
+      commitCount: entry.properties["Commit Count"]?.number || 0,
+      projects: entry.properties["Projects"]?.rich_text?.[0]?.text?.content || "",
+      summary: entry.properties["Summary"]?.rich_text?.[0]?.text?.content || "",
+      insights: entry.properties["Insights"]?.rich_text?.[0]?.text?.content || "",
+      focusAreas: entry.properties["Focus Areas"]?.rich_text?.[0]?.text?.content || ""
+    };
+    
+    console.log(`📊 Retrieved Wanderlog entry for ${date}`);
+    res.json({
+      success: true,
+      entry: wanderlogEntry
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Wanderlog entry by date:', error);
+    res.status(500).json({ 
+      error: 'Error fetching Wanderlog entry by date',
+      details: error.message 
+    });
+  }
+}));
+
+// Get Wanderlog statistics
+app.get('/api/wanderlog/stats', asyncHandler(async (req, res) => {
+  try {
+    console.log('📊 Fetching Wanderlog statistics...');
+    
+    const { ensureWanderlogDatabase } = require('./wanderlog-processor');
+    await ensureWanderlogDatabase();
+    
+    if (!process.env.NOTION_WANDERLOG_DATABASE_ID) {
+      return res.status(404).json({ 
+        error: 'Wanderlog database not found',
+        message: 'Wanderlog database ID not configured' 
+      });
+    }
+    
+    const notion = new (require('@notionhq/client')).Client({ auth: process.env.NOTION_API_KEY });
+    
+    const response = await notion.databases.query({
+      database_id: process.env.NOTION_WANDERLOG_DATABASE_ID,
+      sorts: [
+        { property: "First Commit Date", direction: "descending" }
+      ]
+    });
+    
+    const entries = response.results.map(page => ({
+      created: page.properties["Created"]?.date?.start || "",
+      firstCommitDate: page.properties["First Commit Date"]?.date?.start || "",
+      commitCount: page.properties["Commit Count"]?.number || 0,
+      projects: page.properties["Projects"]?.rich_text?.[0]?.text?.content || "",
+      focusAreas: page.properties["Focus Areas"]?.rich_text?.[0]?.text?.content || ""
+    }));
+    
+    // Calculate statistics
+    const totalEntries = entries.length;
+    const totalCommits = entries.reduce((sum, entry) => sum + entry.commitCount, 0);
+    const avgCommitsPerDay = totalEntries > 0 ? Math.round(totalCommits / totalEntries) : 0;
+    
+    // Get unique projects
+    const allProjects = entries.flatMap(entry => 
+      entry.projects ? entry.projects.split(', ').map(p => p.trim()) : []
+    );
+    const uniqueProjects = [...new Set(allProjects)].filter(p => p.length > 0);
+    
+    // Get focus areas
+    const allFocusAreas = entries.flatMap(entry => 
+      entry.focusAreas ? entry.focusAreas.split(', ').map(f => f.trim()) : []
+    );
+    const focusAreaCounts = allFocusAreas.reduce((acc, area) => {
+      acc[area] = (acc[area] || 0) + 1;
+      return acc;
+    }, {});
+    const topFocusAreas = Object.entries(focusAreaCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10)
+      .map(([area, count]) => ({ area, count }));
+    
+    // Get date range (using first commit dates)
+    const firstCommitDates = entries.map(e => e.firstCommitDate).filter(d => d).sort();
+    const dateRange = firstCommitDates.length > 0 ? {
+      earliest: firstCommitDates[0],
+      latest: firstCommitDates[firstCommitDates.length - 1]
+    } : null;
+    
+    const stats = {
+      totalEntries,
+      totalCommits,
+      avgCommitsPerDay,
+      uniqueProjects: uniqueProjects.length,
+      projects: uniqueProjects,
+      topFocusAreas,
+      dateRange
+    };
+    
+    console.log(`📊 Calculated Wanderlog statistics: ${totalEntries} entries, ${totalCommits} total commits`);
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Wanderlog statistics:', error);
+    res.status(500).json({ 
+      error: 'Error fetching Wanderlog statistics',
+      details: error.message 
+    });
+  }
+}));
+
 // Global error handler
 app.use((error, req, res, next) => {
   console.error('❌ Unhandled error:', error);

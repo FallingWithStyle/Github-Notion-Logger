@@ -121,6 +121,70 @@ node test-wanderlog.js
 curl -X POST http://localhost:3000/api/wanderlog/process
 ```
 
+#### Wanderlog API Endpoints
+
+The Wanderlog system provides several API endpoints for accessing daily summaries:
+
+```bash
+# Get all Wanderlog entries
+GET /api/wanderlog
+
+# Get Wanderlog entries for a date range
+GET /api/wanderlog/range?startDate=2024-01-01&endDate=2024-01-31
+
+# Get Wanderlog entry for a specific date
+GET /api/wanderlog/date/2024-01-15
+
+# Get Wanderlog statistics
+GET /api/wanderlog/stats
+
+# Trigger manual processing
+POST /api/wanderlog/process
+```
+
+**Example API Responses:**
+
+```json
+// GET /api/wanderlog
+{
+  "success": true,
+  "count": 5,
+  "entries": [
+    {
+      "id": "page-id",
+      "title": "Adaptive Concurrency and HiFi-GAN Enhancements Drive Development Forward",
+      "created": "2025-09-09T10:30:00.000Z",
+      "firstCommitDate": "2025-08-29T14:30:00.000Z",
+      "commitCount": 19,
+      "projects": "Audventr, VoiceHub",
+      "summary": "Developers tackled concurrency challenges in Audventr...",
+      "insights": "The commit patterns reveal a strong emphasis on...",
+      "focusAreas": "adaptive concurrency, HiFi-GAN integration, story package export"
+    }
+  ]
+}
+
+// GET /api/wanderlog/stats
+{
+  "success": true,
+  "stats": {
+    "totalEntries": 5,
+    "totalCommits": 87,
+    "avgCommitsPerDay": 17,
+    "uniqueProjects": 3,
+    "projects": ["Audventr", "VoiceHub", "Glyph"],
+    "topFocusAreas": [
+      {"area": "adaptive concurrency", "count": 3},
+      {"area": "HiFi-GAN integration", "count": 2}
+    ],
+    "dateRange": {
+      "earliest": "2025-08-25",
+      "latest": "2025-08-29"
+    }
+  }
+}
+```
+
 #### Specific Date Testing
 
 The `test-wanderlog-specific-date.js` script allows you to test the Wanderlog system with commits from any specific date:
@@ -148,7 +212,8 @@ This is particularly useful for:
 
 The system automatically creates a "Wanderlog" database with:
 - **Title**: Engaging daily summary title
-- **Date**: The date being summarized
+- **Created**: When the Wanderlog entry was created
+- **First Commit Date**: Date of the earliest commit being summarized
 - **Commit Count**: Number of significant commits
 - **Projects**: List of projects worked on
 - **Summary**: AI-generated story of the day's work
