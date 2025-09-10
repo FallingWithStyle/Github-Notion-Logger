@@ -310,6 +310,249 @@
             font-size: 0.75rem;
         }
 
+        .project-details {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .project-details.expanded {
+            display: block;
+        }
+
+        .project-details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .project-details-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .project-details-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0.25rem;
+        }
+
+        .project-details-close:hover {
+            color: #495057;
+        }
+
+        .epic-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .epic-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: #e9ecef;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .epic-header:hover {
+            background: #dee2e6;
+        }
+
+        .epic-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #495057;
+            margin: 0;
+        }
+
+        .epic-toggle {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 0.25rem;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .epic-toggle:hover {
+            color: #495057;
+        }
+
+        .epic-toggle.expanded {
+            transform: rotate(90deg);
+        }
+
+        .epic-content {
+            margin-top: 0.5rem;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .epic-content.collapsed {
+            max-height: 0;
+            margin-top: 0;
+            opacity: 0;
+        }
+
+        .epic-content.expanded {
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .story-item {
+            margin-left: 1rem;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #dee2e6;
+        }
+
+        .story-title {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .story-status {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .story-status.done {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .story-status.active {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .story-status.planning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .story-status.idea {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .task-list {
+            margin-left: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .task-checkbox {
+            margin-right: 0.5rem;
+            margin-top: 0.1rem;
+        }
+
+        .task-description {
+            flex: 1;
+            color: #495057;
+        }
+
+        .task-description.completed {
+            text-decoration: line-through;
+            color: #6c757d;
+        }
+
+        .loading-details {
+            text-align: center;
+            padding: 1rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .weekly-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 0.5rem;
+        }
+
+        .weekly-status-badge.idea {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+        }
+
+        .weekly-status-badge.parking-lot {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #c6c8ca;
+        }
+
+        .weekly-status-badge.planning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .weekly-status-badge.active {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .weekly-status-badge.paused {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .weekly-status-badge.released {
+            background: #cce5ff;
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+
+        .weekly-status-badge.done {
+            background: #28a745;
+            color: #ffffff;
+            border: 1px solid #1e7e34;
+        }
+
+        .weekly-status-badge.unknown {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         .project-card {
             background: white;
             border-radius: 8px;
@@ -642,10 +885,23 @@
             <div class="filter-group">
                 <label for="status-filter">Project Status:</label>
                 <select id="status-filter">
-                    <option value="">All Statuses</option>
+                    <option value="">All Project Statuses</option>
                     <option value="complete">Complete</option>
                     <option value="progress">In Progress</option>
                     <option value="no-files">No Files</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="weekly-status-filter">Weekly Planning Status:</label>
+                <select id="weekly-status-filter">
+                    <option value="">All Planning Statuses</option>
+                    <option value="idea">💡 Idea</option>
+                    <option value="parking-lot">🅿️ Parking Lot</option>
+                    <option value="planning">📝 Planning</option>
+                    <option value="active">🚀 Active</option>
+                    <option value="paused">⏸️ Paused</option>
+                    <option value="released">🌍 Released</option>
+                    <option value="done">✅ Done</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -677,12 +933,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
             loadProgressData();
+            loadWeeklyStatusData();
         });
 
         function setupEventListeners() {
             document.getElementById('refresh-btn').addEventListener('click', loadProgressData);
             document.getElementById('scan-all-btn').addEventListener('click', scanAllProjects);
             document.getElementById('status-filter').addEventListener('change', filterProjects);
+            document.getElementById('weekly-status-filter').addEventListener('change', filterProjects);
             document.getElementById('search-filter').addEventListener('input', filterProjects);
             document.getElementById('bar-view-btn').addEventListener('click', () => switchView('bar'));
             document.getElementById('card-view-btn').addEventListener('click', () => switchView('card'));
@@ -844,11 +1102,12 @@
             const taskCount = project.taskCount || 0;
             const completedStories = project.progressDetails?.completedStories || 0;
             const completedTasks = project.progressDetails?.completedTasks || 0;
+            const weeklyStatusBadge = createWeeklyStatusBadge(project.name);
 
             return `
-                <div class="project-bar">
+                <div class="project-bar" data-project="${project.name}">
                     <div class="project-bar-info">
-                        <div class="project-bar-name">${project.name}</div>
+                        <div class="project-bar-name">${project.name}${weeklyStatusBadge}</div>
                         <span class="project-bar-status ${statusClass}">${project.status || 'unknown'}</span>
                     </div>
                     <div class="project-bar-progress">
@@ -867,8 +1126,9 @@
                     </div>
                     <div class="project-bar-actions">
                         <button class="btn btn-sm primary" onclick="scanProject('${project.name}')">🔍 Scan</button>
-                        <a href="/projects" class="btn btn-sm secondary">📋 Details</a>
+                        <button class="btn btn-sm secondary" onclick="toggleProjectDetails('${project.name}')">📋 Details</button>
                     </div>
+                    <div class="project-details"></div>
                 </div>
             `;
         }
@@ -880,11 +1140,12 @@
             const taskCount = project.taskCount || 0;
             const completedStories = project.progressDetails?.completedStories || 0;
             const completedTasks = project.progressDetails?.completedTasks || 0;
+            const weeklyStatusBadge = createWeeklyStatusBadge(project.name);
 
             return `
-                <div class="project-card">
+                <div class="project-card" data-project="${project.name}">
                     <div class="project-header">
-                        <div class="project-name">${project.name}</div>
+                        <div class="project-name">${project.name}${weeklyStatusBadge}</div>
                         <span class="project-status ${statusClass}">${project.status || 'unknown'}</span>
                     </div>
                     <div class="project-body">
@@ -903,8 +1164,9 @@
                         </div>
                         <div class="project-actions">
                             <button class="btn btn-sm primary" onclick="scanProject('${project.name}')">🔍 Scan</button>
-                            <a href="/projects" class="btn btn-sm secondary">📋 Details</a>
+                            <button class="btn btn-sm secondary" onclick="toggleProjectDetails('${project.name}')">📋 Details</button>
                         </div>
+                        <div class="project-details"></div>
                     </div>
                 </div>
             `;
@@ -933,12 +1195,14 @@
 
         function filterProjects() {
             const statusFilter = document.getElementById('status-filter').value;
+            const weeklyStatusFilter = document.getElementById('weekly-status-filter').value;
             const searchFilter = document.getElementById('search-filter').value.toLowerCase();
 
             filteredProjects = allProjects.filter(project => {
                 const matchesStatus = !statusFilter || project.status === statusFilter;
+                const matchesWeeklyStatus = !weeklyStatusFilter || weeklyStatusData.get(project.name) === weeklyStatusFilter;
                 const matchesSearch = !searchFilter || project.name.toLowerCase().includes(searchFilter);
-                return matchesStatus && matchesSearch;
+                return matchesStatus && matchesWeeklyStatus && matchesSearch;
             });
 
             displayProjects();
@@ -954,6 +1218,270 @@
             const container = document.getElementById('projects-container');
             if (show) {
                 container.innerHTML = '<div class="loading">Loading project data...</div>';
+            }
+        }
+
+        // Track expanded projects and epics
+        const expandedProjects = new Set();
+        const expandedEpics = new Set();
+        const projectDetailsCache = new Map();
+        const weeklyStatusData = new Map();
+
+        async function toggleProjectDetails(projectName) {
+            const projectElement = document.querySelector(`[data-project="${projectName}"]`);
+            if (!projectElement) {
+                console.error(`Project element not found for ${projectName}`);
+                return;
+            }
+
+            const detailsElement = projectElement.querySelector('.project-details');
+            if (!detailsElement) {
+                console.error(`Details element not found for ${projectName}`);
+                return;
+            }
+
+            if (expandedProjects.has(projectName)) {
+                // Collapse
+                detailsElement.classList.remove('expanded');
+                expandedProjects.delete(projectName);
+            } else {
+                // Expand
+                detailsElement.classList.add('expanded');
+                expandedProjects.add(projectName);
+                
+                // Load details if not cached
+                if (!projectDetailsCache.has(projectName)) {
+                    await loadProjectDetails(projectName, detailsElement);
+                } else {
+                    displayProjectDetails(projectName, detailsElement, projectDetailsCache.get(projectName));
+                }
+            }
+        }
+
+        async function loadProjectDetails(projectName, detailsElement) {
+            detailsElement.innerHTML = '<div class="loading-details">Loading project details...</div>';
+            
+            try {
+                const response = await fetch(`/api/project-progress/${encodeURIComponent(projectName)}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    projectDetailsCache.set(projectName, result.data);
+                    displayProjectDetails(projectName, detailsElement, result.data);
+                } else {
+                    detailsElement.innerHTML = `<div class="error">Failed to load details: ${result.error}</div>`;
+                }
+            } catch (error) {
+                console.error('Error loading project details:', error);
+                detailsElement.innerHTML = `<div class="error">Error loading project details: ${error.message}</div>`;
+            }
+        }
+
+        function displayProjectDetails(projectName, detailsElement, projectData) {
+            const { stories = [], tasks = [] } = projectData;
+            
+            // Group stories by status for better organization
+            const storiesByStatus = {
+                'Active': [],
+                'Planning': [],
+                'Review': [],
+                'Done': [],
+                'Idea': []
+            };
+            
+            stories.forEach(story => {
+                const status = story.status || 'Idea';
+                if (storiesByStatus[status]) {
+                    storiesByStatus[status].push(story);
+                } else {
+                    storiesByStatus['Idea'].push(story);
+                }
+            });
+
+            // Group tasks by story context
+            const tasksByStory = {};
+            tasks.forEach(task => {
+                const storyContext = task.storyContext || 'General Tasks';
+                if (!tasksByStory[storyContext]) {
+                    tasksByStory[storyContext] = [];
+                }
+                tasksByStory[storyContext].push(task);
+            });
+
+            let html = `
+                <div class="project-details-header">
+                    <div class="project-details-title">${projectName} - Project Details</div>
+                    <button class="project-details-close" onclick="toggleProjectDetails('${projectName}')">×</button>
+                </div>
+            `;
+
+            // Display stories grouped by status
+            Object.keys(storiesByStatus).forEach(status => {
+                const statusStories = storiesByStatus[status];
+                if (statusStories.length === 0) return;
+                
+                const statusKey = `${projectName}-${status}`;
+                const isExpanded = expandedEpics.has(statusKey);
+                const statusEmoji = getStatusEmoji(status);
+                
+                html += `
+                    <div class="epic-section" data-epic="${statusKey}">
+                        <div class="epic-header" onclick="toggleEpic('${projectName}', '${status}')">
+                            <div class="epic-title">${statusEmoji} ${status} Stories (${statusStories.length})</div>
+                            <button class="epic-toggle ${isExpanded ? 'expanded' : ''}">▶</button>
+                        </div>
+                        <div class="epic-content ${isExpanded ? 'expanded' : 'collapsed'}">
+                            ${statusStories.map(story => createStoryHTML(story, tasksByStory)).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Display orphaned tasks (tasks without story context)
+            const orphanedTasks = tasksByStory['General Tasks'] || [];
+            if (orphanedTasks.length > 0) {
+                const tasksKey = `${projectName}-General Tasks`;
+                const isTasksExpanded = expandedEpics.has(tasksKey);
+                html += `
+                    <div class="epic-section" data-epic="${tasksKey}">
+                        <div class="epic-header" onclick="toggleEpic('${projectName}', 'General Tasks')">
+                            <div class="epic-title">General Tasks</div>
+                            <button class="epic-toggle ${isTasksExpanded ? 'expanded' : ''}">▶</button>
+                        </div>
+                        <div class="epic-content ${isTasksExpanded ? 'expanded' : 'collapsed'}">
+                            <div class="task-list">
+                                ${orphanedTasks.map(task => createTaskHTML(task)).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (stories.length === 0 && tasks.length === 0) {
+                html += '<div class="loading-details">No stories or tasks found for this project.</div>';
+            }
+
+            detailsElement.innerHTML = html;
+        }
+
+        function createStoryHTML(story, tasksByStory) {
+            const storyTasks = tasksByStory[story.title] || [];
+            const completedTasks = storyTasks.filter(task => task.completed).length;
+            const totalTasks = storyTasks.length;
+            
+            return `
+                <div class="story-item">
+                    <div class="story-title">${story.title}</div>
+                    <span class="story-status ${story.status ? story.status.toLowerCase() : 'idea'}">${story.status || 'Idea'}</span>
+                    ${story.description ? `<div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">${story.description}</div>` : ''}
+                    ${totalTasks > 0 ? `
+                        <div class="task-list">
+                            <div style="font-size: 0.8rem; color: #666; margin-bottom: 0.5rem;">
+                                Tasks: ${completedTasks}/${totalTasks} completed
+                            </div>
+                            ${storyTasks.map(task => createTaskHTML(task)).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function createTaskHTML(task) {
+            return `
+                <div class="task-item">
+                    <span class="task-checkbox">${task.completed ? '☑️' : '☐'}</span>
+                    <span class="task-description ${task.completed ? 'completed' : ''}">${task.description}</span>
+                </div>
+            `;
+        }
+
+        async function loadWeeklyStatusData() {
+            try {
+                const response = await fetch('/api/projects');
+                const result = await response.json();
+                
+                if (result.success && result.projects) {
+                    weeklyStatusData.clear();
+                    result.projects.forEach(project => {
+                        if (project.status && project.status !== 'unknown') {
+                            weeklyStatusData.set(project.name, project.status);
+                        }
+                    });
+                    console.log(`📊 Loaded weekly status data for ${weeklyStatusData.size} projects`);
+                    
+                    // Refresh the display to show status badges
+                    if (allProjects.length > 0) {
+                        displayProjects();
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not load weekly status data:', error.message);
+            }
+        }
+
+        function createWeeklyStatusBadge(projectName) {
+            const status = weeklyStatusData.get(projectName);
+            if (!status) return '';
+
+            const statusMap = {
+                'idea': { emoji: '💡', text: 'Idea' },
+                'parking-lot': { emoji: '🅿️', text: 'Parking Lot' },
+                'planning': { emoji: '📝', text: 'Planning' },
+                'active': { emoji: '🚀', text: 'Active' },
+                'paused': { emoji: '⏸️', text: 'Paused' },
+                'released': { emoji: '🌍', text: 'Released' },
+                'done': { emoji: '✅', text: 'Done' }
+            };
+
+            const statusInfo = statusMap[status] || { emoji: '❓', text: status };
+            
+            return `
+                <span class="weekly-status-badge ${status}" title="Weekly Planning Status: ${statusInfo.text}">
+                    ${statusInfo.emoji} ${statusInfo.text}
+                </span>
+            `;
+        }
+
+        function getStatusEmoji(status) {
+            const statusEmojis = {
+                'Active': '🚀',
+                'Planning': '📝',
+                'Review': '👀',
+                'Done': '✅',
+                'Idea': '💡'
+            };
+            return statusEmojis[status] || '📋';
+        }
+
+        function toggleEpic(projectName, statusTitle) {
+            const statusKey = `${projectName}-${statusTitle}`;
+            const statusElement = document.querySelector(`[data-epic="${statusKey}"]`);
+            
+            if (!statusElement) {
+                console.error(`Status element not found for ${statusKey}`);
+                return;
+            }
+
+            const contentElement = statusElement.querySelector('.epic-content');
+            const toggleElement = statusElement.querySelector('.epic-toggle');
+            
+            if (!contentElement || !toggleElement) {
+                console.error(`Status content or toggle element not found for ${statusKey}`);
+                return;
+            }
+
+            if (expandedEpics.has(statusKey)) {
+                // Collapse
+                contentElement.classList.remove('expanded');
+                contentElement.classList.add('collapsed');
+                toggleElement.classList.remove('expanded');
+                expandedEpics.delete(statusKey);
+            } else {
+                // Expand
+                contentElement.classList.remove('collapsed');
+                contentElement.classList.add('expanded');
+                toggleElement.classList.add('expanded');
+                expandedEpics.add(statusKey);
             }
         }
     </script>
