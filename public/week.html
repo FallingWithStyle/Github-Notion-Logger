@@ -2561,6 +2561,50 @@
         document.getElementById('skip-focus-btn').addEventListener('click', skipFocus);
         document.getElementById('edit-focus-btn').addEventListener('click', editFocus);
         
+        // Handle keyboard shortcuts for heart rating
+        function handleHeartRatingShortcut(rating) {
+            const filteredProjects = getFilteredProjects();
+            const currentProject = filteredProjects[currentProjectIndex];
+            
+            if (!currentProject) {
+                console.log('❌ No current project for keyboard shortcut');
+                return;
+            }
+            
+            // Find the heart rating bubble for the current project
+            const heartBubble = document.querySelector(`[data-question="heart"][data-project="${currentProject.name}"] .rating-bubble[data-rating="${rating}"]`);
+            
+            if (heartBubble) {
+                // Simulate click on the heart rating bubble
+                heartBubble.click();
+                
+                // Auto-advance to next project after a short delay
+                setTimeout(() => {
+                    nextProject();
+                }, 150);
+            } else {
+                console.log(`❌ Heart rating bubble not found for rating ${rating} on project ${currentProject.name}`);
+            }
+        }
+        
+        // Add keyboard event listener for number keys
+        document.addEventListener('keydown', function(event) {
+            // Only handle if we're on the weekly planning tab and not in an input field
+            if (document.getElementById('weekly-plan').classList.contains('hidden') || 
+                event.target.tagName === 'INPUT' || 
+                event.target.tagName === 'TEXTAREA' || 
+                event.target.tagName === 'SELECT') {
+                return;
+            }
+            
+            // Handle number keys 1-5 (both from number row and numpad)
+            if (event.key >= '1' && event.key <= '5') {
+                event.preventDefault(); // Prevent default behavior
+                const rating = parseInt(event.key);
+                handleHeartRatingShortcut(rating);
+            }
+        });
+
         // Load data when page loads
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedData(); // Load saved data first
