@@ -14,10 +14,130 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f8f9fa;
+        }
+        
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .sidebar-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sidebar-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .sidebar-emoji {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .sidebar-project-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .sidebar-project-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 2px;
+        }
+        
+        .sidebar-project-score {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .sidebar-project-status {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .tied-projects-group {
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 10px;
+            background: rgba(231, 76, 60, 0.05);
+        }
+        
+        .tied-projects-group .sidebar-item {
+            margin-bottom: 5px;
+        }
+        
+        .tied-projects-group .sidebar-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .tied-projects-group-header {
+            font-size: 11px;
+            font-weight: 600;
+            color: #e74c3c;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            text-align: center;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: static;
+            }
         }
         
         .header {
@@ -917,74 +1037,85 @@
         <div class="status" id="status">Ready to load project data</div>
     </div>
     
-    <div id="loading" class="loading">
-        <p>Loading project data...</p>
-    </div>
-    
-    <div id="error" class="error hidden"></div>
-    
-    <div id="progress-indicator" class="progress-indicator hidden">
-        <div class="progress-controls">
-            <span id="progress-text"></span>
-            <label class="ignore-done-checkbox">
-                <input type="checkbox" id="ignore-done-projects" checked>
-                <span class="checkmark"></span>
-                Ignore done/retired projects
-            </label>
-        </div>
-    </div>
-    
-    <div id="project-container" class="project-card hidden"></div>
-    
-            <div id="completion-message" class="completion-message hidden">
-            <div class="completion-indicator">⚠️ Some Projects Need Ratings</div>
-            <p id="completion-status" style="margin-top: 10px; font-size: 14px;">Click "Generate Weekly Plan" to see your summary.</p>
-            <button id="go-back-btn" class="btn" onclick="goBackToIncomplete()" style="margin-top: 10px; font-size: 12px; padding: 8px 16px;">← Go Back to Incomplete</button>
-        </div>
-    
-    <div id="weekly-plan" class="weekly-plan hidden">
-        <h2>📋 Your Weekly Project Plan</h2>
-        <div id="plan-content"></div>
-        
-        <!-- Primary and Tangent Focus Input Section -->
-        <div id="focus-input-section" class="focus-input-section hidden">
-            <h3>🎯 Declare Your Weekly Focus</h3>
-            <p>After reviewing your plan, declare your Primary and Tangent focus for this week:</p>
+    <div class="main-layout">
+        <div class="main-content">
+            <div id="loading" class="loading">
+                <p>Loading project data...</p>
+            </div>
             
-            <div class="focus-inputs">
-                <div class="focus-input">
-                    <label for="primary-focus">🎯 Primary Focus:</label>
-                    <input type="text" id="primary-focus" placeholder="What's your main focus this week?" maxlength="200">
-                    <small>Your primary project or goal for the week</small>
+            <div id="error" class="error hidden"></div>
+            
+            <div id="progress-indicator" class="progress-indicator hidden">
+                <div class="progress-controls">
+                    <span id="progress-text"></span>
+                    <label class="ignore-done-checkbox">
+                        <input type="checkbox" id="ignore-done-projects" checked>
+                        <span class="checkmark"></span>
+                        Ignore done/retired projects
+                    </label>
+                </div>
+            </div>
+            
+            <div id="project-container" class="project-card hidden"></div>
+            
+            <div id="completion-message" class="completion-message hidden">
+                <div class="completion-indicator">⚠️ Some Projects Need Ratings</div>
+                <p id="completion-status" style="margin-top: 10px; font-size: 14px;">Click "Generate Weekly Plan" to see your summary.</p>
+                <button id="go-back-btn" class="btn" onclick="goBackToIncomplete()" style="margin-top: 10px; font-size: 12px; padding: 8px 16px;">← Go Back to Incomplete</button>
+            </div>
+            
+            <div id="weekly-plan" class="weekly-plan hidden">
+                <h2>📋 Your Weekly Project Plan</h2>
+                <div id="plan-content"></div>
+                
+                <!-- Primary and Tangent Focus Input Section -->
+                <div id="focus-input-section" class="focus-input-section hidden">
+                    <h3>🎯 Declare Your Weekly Focus</h3>
+                    <p>After reviewing your plan, declare your Primary and Tangent focus for this week:</p>
+                    
+                    <div class="focus-inputs">
+                        <div class="focus-input">
+                            <label for="primary-focus">🎯 Primary Focus:</label>
+                            <input type="text" id="primary-focus" placeholder="What's your main focus this week?" maxlength="200">
+                            <small>Your primary project or goal for the week</small>
+                        </div>
+                        
+                        <div class="focus-input">
+                            <label for="tangent-focus">🌟 Tangent Focus:</label>
+                            <input type="text" id="tangent-focus" placeholder="What's your tangent/exploration focus?" maxlength="200">
+                            <small>Something you want to explore or work on when you have spare time</small>
+                        </div>
+                    </div>
+                    
+                    <div class="focus-actions">
+                        <button id="save-focus-btn" class="btn">💾 Save Focus</button>
+                        <button id="skip-focus-btn" class="btn" style="background: #95a5a6;">⏭️ Skip for Now</button>
+                    </div>
                 </div>
                 
-                <div class="focus-input">
-                    <label for="tangent-focus">🌟 Tangent Focus:</label>
-                    <input type="text" id="tangent-focus" placeholder="What's your tangent/exploration focus?" maxlength="200">
-                    <small>Something you want to explore or work on when you have spare time</small>
+                <!-- Saved Focus Display -->
+                <div id="saved-focus-display" class="saved-focus-display hidden">
+                    <h3>🎯 Your Weekly Focus</h3>
+                    <div class="focus-display">
+                        <div class="focus-item primary">
+                            <h4>🎯 Primary Focus</h4>
+                            <p id="saved-primary-focus"></p>
+                        </div>
+                        <div class="focus-item tangent">
+                            <h4>🌟 Tangent Focus</h4>
+                            <p id="saved-tangent-focus"></p>
+                        </div>
+                    </div>
+                    <button id="edit-focus-btn" class="btn" style="background: #f39c12;">✏️ Edit Focus</button>
                 </div>
-            </div>
-            
-            <div class="focus-actions">
-                <button id="save-focus-btn" class="btn">💾 Save Focus</button>
-                <button id="skip-focus-btn" class="btn" style="background: #95a5a6;">⏭️ Skip for Now</button>
             </div>
         </div>
         
-        <!-- Saved Focus Display -->
-        <div id="saved-focus-display" class="saved-focus-display hidden">
-            <h3>🎯 Your Weekly Focus</h3>
-            <div class="focus-display">
-                <div class="focus-item primary">
-                    <h4>🎯 Primary Focus</h4>
-                    <p id="saved-primary-focus"></p>
-                </div>
-                <div class="focus-item tangent">
-                    <h4>🌟 Tangent Focus</h4>
-                    <p id="saved-tangent-focus"></p>
-                </div>
+        <div class="sidebar">
+            <h3>Project Priority</h3>
+            <div id="sidebar-items" class="sidebar-items">
+                <!-- Project items will be populated by JavaScript -->
             </div>
-            <button id="edit-focus-btn" class="btn" style="background: #f39c12;">✏️ Edit Focus</button>
         </div>
     </div>
     
@@ -1225,6 +1356,9 @@
                     // Show the current project after data is loaded
                     showCurrentProject();
                     
+                    // Update sidebar with project priority data
+                    updateSidebar();
+                    
                     if (projectData.length === 0) {
                         updateStatus('No project activity found in the last 28 days. Try fetching data from Notion first.');
                         document.getElementById('generate-plan-btn').disabled = true;
@@ -1241,6 +1375,7 @@
                     } else {
                         currentProjectIndex = 0;
                         showCurrentProject();
+                        updateSidebar();
                         updateStatus(`Loaded ${projectData.length} projects. Review them one by one.`);
                         document.getElementById('generate-plan-btn').disabled = true;
                     }
@@ -1429,6 +1564,7 @@
                     // Restore normal progress indicator
                     updateProgressIndicator();
                     showCurrentProject();
+                    updateSidebar();
                     return;
                 }
             }
@@ -1560,6 +1696,7 @@
             if (currentProjectIndex < filteredProjects.length - 1) {
                 currentProjectIndex++;
                 showCurrentProject();
+                updateSidebar();
             } else {
                 showCompletionMessage();
             }
@@ -1570,6 +1707,7 @@
             if (currentProjectIndex > 0) {
                 currentProjectIndex--;
                 showCurrentProject();
+                updateSidebar();
             }
         }
         
@@ -1684,6 +1822,7 @@
                 userAnswers[projectName].category = category;
                 
                 saveData();
+                updateSidebar();
             }
         }
         
@@ -1714,6 +1853,9 @@
                 console.log(`🔄 About to call saveData()...`);
                 saveData();
                 console.log(`💾 Called saveData() for status update`);
+                
+                // Update sidebar
+                updateSidebar();
                 
                 // Verify the update worked
                 console.log(`🔄 Verification - project.status: ${project.status}`);
@@ -1757,7 +1899,166 @@
                 
                 // Save all data
                 saveData();
+                updateSidebar();
             }
+        }
+        
+        // Update sidebar with project priority data
+        function updateSidebar() {
+            const sidebarContainer = document.getElementById('sidebar-items');
+            if (!sidebarContainer) return;
+            
+            // Calculate priority scores for all projects
+            const projectsWithScores = projectData.map(project => {
+                const answers = userAnswers[project.name] || {};
+                const headScore = parseInt(answers.head) || 0;
+                const heartScore = parseInt(answers.heart) || 0;
+                const basePriorityScore = headScore + heartScore;
+                
+                // Add tie-breaking factors
+                let tieBreakBonus = 0;
+                
+                // Status bonus
+                if (project.status === 'active') {
+                    tieBreakBonus += 1.0;
+                } else if (project.status === 'planning') {
+                    tieBreakBonus += 0.5;
+                }
+                
+                // Recency bonus
+                if (project.lastUpdated) {
+                    const daysSinceUpdate = (Date.now() - new Date(project.lastUpdated).getTime()) / (1000 * 60 * 60 * 24);
+                    if (daysSinceUpdate <= 7) {
+                        tieBreakBonus += 0.5;
+                    } else if (daysSinceUpdate <= 30) {
+                        tieBreakBonus += 0.2;
+                    }
+                }
+                
+                // Progress bonus
+                if (project.commitCount && project.commitCount > 0) {
+                    tieBreakBonus += 0.2;
+                }
+                
+                const priorityScore = basePriorityScore + tieBreakBonus;
+                
+                return {
+                    ...project,
+                    headScore,
+                    heartScore,
+                    basePriorityScore,
+                    priorityScore: parseFloat(priorityScore.toFixed(2)),
+                    status: project.status || 'unknown'
+                };
+            });
+            
+            // Sort by priority score (highest first)
+            const sortedProjects = projectsWithScores.sort((a, b) => b.priorityScore - a.priorityScore);
+            
+            // Group projects by priority score
+            const groupedProjects = {};
+            sortedProjects.forEach(project => {
+                const score = project.priorityScore;
+                if (!groupedProjects[score]) {
+                    groupedProjects[score] = [];
+                }
+                groupedProjects[score].push(project);
+            });
+            
+            // Generate sidebar HTML with tied projects grouping
+            let sidebarHTML = '';
+            Object.keys(groupedProjects).forEach(score => {
+                const projects = groupedProjects[score];
+                const isTied = projects.length > 1;
+                
+                if (isTied) {
+                    // Create tied projects group
+                    sidebarHTML += `
+                        <div class="tied-projects-group">
+                            <div class="tied-projects-group-header">
+                                Tied at ${score} points (${projects.length} projects)
+                            </div>
+                            ${projects.map(project => {
+                                const projectColor = getProjectColor(project.name);
+                                const statusIcon = getStatusIcon(project.status);
+                                
+                                return `
+                                    <div class="sidebar-item">
+                                        <div class="sidebar-emoji" style="background-color: ${projectColor}">
+                                            ${statusIcon}
+                                        </div>
+                                        <div class="sidebar-project-info">
+                                            <div class="sidebar-project-name">${project.name}</div>
+                                            <div class="sidebar-project-score">Score: ${project.priorityScore}</div>
+                                            <div class="sidebar-project-status">${getStatusDisplay(project.status)}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                } else {
+                    // Single project (not tied)
+                    const project = projects[0];
+                    const projectColor = getProjectColor(project.name);
+                    const statusIcon = getStatusIcon(project.status);
+                    
+                    sidebarHTML += `
+                        <div class="sidebar-item">
+                            <div class="sidebar-emoji" style="background-color: ${projectColor}">
+                                ${statusIcon}
+                            </div>
+                            <div class="sidebar-project-info">
+                                <div class="sidebar-project-name">${project.name}</div>
+                                <div class="sidebar-project-score">Score: ${project.priorityScore}</div>
+                                <div class="sidebar-project-status">${getStatusDisplay(project.status)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            sidebarContainer.innerHTML = sidebarHTML;
+        }
+        
+        // Get status icon for project
+        function getStatusIcon(status) {
+            const statusIcons = {
+                'active': '🚀',
+                'planning': '📋',
+                'idea': '💡',
+                'paused': '⏸️',
+                'unknown': '❓',
+                'done': '✅',
+                'released': '🌍',
+                'parking-lot': '🅿️',
+                'abandoned': '🗑️'
+            };
+            return statusIcons[status] || '❓';
+        }
+        
+        // Get status display text
+        function getStatusDisplay(status) {
+            const statusDisplay = {
+                'active': 'Active',
+                'planning': 'Planning',
+                'idea': 'Idea',
+                'paused': 'Paused',
+                'unknown': 'Unknown',
+                'done': 'Done',
+                'released': 'Released',
+                'parking-lot': 'Parking Lot',
+                'abandoned': 'Abandoned'
+            };
+            return statusDisplay[status] || 'Unknown';
+        }
+        
+        // Get project color (reuse existing function from activity view)
+        function getProjectColor(projectName) {
+            if (projectColors[projectName]) {
+                return projectColors[projectName].hex;
+            }
+            return '#95a5a6'; // Default gray color
         }
         
         // Update user answer
