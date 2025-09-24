@@ -59,24 +59,36 @@
             gap: 8px;
             font-size: 14px;
             padding: 8px 12px;
-            border-radius: 6px;
-            transition: background-color 0.2s ease;
+            border-radius: 20px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            margin-bottom: 6px;
+            position: relative;
+            overflow: hidden;
         }
         
         .sidebar-item:hover {
-            background-color: #f8f9fa;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .sidebar-item:active {
+            transform: translateY(0);
         }
         
         .sidebar-emoji {
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 14px;
             color: white;
             font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            z-index: 2;
         }
         
         .sidebar-project-info {
@@ -86,18 +98,27 @@
         
         .sidebar-project-name {
             font-weight: 600;
-            color: #2c3e50;
+            color: white;
             margin-bottom: 2px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+            position: relative;
         }
         
         .sidebar-project-score {
             font-size: 12px;
-            color: #7f8c8d;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+            position: relative;
         }
         
         .sidebar-project-status {
             font-size: 12px;
-            color: #7f8c8d;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+            position: relative;
         }
         
         .tied-projects-group {
@@ -1986,8 +2007,8 @@
                                 const statusIcon = getStatusIcon(project.status);
                                 
                                 return `
-                                    <div class="sidebar-item">
-                                        <div class="sidebar-emoji" style="background-color: ${projectColor}">
+                                    <div class="sidebar-item" style="background-color: ${projectColor}" onclick="navigateToProject('${project.name}')">
+                                        <div class="sidebar-emoji">
                                             ${statusIcon}
                                         </div>
                                         <div class="sidebar-project-info">
@@ -2007,8 +2028,8 @@
                     const statusIcon = getStatusIcon(project.status);
                     
                     sidebarHTML += `
-                        <div class="sidebar-item">
-                            <div class="sidebar-emoji" style="background-color: ${projectColor}">
+                        <div class="sidebar-item" style="background-color: ${projectColor}" onclick="navigateToProject('${project.name}')">
+                            <div class="sidebar-emoji">
                                 ${statusIcon}
                             </div>
                             <div class="sidebar-project-info">
@@ -2062,6 +2083,32 @@
                 return projectColors[projectName].hex;
             }
             return '#95a5a6'; // Default gray color
+        }
+        
+        // Navigate to a specific project in the review interface
+        function navigateToProject(projectName) {
+            console.log(`🎯 Navigating to project: ${projectName}`);
+            
+            // Find the project index in the filtered projects
+            const filteredProjects = getFilteredProjects();
+            const projectIndex = filteredProjects.findIndex(project => project.name === projectName);
+            
+            if (projectIndex !== -1) {
+                // Set the current project index and show it
+                currentProjectIndex = projectIndex;
+                showCurrentProject();
+                updateSidebar();
+                
+                // Scroll to the project container
+                const projectContainer = document.getElementById('project-container');
+                if (projectContainer) {
+                    projectContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                
+                console.log(`✅ Navigated to project ${projectName} (index: ${projectIndex})`);
+            } else {
+                console.warn(`⚠️ Project ${projectName} not found in filtered projects`);
+            }
         }
         
         // Update user answer
