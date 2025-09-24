@@ -539,7 +539,17 @@
       },
       "category": "Miscellaneous / Standalone",
       "assignedAt": "2025-09-04T20:06:51.946Z"
+    },
+    "Audventr-Warlock": {
+      "hex": "#87ed5e",
+      "hsl": {
+        "h": 103,
+        "s": 80,
+        "l": 65
+      },
+      "category": "Writing & Story Tools",
+      "assignedAt": "2025-09-13T15:46:27.017Z"
     }
   },
-  "lastUpdated": "2025-09-04T20:16:03.539Z"
+  "lastUpdated": "2025-09-13T15:46:27.017Z"
 }

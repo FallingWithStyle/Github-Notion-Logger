@@ -1,38 +1,136 @@
 [
   {
+    "date": "2025-05-29",
+    "projects": {
+      "Avoros-Dungeon": 90
+    }
+  },
+  {
+    "date": "2025-05-30",
+    "projects": {
+      "Avoros-Dungeon": 157
+    }
+  },
+  {
+    "date": "2025-05-31",
+    "projects": {
+      "Avoros-Dungeon": 170
+    }
+  },
+  {
+    "date": "2025-06-01",
+    "projects": {
+      "Avoros-Dungeon": 3
+    }
+  },
+  {
+    "date": "2025-06-02",
+    "projects": {
+      "Avoros-Dungeon": 24
+    }
+  },
+  {
+    "date": "2025-06-03",
+    "projects": {
+      "Avoros-Dungeon": 30
+    }
+  },
+  {
+    "date": "2025-06-04",
+    "projects": {
+      "Avoros-Dungeon": 18
+    }
+  },
+  {
+    "date": "2025-06-06",
+    "projects": {
+      "Avoros-Dungeon": 2
+    }
+  },
+  {
+    "date": "2025-06-07",
+    "projects": {
+      "Avoros-Dungeon": 1
+    }
+  },
+  {
     "date": "2025-06-09",
     "projects": {
-      "Avoros-Dungeon": 7
+      "Avoros-Dungeon": 8
     }
   },
   {
     "date": "2025-06-10",
     "projects": {
-      "Avoros-Dungeon": 4
+      "Avoros-Dungeon": 5
+    }
+  },
+  {
+    "date": "2025-06-13",
+    "projects": {
+      "Avoros-Dungeon": 1
+    }
+  },
+  {
+    "date": "2025-06-15",
+    "projects": {
+      "Avoros-Dungeon": 30
+    }
+  },
+  {
+    "date": "2025-06-16",
+    "projects": {
+      "Avoros-Dungeon": 14,
+      "Kitch": 12
     }
   },
   {
     "date": "2025-06-17",
     "projects": {
-      "Kitch": 2
+      "Kitch": 72
+    }
+  },
+  {
+    "date": "2025-06-18",
+    "projects": {
+      "Kitch": 44
+    }
+  },
+  {
+    "date": "2025-06-19",
+    "projects": {
+      "Kitch": 70
+    }
+  },
+  {
+    "date": "2025-06-20",
+    "projects": {
+      "Kitch": 106
     }
   },
   {
     "date": "2025-06-21",
     "projects": {
-      "Kitch": 54
+      "Avoros-Dungeon": 79,
+      "Kitch": 61
     }
   },
   {
     "date": "2025-06-22",
     "projects": {
-      "Avoros-Dungeon": 42
+      "Avoros-Dungeon": 70
     }
   },
   {
     "date": "2025-06-23",
     "projects": {
       "Avoros-Dungeon": 97
+    }
+  },
+  {
+    "date": "2025-06-24",
+    "projects": {
+      "familiar-things": 6
     }
   },
   {
@@ -198,12 +296,14 @@
   {
     "date": "2025-08-01",
     "projects": {
+      "Audventr-Wizard": 24,
       "glyph-server": 9
     }
   },
   {
     "date": "2025-08-02",
     "projects": {
+      "Audventr-Wizard": 4,
       "Kitch": 4,
       "glyph-server": 24
     }
@@ -225,12 +325,14 @@
   {
     "date": "2025-08-05",
     "projects": {
+      "Github-Notion-Logger": 11,
       "Kitch": 16
     }
   },
   {
     "date": "2025-08-06",
     "projects": {
+      "Github-Notion-Logger": 13,
       "Kitch": 9,
       "Friend-Party": 4
     }
@@ -238,6 +340,8 @@
   {
     "date": "2025-08-07",
     "projects": {
+      "Audventr-Wizard": 2,
+      "Github-Notion-Logger": 2,
       "Kitch": 17,
       "glyph-server": 7,
       "Magic-Quill": 1,
@@ -247,6 +351,7 @@
   {
     "date": "2025-08-08",
     "projects": {
+      "Audventr-Wizard": 1,
       "Kitch": 25,
       "glyph-server": 17,
       "Magic-Quill": 1,
@@ -256,18 +361,22 @@
   {
     "date": "2025-08-09",
     "projects": {
+      "Audventr-Wizard": 16,
       "glyph-server": 5
     }
   },
   {
     "date": "2025-08-10",
     "projects": {
+      "Audventr-Wizard": 16,
       "glyph-server": 14
     }
   },
   {
     "date": "2025-08-11",
     "projects": {
+      "Audventr-Wizard": 9,
+      "Github-Notion-Logger": 2,
       "glyph-server": 15,
       "Magic-Quill": 3
     }
@@ -282,6 +391,8 @@
   {
     "date": "2025-08-13",
     "projects": {
+      "Daily-Dungeon": 1,
+      "roll-call": 1,
       "glyph-server": 1,
       "Magic-Quill": 34
     }
@@ -289,18 +400,21 @@
   {
     "date": "2025-08-14",
     "projects": {
+      "Github-Notion-Logger": 4,
       "Magic-Quill": 13
     }
   },
   {
     "date": "2025-08-15",
     "projects": {
+      "Github-Notion-Logger": 1,
       "Magic-Quill": 12
     }
   },
   {
     "date": "2025-08-16",
     "projects": {
+      "Audventr-Warlock": 9,
       "Magic-Quill": 11,
       "Audventr": 1
     }
@@ -308,6 +422,7 @@
   {
     "date": "2025-08-17",
     "projects": {
+      "Audventr-Warlock": 9,
       "Magic-Quill": 13,
       "Audventr": 2
     }
@@ -327,6 +442,7 @@
   {
     "date": "2025-08-20",
     "projects": {
+      "VoiceHub": 15,
       "glyph-server": 1,
       "Magic-Quill": 8
     }
@@ -334,6 +450,7 @@
   {
     "date": "2025-08-21",
     "projects": {
+      "Crawler-s-Contract": 2,
       "Magic-Quill": 11,
       "Friend-Party": 7
     }
@@ -341,15 +458,23 @@
   {
     "date": "2025-08-22",
     "projects": {
+      "Crawler-s-Contract": 55,
+      "avoros-hub": 1,
       "Magic-Quill": 1,
       "Friend-Party": 6
     }
   },
   {
+    "date": "2025-08-23",
+    "projects": {
+      "Github-Notion-Logger": 7
+    }
+  },
+  {
     "date": "2025-08-24",
     "projects": {
-      "Magic-Quill": 1,
-      "Github-Notion-Logger": 22
+      "Github-Notion-Logger": 29,
+      "Magic-Quill": 1
     }
   },
   {
@@ -392,8 +517,8 @@
   {
     "date": "2025-08-30",
     "projects": {
+      "VoiceHub": 5,
       "Magic-Quill": 3,
-      "VoiceHub": 3,
       "Audventr": 14,
       "Github-Notion-Logger": 11,
       "Friend-Party": 1
@@ -433,7 +558,6 @@
   {
     "date": "2025-09-04",
     "projects": {
-      "Github-Notion-Logger": 2,
       "Crawler-s-Contract": 2,
       "Daily-Dungeon": 2,
       "glyph-server": 1,
@@ -443,7 +567,8 @@
       "Audventr": 2,
       "VoiceHub": 10,
       "roll-call": 3,
-      "Friend-Party": 2
+      "Friend-Party": 2,
+      "Github-Notion-Logger": 2
     }
   },
   {
@@ -468,19 +593,47 @@
   {
     "date": "2025-09-07",
     "projects": {
+      "Wanderjob.com": 5,
       "roll-call": 3
     }
   },
   {
     "date": "2025-09-08",
     "projects": {
-      "Github-Notion-Logger": 10
+      "Wanderjob.com": 15,
+      "Github-Notion-Logger": 13,
+      "Audventr": 1,
+      "Wikipedia-to-Notion": 2
     }
   },
   {
     "date": "2025-09-09",
     "projects": {
-      "Github-Notion-Logger": 8
+      "VoiceHub": 13,
+      "Github-Notion-Logger": 9,
+      "audventr-story-nexus": 2,
+      "Audventr": 8
+    }
+  },
+  {
+    "date": "2025-09-10",
+    "projects": {
+      "Audventr": 40,
+      "Devra": 31
+    }
+  },
+  {
+    "date": "2025-09-11",
+    "projects": {
+      "Devra": 6,
+      "Audventr": 12
+    }
+  },
+  {
+    "date": "2025-09-12",
+    "projects": {
+      "Wikipedia-to-Notion": 1,
+      "Devra": 1
     }
   }
 ]
