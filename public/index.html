@@ -687,7 +687,7 @@
             square.className = 'commit-square';
             square.style.backgroundColor = getProjectColor(normalizedName);
             
-            // Get project category for tooltip
+            // Get project category for tooltip from the loaded project data
             const colorData = projectColors[normalizedName];
             const category = colorData?.category || 'Unknown Category';
             const tooltipText = `${normalizedName} (${category})`;

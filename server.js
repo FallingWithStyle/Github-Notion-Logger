@@ -1096,6 +1096,55 @@ app.get('/api/prd-stories', asyncHandler(async (req, res) => {
       }
     }
     
+    // Load project categories and status from weekly planning data
+    const projectMetadata = {};
+    try {
+      const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+      if (fs.existsSync(weeklyPlansPath)) {
+        const weeklyPlansData = fs.readFileSync(weeklyPlansPath, 'utf8');
+        const weeklyPlans = JSON.parse(weeklyPlansData);
+        
+        // Get the most recent weekly plan
+        if (weeklyPlans.length > 0) {
+          const latestPlan = weeklyPlans[weeklyPlans.length - 1];
+          const userAnswers = latestPlan.planData?.userAnswers || {};
+          
+          // Build project metadata map
+          Object.entries(userAnswers).forEach(([projectName, projectData]) => {
+            if (projectData.category || projectData.status) {
+              projectMetadata[projectName] = {
+                category: projectData.category || 'Unknown Category',
+                status: projectData.status || 'unknown'
+              };
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not load project metadata from weekly plans:', error.message);
+    }
+    
+    // Add project metadata to stories
+    deduplicatedStories.forEach(story => {
+      const projectName = story.projectName || 'Unknown';
+      let metadata = projectMetadata[projectName];
+      
+      // If no direct match, try to find a match by extracting the base project name
+      if (!metadata) {
+        // Try to extract base project name from PRD titles
+        const baseName = projectName.replace(/\s+Product\s+Requirements\s+Document\s+\(PRD\)\s*v?\d*$/i, '').trim();
+        metadata = projectMetadata[baseName];
+      }
+      
+      if (metadata) {
+        story.projectCategory = metadata.category;
+        story.projectStatus = metadata.status;
+      } else {
+        story.projectCategory = 'Unknown Category';
+        story.projectStatus = 'unknown';
+      }
+    });
+    
     // Sort stories by project, then by status, then by priority
     deduplicatedStories.sort((a, b) => {
       // First by project name
@@ -1346,6 +1395,34 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
       cachedRepoMap.set(cachedRepo.repository, cachedRepo);
     });
     
+    // Load project categories and status from weekly planning data
+    const projectMetadata = {};
+    try {
+      const weeklyPlansPath = path.join(DATA_DIR, 'weekly-plans.json');
+      if (fs.existsSync(weeklyPlansPath)) {
+        const weeklyPlansData = fs.readFileSync(weeklyPlansPath, 'utf8');
+        const weeklyPlans = JSON.parse(weeklyPlansData);
+        
+        // Get the most recent weekly plan
+        if (weeklyPlans.length > 0) {
+          const latestPlan = weeklyPlans[weeklyPlans.length - 1];
+          const userAnswers = latestPlan.planData?.userAnswers || {};
+          
+          // Build project metadata map
+          Object.entries(userAnswers).forEach(([projectName, projectData]) => {
+            if (projectData.category || projectData.status) {
+              projectMetadata[projectName] = {
+                category: projectData.category || 'Unknown Category',
+                status: projectData.status || 'unknown'
+              };
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not load project metadata from weekly plans:', error.message);
+    }
+    
     // Build repository list with cache status
     const repositories = await Promise.all(filteredRepos.map(async repo => {
       const cachedRepo = cachedRepoMap.get(repo.name);
@@ -1407,6 +1484,19 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
           };
         }
         
+        // Get project metadata
+        let metadata = projectMetadata[repo.name];
+        
+        // If no direct match, try to find a match by extracting the base project name
+        if (!metadata) {
+          // Try to extract base project name from PRD titles
+          const baseName = repo.name.replace(/\s+Product\s+Requirements\s+Document\s+\(PRD\)\s*v?\d*$/i, '').trim();
+          metadata = projectMetadata[baseName];
+        }
+        
+        const projectCategory = metadata?.category || 'Unknown Category';
+        const projectStatus = metadata?.status || 'unknown';
+        
         return {
           name: repo.name,
           status: status,
@@ -1416,10 +1506,25 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
           progress: cachedRepo.progress || 0,
           progressDetails: progressDetails,
           lastUpdated: cachedRepo.lastScanned || repo.updated_at,
-          cached: true
+          cached: true,
+          category: projectCategory,
+          projectStatus: projectStatus
         };
       } else {
         // Repository has not been processed
+        // Get project metadata
+        let metadata = projectMetadata[repo.name];
+        
+        // If no direct match, try to find a match by extracting the base project name
+        if (!metadata) {
+          // Try to extract base project name from PRD titles
+          const baseName = repo.name.replace(/\s+Product\s+Requirements\s+Document\s+\(PRD\)\s*v?\d*$/i, '').trim();
+          metadata = projectMetadata[baseName];
+        }
+        
+        const projectCategory = metadata?.category || 'Unknown Category';
+        const projectStatus = metadata?.status || 'unknown';
+        
         return {
           name: repo.name,
           status: 'not-processed',
@@ -1429,7 +1534,9 @@ app.get('/api/prd-stories/repositories', asyncHandler(async (req, res) => {
           progress: 0,
           progressDetails: null,
           lastUpdated: repo.updated_at,
-          cached: false
+          cached: false,
+          category: projectCategory,
+          projectStatus: projectStatus
         };
       }
     }));
