@@ -1419,7 +1419,7 @@
             
             container.innerHTML = `
                 <div class="project-header">
-                    <div class="project-emoji">${getProjectColor(project.name)}</div>
+                    <div class="project-emoji">${getProjectColorSquare(project.name)}</div>
                     <div class="project-info">
                         <h2>${project.name}</h2>
                     </div>
@@ -1775,8 +1775,8 @@
             });
         }
         
-        // Get project color
-        function getProjectColor(projectName) {
+        // Get project color square (HTML)
+        function getProjectColorSquare(projectName) {
             const colorData = projectColors[projectName];
             if (colorData && colorData.hex) {
                 const category = colorData.category || 'Unknown Category';
@@ -1966,8 +1966,11 @@
             });
             
             // Generate sidebar HTML with tied projects grouping
+            // Sort scores in descending order (highest first)
+            const sortedScores = Object.keys(groupedProjects).sort((a, b) => parseFloat(b) - parseFloat(a));
+            
             let sidebarHTML = '';
-            Object.keys(groupedProjects).forEach(score => {
+            sortedScores.forEach(score => {
                 const projects = groupedProjects[score];
                 const isTied = projects.length > 1;
                 
