@@ -79,10 +79,14 @@ class DataConsistencyService {
       ...reconciledData,
       name: githubData.name || reconciledData.name,
       repository: githubData.name || reconciledData.repository,
-      lastActivity: githubData.updated_at || reconciledData.lastActivity,
-      totalCommits: githubData.totalCommits || reconciledData.totalCommits,
+      lastActivity: githubData.lastActivity || reconciledData.lastActivity,
+      totalCommits: githubData.commits || reconciledData.totalCommits,
       hasPrd: githubData.hasPrd !== undefined ? githubData.hasPrd : reconciledData.hasPrd,
       hasTaskList: githubData.hasTaskList !== undefined ? githubData.hasTaskList : reconciledData.hasTaskList,
+      // GitHub metrics for health calculation
+      githubCommits: githubData.commits || 0,
+      githubPRs: githubData.prs || 0,
+      githubIssues: githubData.issues || 0,
       // GitHub data source
       _githubData: {
         lastUpdated: new Date(),
@@ -276,7 +280,11 @@ class DataConsistencyService {
       prdStatus: data.hasPrd ? 'present' : 'missing',
       taskListStatus: data.hasTaskList ? 'present' : 'missing',
       completionVelocity: this.calculateCompletionVelocity(data),
-      riskFactors: []
+      riskFactors: [],
+      // Add GitHub data for health calculation
+      githubCommits: data.githubCommits || 0,
+      githubPRs: data.githubPRs || 0,
+      githubIssues: data.githubIssues || 0
     };
 
     const healthModel = new ProjectHealthModel(healthData);
@@ -307,7 +315,13 @@ class DataConsistencyService {
     
     const overviewData = {
       ...data,
-      health: healthModel.toJSON()
+      health: {
+        ...healthModel.toJSON(),
+        // Include GitHub data so health factors are preserved
+        githubCommits: data.githubCommits || 0,
+        githubPRs: data.githubPRs || 0,
+        githubIssues: data.githubIssues || 0
+      }
     };
 
     return new ProjectOverviewModel(overviewData);

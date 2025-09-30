@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress - Github Notion Logger</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/commit-logger-favicon_1.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/commit-logger-favicon_2.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/commit-logger-favicon_3.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/commit-logger-favicon_3.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/commit-logger-favicon_3.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-links {
+            background: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: #667eea;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: #f0f2ff;
+        }
+
+        .nav-link.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .controls {
+            background: white;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 1200px;
+        }
+
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .controls-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.secondary {
+            background: #6c757d;
+        }
+
+        .btn.secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn.danger {
+            background: #dc3545;
+        }
+
+        .btn.danger:hover {
+            background: #c82333;
+        }
+
+        .btn.small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            min-width: 120px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding-left: 2.5rem;
+            width: 250px;
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .status {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 6px;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .progress-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .overview-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-description {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+        }
+
+        .projects-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .project-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .project-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .project-item.high-priority {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .project-item.medium-priority {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+
+        .project-item.low-priority {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .project-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .project-priority {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .priority-high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .priority-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .priority-low {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .project-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .blocked-items {
+            margin-top: 1rem;
+        }
+
+        .blocked-items h4 {
+            font-size: 0.9rem;
+            color: #dc3545;
+            margin-bottom: 0.5rem;
+        }
+
+        .blocked-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .blocked-item {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin: 0.25rem 0;
+        }
+
+        .stale-items {
+            margin-top: 1rem;
+        }
+
+        .stale-items h4 {
+            font-size: 0.9rem;
+            color: #ffc107;
+            margin-bottom: 0.5rem;
+        }
+
+        .stale-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .stale-item {
+            background: #fff3cd;
+            color: #856404;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin: 0.25rem 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #f8f9fa;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .current-page {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e9ecef;
+            margin-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            background: #f8f9fa;
+        }
+
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                margin: 1rem;
+                padding: 1rem;
+            }
+            
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .overview-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .project-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Github Notion Logger</h1>
+        <p>Progress Tracking Dashboard</p>
+    </div>
+    
+    <div class="nav-links">
+        <a href="/" class="nav-link">📊 Activity View</a>
+        <a href="/week" class="nav-link">📅 Weekly Planning</a>
+        <a href="/projects" class="nav-link">📁 Projects</a>
+        <a href="/progress" class="nav-link active">📊 Progress</a>
+    </div>
+    
+    <div class="controls">
+        <div class="controls-header">
+            <h2 class="controls-title">Progress Analytics</h2>
+            <div>
+                <button id="refresh-btn" class="btn">🔄 Refresh</button>
+                <button id="clear-cache-btn" class="btn secondary">🗑️ Clear Cache</button>
+            </div>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-group search-box">
+                <input type="text" id="search-input" placeholder="Search projects...">
+            </div>
+            <div class="filter-group">
+                <label for="project-filter">Project:</label>
+                <select id="project-filter">
+                    <option value="">All Projects</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="min-completion">Min Completion:</label>
+                <input type="number" id="min-completion" placeholder="0" min="0" max="100">
+            </div>
+            <div class="filter-group">
+                <label for="max-completion">Max Completion:</label>
+                <input type="number" id="max-completion" placeholder="100" min="0" max="100">
+            </div>
+            <div class="filter-group">
+                <label for="min-velocity">Min Velocity:</label>
+                <input type="number" id="min-velocity" placeholder="0" min="0" step="0.1">
+            </div>
+        </div>
+        
+        <div class="status" id="status">Ready to load progress data</div>
+    </div>
+    
+    <div class="progress-container">
+        <div id="loading" class="loading">
+            <p>Loading progress data...</p>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="progress-content" style="display: none;">
+            <!-- Overview Stats -->
+            <div class="overview-stats" id="overview-stats"></div>
+            
+            <!-- Progress Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="analytics">📊 Analytics</div>
+                <div class="tab" data-tab="incomplete">📋 Incomplete Work</div>
+                <div class="tab" data-tab="blocked">🚫 Blocked Items</div>
+            </div>
+            
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="tab-content active">
+                <div class="progress-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Project Analytics</h3>
+                        <p class="section-description">Detailed progress metrics for all projects</p>
+                    </div>
+                    <div class="section-content">
+                        <div id="analytics-list" class="projects-list"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Incomplete Work Tab -->
+            <div id="incomplete-tab" class="tab-content">
+                <div class="progress-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Incomplete Work</h3>
+                        <p class="section-description">Work items that need attention, sorted by priority</p>
+                    </div>
+                    <div class="section-content">
+                        <div id="incomplete-list" class="projects-list"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Blocked Items Tab -->
+            <div id="blocked-tab" class="tab-content">
+                <div class="progress-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Blocked & Stale Items</h3>
+                        <p class="section-description">Items that are blocked or haven't been updated recently</p>
+                    </div>
+                    <div class="section-content">
+                        <div id="blocked-list" class="projects-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <h3>No Progress Data Found</h3>
+            <p>No progress data matches your current filters. Try adjusting your search criteria.</p>
+        </div>
+    </div>
+    
+    <script>
+        let analyticsData = null;
+        let incompleteData = [];
+        let blockedData = null;
+        let currentTab = 'analytics';
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProgressData();
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            document.getElementById('refresh-btn').addEventListener('click', loadProgressData);
+            document.getElementById('clear-cache-btn').addEventListener('click', clearCache);
+            document.getElementById('search-input').addEventListener('input', debounce(filterData, 300));
+            document.getElementById('project-filter').addEventListener('change', filterData);
+            document.getElementById('min-completion').addEventListener('change', filterData);
+            document.getElementById('max-completion').addEventListener('change', filterData);
+            document.getElementById('min-velocity').addEventListener('change', filterData);
+            
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+        }
+        
+        async function loadProgressData() {
+            try {
+                showLoading(true);
+                updateStatus('Loading progress data...', '');
+                
+                // Load analytics data
+                const analyticsResponse = await fetch('/api/v2/progress/analytics');
+                const analyticsResult = await analyticsResponse.json();
+                
+                if (analyticsResult.success) {
+                    analyticsData = analyticsResult.data;
+                    updateProjectFilter();
+                    displayOverviewStats();
+                    displayAnalytics();
+                } else {
+                    throw new Error(analyticsResult.error || 'Failed to load analytics data');
+                }
+                
+                // Load incomplete work data
+                const incompleteResponse = await fetch('/api/v2/progress/incomplete');
+                const incompleteResult = await incompleteResponse.json();
+                
+                if (incompleteResult.success) {
+                    incompleteData = incompleteResult.data;
+                    displayIncompleteWork();
+                }
+                
+                // Load blocked items data
+                const blockedResponse = await fetch('/api/v2/progress/blocked');
+                const blockedResult = await blockedResponse.json();
+                
+                if (blockedResult.success) {
+                    blockedData = blockedResult.data;
+                    displayBlockedItems();
+                }
+                
+                updateStatus('Progress data loaded successfully', 'success');
+                showLoading(false);
+                
+            } catch (error) {
+                showLoading(false);
+                showError(`Error loading progress data: ${error.message}`);
+                updateStatus('Failed to load progress data', 'error');
+            }
+        }
+        
+        function updateProjectFilter() {
+            if (!analyticsData || !analyticsData.projects) return;
+            
+            const filter = document.getElementById('project-filter');
+            const currentValue = filter.value;
+            
+            filter.innerHTML = '<option value="">All Projects</option>';
+            analyticsData.projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.projectName;
+                option.textContent = project.projectName;
+                if (project.projectName === currentValue) {
+                    option.selected = true;
+                }
+                filter.appendChild(option);
+            });
+        }
+        
+        function displayOverviewStats() {
+            if (!analyticsData || !analyticsData.aggregate) return;
+            
+            const container = document.getElementById('overview-stats');
+            const aggregate = analyticsData.aggregate;
+            
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${aggregate.totalProjects}</div>
+                    <div class="stat-label">Total Projects</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${aggregate.averageCompletion}%</div>
+                    <div class="stat-label">Avg Completion</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${aggregate.totalStories}</div>
+                    <div class="stat-label">Total Stories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${aggregate.completedStories}</div>
+                    <div class="stat-label">Completed Stories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${aggregate.totalTasks}</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${aggregate.completedTasks}</div>
+                    <div class="stat-label">Completed Tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${aggregate.averageVelocity}</div>
+                    <div class="stat-label">Avg Velocity</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${aggregate.projectsWithBlockedItems}</div>
+                    <div class="stat-label">Blocked Projects</div>
+                </div>
+            `;
+        }
+        
+        function displayAnalytics() {
+            if (!analyticsData || !analyticsData.projects) return;
+            
+            const container = document.getElementById('analytics-list');
+            const filteredProjects = getFilteredProjects(analyticsData.projects);
+            
+            if (filteredProjects.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No Projects Found</h3><p>No projects match your current filters.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = filteredProjects.map(project => createAnalyticsCard(project)).join('');
+        }
+        
+        function displayIncompleteWork() {
+            const container = document.getElementById('incomplete-list');
+            const filteredIncomplete = getFilteredIncompleteWork();
+            
+            if (filteredIncomplete.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No Incomplete Work</h3><p>All work items are completed!</p></div>';
+                return;
+            }
+            
+            container.innerHTML = filteredIncomplete.map(project => createIncompleteCard(project)).join('');
+        }
+        
+        function displayBlockedItems() {
+            if (!blockedData) return;
+            
+            const container = document.getElementById('blocked-list');
+            const { blockedItems, staleItems } = blockedData;
+            
+            let html = '';
+            
+            if (blockedItems.length > 0) {
+                html += `
+                    <div class="progress-section">
+                        <div class="section-header">
+                            <h3 class="section-title">🚫 Blocked Items (${blockedItems.length})</h3>
+                        </div>
+                        <div class="section-content">
+                            <div class="projects-list">
+                                ${blockedItems.map(item => createBlockedItemCard(item)).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (staleItems.length > 0) {
+                html += `
+                    <div class="progress-section">
+                        <div class="section-header">
+                            <h3 class="section-title">⏰ Stale Items (${staleItems.length})</h3>
+                        </div>
+                        <div class="section-content">
+                            <div class="projects-list">
+                                ${staleItems.map(item => createStaleItemCard(item)).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (blockedItems.length === 0 && staleItems.length === 0) {
+                html = '<div class="empty-state"><h3>No Blocked or Stale Items</h3><p>All items are up to date!</p></div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function createAnalyticsCard(project) {
+            return `
+                <div class="project-item">
+                    <div class="project-header">
+                        <div class="project-name">${project.projectName}</div>
+                        <div class="project-priority priority-${getPriorityClass(project.overallCompletionPercentage)}">
+                            ${getPriorityText(project.overallCompletionPercentage)}
+                        </div>
+                    </div>
+                    
+                    <div class="project-metrics">
+                        <div class="metric">
+                            <div class="metric-value">${project.overallCompletionPercentage}%</div>
+                            <div class="metric-label">Completion</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${project.velocity}</div>
+                            <div class="metric-label">Velocity</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${project.incompleteStories + project.incompleteTasks}</div>
+                            <div class="metric-label">Incomplete</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${project.blockedItems.length}</div>
+                            <div class="metric-label">Blocked</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${project.overallCompletionPercentage}%"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span>${project.completedStories}/${project.totalStories} stories • ${project.completedTasks}/${project.totalTasks} tasks</span>
+                        <span>${project.trend}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createIncompleteCard(project) {
+            const priorityClass = getPriorityClass(project.priority);
+            
+            return `
+                <div class="project-item ${priorityClass}">
+                    <div class="project-header">
+                        <div class="project-name">${project.projectName}</div>
+                        <div class="project-priority priority-${priorityClass}">
+                            Priority: ${project.priority}
+                        </div>
+                    </div>
+                    
+                    <div class="project-metrics">
+                        <div class="metric">
+                            <div class="metric-value">${project.totalIncomplete}</div>
+                            <div class="metric-label">Total Incomplete</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${project.incompleteStories}</div>
+                            <div class="metric-label">Stories</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${project.incompleteTasks}</div>
+                            <div class="metric-label">Tasks</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${project.velocity}</div>
+                            <div class="metric-label">Velocity</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${project.completionPercentage}%"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span>${project.completionPercentage}% complete</span>
+                        <span>${project.velocity} velocity</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createBlockedItemCard(item) {
+            return `
+                <div class="project-item high-priority">
+                    <div class="project-header">
+                        <div class="project-name">${item.title}</div>
+                        <div class="project-priority priority-high">Blocked</div>
+                    </div>
+                    <div class="blocked-items">
+                        <h4>Project: ${item.projectName}</h4>
+                        <p><strong>Reason:</strong> ${item.reason || 'Unknown'}</p>
+                        <p><strong>Last Activity:</strong> ${formatDate(item.lastActivity)}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createStaleItemCard(item) {
+            return `
+                <div class="project-item medium-priority">
+                    <div class="project-header">
+                        <div class="project-name">${item.title}</div>
+                        <div class="project-priority priority-medium">Stale</div>
+                    </div>
+                    <div class="stale-items">
+                        <h4>Project: ${item.projectName}</h4>
+                        <p><strong>Days Since Activity:</strong> ${item.daysSinceActivity || 'Unknown'}</p>
+                        <p><strong>Last Activity:</strong> ${formatDate(item.lastActivity)}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getFilteredProjects(projects) {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const projectFilter = document.getElementById('project-filter').value;
+            const minCompletion = document.getElementById('min-completion').value;
+            const maxCompletion = document.getElementById('max-completion').value;
+            const minVelocity = document.getElementById('min-velocity').value;
+            
+            return projects.filter(project => {
+                if (searchTerm && !project.projectName.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                if (projectFilter && project.projectName !== projectFilter) {
+                    return false;
+                }
+                if (minCompletion && project.overallCompletionPercentage < parseInt(minCompletion)) {
+                    return false;
+                }
+                if (maxCompletion && project.overallCompletionPercentage > parseInt(maxCompletion)) {
+                    return false;
+                }
+                if (minVelocity && project.velocity < parseFloat(minVelocity)) {
+                    return false;
+                }
+                return true;
+            });
+        }
+        
+        function getFilteredIncompleteWork() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const projectFilter = document.getElementById('project-filter').value;
+            
+            return incompleteData.filter(project => {
+                if (searchTerm && !project.projectName.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                if (projectFilter && project.projectName !== projectFilter) {
+                    return false;
+                }
+                return true;
+            });
+        }
+        
+        function filterData() {
+            switch (currentTab) {
+                case 'analytics':
+                    displayAnalytics();
+                    break;
+                case 'incomplete':
+                    displayIncompleteWork();
+                    break;
+                case 'blocked':
+                    displayBlockedItems();
+                    break;
+            }
+        }
+        
+        function switchTab(tabName) {
+            // Update tab appearance
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            currentTab = tabName;
+        }
+        
+        function getPriorityClass(priority) {
+            if (priority >= 80) return 'low-priority';
+            if (priority >= 50) return 'medium-priority';
+            return 'high-priority';
+        }
+        
+        function getPriorityText(priority) {
+            if (priority >= 80) return 'Low Priority';
+            if (priority >= 50) return 'Medium Priority';
+            return 'High Priority';
+        }
+        
+        async function clearCache() {
+            try {
+                if (!confirm('Are you sure you want to clear the cache? This will refresh all progress data.')) {
+                    return;
+                }
+                
+                updateStatus('Clearing cache...', '');
+                
+                const response = await fetch('/api/v2/cache/progress/clear', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('Cache cleared successfully', 'success');
+                    loadProgressData();
+                } else {
+                    throw new Error(result.error || 'Failed to clear cache');
+                }
+            } catch (error) {
+                updateStatus(`Failed to clear cache: ${error.message}`, 'error');
+            }
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('progress-content').style.display = show ? 'none' : 'block';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+        
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>

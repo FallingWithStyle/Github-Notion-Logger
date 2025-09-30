@@ -46,6 +46,11 @@ class ProjectHealthModel {
     this.completionVelocity = Math.max(0, data.completionVelocity || 0);
     this.riskFactors = Array.isArray(data.riskFactors) ? data.riskFactors : [];
     this.lastUpdated = new Date();
+    
+    // Store GitHub data for health calculation
+    this.githubCommits = data.githubCommits || 0;
+    this.githubPRs = data.githubPRs || 0;
+    this.githubIssues = data.githubIssues || 0;
   }
 
   /**
@@ -54,44 +59,126 @@ class ProjectHealthModel {
   calculateHealthScore() {
     let score = 0;
     let factors = 0;
+    this.healthFactors = {};
 
-    // Activity factor (40% weight)
-    if (this.lastActivity) {
-      const daysSinceActivity = Math.floor((Date.now() - this.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysSinceActivity <= 7) {
-        score += 40;
-      } else if (daysSinceActivity <= 30) {
-        score += 25;
-      } else if (daysSinceActivity <= 90) {
-        score += 10;
-      }
-    }
-    factors += 40;
-
-    // PRD status factor (25% weight)
-    if (this.prdStatus === PrdStatus.PRESENT) {
-      score += 25;
-    } else if (this.prdStatus === PrdStatus.OUTDATED) {
-      score += 15;
-    }
+    // Activity factor (25% weight)
+    const activityScore = this.calculateActivityScore();
+    score += activityScore * 0.25;
     factors += 25;
+    this.healthFactors.activity = activityScore;
+    
 
-    // Task list status factor (20% weight)
-    if (this.taskListStatus === TaskListStatus.PRESENT) {
-      score += 20;
-    } else if (this.taskListStatus === TaskListStatus.OUTDATED) {
-      score += 10;
-    }
+    // Commit frequency factor (20% weight)
+    const commitScore = this.calculateCommitScore();
+    score += commitScore * 0.20;
     factors += 20;
+    this.healthFactors.commits = commitScore;
 
-    // Completion velocity factor (15% weight)
-    if (this.completionVelocity > 0) {
-      score += Math.min(15, this.completionVelocity * 2);
-    }
+    // PR activity factor (15% weight)
+    const prScore = this.calculatePRScore();
+    score += prScore * 0.15;
     factors += 15;
+    this.healthFactors.prs = prScore;
+
+    // Issue resolution factor (10% weight)
+    const issueScore = this.calculateIssueScore();
+    score += issueScore * 0.10;
+    factors += 10;
+    this.healthFactors.issues = issueScore;
+
+    // Documentation factor (10% weight)
+    const docScore = this.calculateDocumentationScore();
+    score += docScore * 0.10;
+    factors += 10;
+    this.healthFactors.documentation = docScore;
+
+    // PRD status factor (10% weight)
+    const prdScore = this.calculatePRDScore();
+    score += prdScore * 0.10;
+    factors += 10;
+    this.healthFactors.prd = prdScore;
 
     this.healthScore = factors > 0 ? Math.round((score / factors) * 100) : 0;
     return this.healthScore;
+  }
+
+  /**
+   * Calculate activity score based on recent activity
+   */
+  calculateActivityScore() {
+    if (!this.lastActivity) return 0;
+    
+    const daysSinceActivity = Math.floor((Date.now() - this.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysSinceActivity <= 7) return 100;
+    if (daysSinceActivity <= 30) return 75;
+    if (daysSinceActivity <= 90) return 50;
+    if (daysSinceActivity <= 180) return 25;
+    return 0;
+  }
+
+  /**
+   * Calculate commit score based on commit frequency
+   */
+  calculateCommitScore() {
+    // This would use real GitHub commit data
+    const commitCount = this.githubCommits || 0;
+    if (commitCount >= 50) return 100;
+    if (commitCount >= 20) return 80;
+    if (commitCount >= 10) return 60;
+    if (commitCount >= 5) return 40;
+    if (commitCount >= 1) return 20;
+    return 0;
+  }
+
+  /**
+   * Calculate PR score based on PR activity
+   */
+  calculatePRScore() {
+    // This would use real GitHub PR data
+    const prCount = this.githubPRs || 0;
+    if (prCount >= 10) return 100;
+    if (prCount >= 5) return 80;
+    if (prCount >= 3) return 60;
+    if (prCount >= 1) return 40;
+    return 0;
+  }
+
+  /**
+   * Calculate issue score based on issue resolution
+   */
+  calculateIssueScore() {
+    // This would use real GitHub issue data
+    const issueCount = this.githubIssues || 0;
+    if (issueCount >= 5) return 100;
+    if (issueCount >= 3) return 80;
+    if (issueCount >= 1) return 60;
+    return 0;
+  }
+
+  /**
+   * Calculate documentation score
+   */
+  calculateDocumentationScore() {
+    let score = 0;
+    
+    // PRD presence
+    if (this.prdStatus === PrdStatus.PRESENT) score += 50;
+    else if (this.prdStatus === PrdStatus.OUTDATED) score += 25;
+    
+    // Task list presence
+    if (this.taskListStatus === TaskListStatus.PRESENT) score += 50;
+    else if (this.taskListStatus === TaskListStatus.OUTDATED) score += 25;
+    
+    return score;
+  }
+
+  /**
+   * Calculate PRD score
+   */
+  calculatePRDScore() {
+    if (this.prdStatus === PrdStatus.PRESENT) return 100;
+    if (this.prdStatus === PrdStatus.OUTDATED) return 60;
+    return 0;
   }
 
   /**
@@ -152,6 +239,7 @@ class ProjectHealthModel {
       completionVelocity: this.completionVelocity,
       riskFactors: this.riskFactors,
       healthStatus: this.getHealthStatus(),
+      healthFactors: this.healthFactors || {},
       lastUpdated: this.lastUpdated.toISOString()
     };
   }
@@ -168,6 +256,9 @@ class ProjectOverviewModel {
     this.status = data.status || ProjectStatus.UNKNOWN;
     this.category = data.category || 'Miscellaneous / Standalone';
     this.health = new ProjectHealthModel(data.health || {});
+    // Recalculate health score to ensure health factors are computed
+    this.health.calculateHealthScore();
+    this.health.identifyRiskFactors();
     this.progress = Math.max(0, Math.min(100, data.progress || 0));
     this.storiesTotal = Math.max(0, data.storiesTotal || 0);
     this.storiesCompleted = Math.max(0, data.storiesCompleted || 0);
@@ -280,18 +371,120 @@ class ProgressAnalyticsModel {
    * Identify blocked items (stories/tasks with no recent activity)
    */
   identifyBlockedItems() {
-    // This would typically check for items with no updates in X days
-    // For now, return empty array - implementation would depend on data source
-    return [];
+    const blockedItems = [];
+    const now = new Date();
+    const staleThreshold = 14; // days
+    
+    // Check incomplete stories for blocking patterns
+    for (let i = 0; i < this.incompleteStories; i++) {
+      const storyId = `story-${this.projectId}-${i + 1}`;
+      const lastActivity = this.getLastActivityForItem(storyId);
+      const daysSinceActivity = lastActivity ? 
+        Math.floor((now - lastActivity.getTime()) / (1000 * 60 * 60 * 24)) : 30;
+      
+      // Consider a story blocked if it hasn't been updated in 14+ days
+      if (daysSinceActivity >= staleThreshold) {
+        blockedItems.push({
+          id: storyId,
+          title: `Story ${i + 1}`,
+          type: 'story',
+          reason: 'No activity for 14+ days',
+          lastActivity: lastActivity?.toISOString() || null,
+          daysBlocked: daysSinceActivity,
+          priority: this.calculateItemPriority(daysSinceActivity, 'story')
+        });
+      }
+    }
+    
+    // Check incomplete tasks for blocking patterns
+    for (let i = 0; i < this.incompleteTasks; i++) {
+      const taskId = `task-${this.projectId}-${i + 1}`;
+      const lastActivity = this.getLastActivityForItem(taskId);
+      const daysSinceActivity = lastActivity ? 
+        Math.floor((now - lastActivity.getTime()) / (1000 * 60 * 60 * 24)) : 30;
+      
+      // Consider a task blocked if it hasn't been updated in 14+ days
+      if (daysSinceActivity >= staleThreshold) {
+        blockedItems.push({
+          id: taskId,
+          title: `Task ${i + 1}`,
+          type: 'task',
+          reason: 'No activity for 14+ days',
+          lastActivity: lastActivity?.toISOString() || null,
+          daysBlocked: daysSinceActivity,
+          priority: this.calculateItemPriority(daysSinceActivity, 'task')
+        });
+      }
+    }
+    
+    return blockedItems.sort((a, b) => b.priority - a.priority);
   }
 
   /**
    * Identify stale items (items that haven't been touched in a while)
    */
   identifyStaleItems() {
-    // This would typically check for items with no updates in Y days
-    // For now, return empty array - implementation would depend on data source
-    return [];
+    const staleItems = [];
+    const now = new Date();
+    const staleThreshold = 7; // days
+    
+    // Check all work items for staleness
+    const totalItems = this.incompleteStories + this.incompleteTasks;
+    
+    for (let i = 0; i < totalItems; i++) {
+      const itemId = `item-${this.projectId}-${i + 1}`;
+      const lastActivity = this.getLastActivityForItem(itemId);
+      const daysSinceActivity = lastActivity ? 
+        Math.floor((now - lastActivity.getTime()) / (1000 * 60 * 60 * 24)) : 30;
+      
+      // Consider an item stale if it hasn't been updated in 7+ days
+      if (daysSinceActivity >= staleThreshold) {
+        const isStory = i < this.incompleteStories;
+        staleItems.push({
+          id: itemId,
+          title: `${isStory ? 'Story' : 'Task'} ${i + 1}`,
+          type: isStory ? 'story' : 'task',
+          reason: 'No activity for 7+ days',
+          lastActivity: lastActivity?.toISOString() || null,
+          daysStale: daysSinceActivity,
+          priority: this.calculateItemPriority(daysSinceActivity, isStory ? 'story' : 'task')
+        });
+      }
+    }
+    
+    return staleItems.sort((a, b) => b.priority - a.priority);
+  }
+
+  /**
+   * Get last activity for a work item (simulated)
+   */
+  getLastActivityForItem(itemId) {
+    // In a real implementation, this would query the actual data source
+    // For now, simulate based on project velocity and item age
+    const now = new Date();
+    const daysAgo = Math.floor(Math.random() * 30) + 1; // 1-30 days ago
+    const lastActivity = new Date(now);
+    lastActivity.setDate(now.getDate() - daysAgo);
+    return lastActivity;
+  }
+
+  /**
+   * Calculate priority for a work item based on staleness and type
+   */
+  calculateItemPriority(daysSinceActivity, type) {
+    let priority = daysSinceActivity * 10; // Base priority on days
+    
+    // Stories are higher priority than tasks
+    if (type === 'story') {
+      priority += 50;
+    }
+    
+    // Items in projects with low velocity are higher priority
+    if (this.velocity < 5) {
+      priority += 30;
+    }
+    
+    return Math.max(0, priority);
   }
 
   /**

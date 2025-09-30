@@ -266,25 +266,35 @@ class PerformanceOptimizationService {
     
     let filtered = [...data];
 
-    Object.entries(filters).forEach(([field, value]) => {
+    // Exclude pagination and sorting parameters from filtering
+    const paginationParams = ['page', 'limit', 'sortBy'];
+    const filterableFields = Object.entries(filters).filter(([field]) => !paginationParams.includes(field));
+
+    filterableFields.forEach(([field, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        filtered = filtered.filter(item => {
-          const itemValue = item[field];
-          
-          if (typeof value === 'string' && typeof itemValue === 'string') {
-            return itemValue.toLowerCase().includes(value.toLowerCase());
-          }
-          
-          if (typeof value === 'number' && typeof itemValue === 'number') {
+        if (field === 'search') {
+          // Handle search functionality
+          filtered = this.performSearch(filtered, value);
+        } else {
+          // Handle other filters
+          filtered = filtered.filter(item => {
+            const itemValue = item[field];
+            
+            if (typeof value === 'string' && typeof itemValue === 'string') {
+              return itemValue.toLowerCase().includes(value.toLowerCase());
+            }
+            
+            if (typeof value === 'number' && typeof itemValue === 'number') {
+              return itemValue === value;
+            }
+            
+            if (Array.isArray(value)) {
+              return value.includes(itemValue);
+            }
+            
             return itemValue === value;
-          }
-          
-          if (Array.isArray(value)) {
-            return value.includes(itemValue);
-          }
-          
-          return itemValue === value;
-        });
+          });
+        }
       }
     });
 
@@ -292,6 +302,155 @@ class PerformanceOptimizationService {
     this.recordPerformanceMetric('filtering', processingTime, data.length);
 
     return filtered;
+  }
+
+  /**
+   * Perform enhanced search across multiple fields
+   * @param {Array} data - Data to search
+   * @param {string} searchQuery - Search query
+   * @returns {Array} Filtered data
+   */
+  performSearch(data, searchQuery) {
+    if (!searchQuery || typeof searchQuery !== 'string') {
+      return data;
+    }
+
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return data;
+    }
+
+    return data.filter(item => {
+      // Handle advanced search syntax
+      if (query.includes(':')) {
+        return this.performAdvancedSearch(item, query);
+      }
+
+      // Handle multi-word search
+      if (query.includes(' ')) {
+        const words = query.split(/\s+/).filter(word => word.length > 0);
+        return words.every(word => this.matchesSearchTerm(item, word));
+      }
+
+      // Handle single word search
+      return this.matchesSearchTerm(item, query);
+    });
+  }
+
+  /**
+   * Check if an item matches a search term
+   * @param {Object} item - Item to check
+   * @param {string} term - Search term
+   * @returns {boolean} Whether the item matches
+   */
+  matchesSearchTerm(item, term) {
+    const searchFields = [
+      'name',
+      'repository', 
+      'category',
+      'status',
+      'healthStatus',
+      'activityStatus'
+    ];
+
+    return searchFields.some(field => {
+      const value = item[field];
+      if (typeof value === 'string') {
+        return value.toLowerCase().includes(term);
+      }
+      return false;
+    });
+  }
+
+  /**
+   * Perform advanced search with field-specific queries
+   * @param {Object} item - Item to check
+   * @param {string} query - Advanced search query
+   * @returns {boolean} Whether the item matches
+   */
+  performAdvancedSearch(item, query) {
+    const parts = query.split(/\s+/);
+    
+    return parts.every(part => {
+      if (part.includes(':')) {
+        const [field, value] = part.split(':', 2);
+        return this.matchesFieldQuery(item, field, value);
+      } else {
+        return this.matchesSearchTerm(item, part);
+      }
+    });
+  }
+
+  /**
+   * Check if an item matches a field-specific query
+   * @param {Object} item - Item to check
+   * @param {string} field - Field name
+   * @param {string} value - Field value
+   * @returns {boolean} Whether the item matches
+   */
+  matchesFieldQuery(item, field, value) {
+    const itemValue = item[field];
+    
+    if (itemValue === undefined || itemValue === null) {
+      return false;
+    }
+
+    // Handle range queries (e.g., progress:>50, progress:<80)
+    if (value.includes('>') || value.includes('<') || value.includes('=')) {
+      return this.matchesRangeQuery(itemValue, value);
+    }
+
+    // Handle string matching
+    if (typeof itemValue === 'string') {
+      return itemValue.toLowerCase().includes(value.toLowerCase());
+    }
+
+    // Handle exact matching
+    if (typeof itemValue === 'number') {
+      const numValue = parseFloat(value);
+      return !isNaN(numValue) && itemValue === numValue;
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if a value matches a range query
+   * @param {*} itemValue - Item value to check
+   * @param {string} rangeQuery - Range query (e.g., ">50", "<80", "=100")
+   * @returns {boolean} Whether the value matches the range
+   */
+  matchesRangeQuery(itemValue, rangeQuery) {
+    if (typeof itemValue !== 'number') {
+      return false;
+    }
+
+    if (rangeQuery.startsWith('>=')) {
+      const threshold = parseFloat(rangeQuery.substring(2));
+      return !isNaN(threshold) && itemValue >= threshold;
+    }
+    
+    if (rangeQuery.startsWith('<=')) {
+      const threshold = parseFloat(rangeQuery.substring(2));
+      return !isNaN(threshold) && itemValue <= threshold;
+    }
+    
+    if (rangeQuery.startsWith('>')) {
+      const threshold = parseFloat(rangeQuery.substring(1));
+      return !isNaN(threshold) && itemValue > threshold;
+    }
+    
+    if (rangeQuery.startsWith('<')) {
+      const threshold = parseFloat(rangeQuery.substring(1));
+      return !isNaN(threshold) && itemValue < threshold;
+    }
+    
+    if (rangeQuery.startsWith('=')) {
+      const threshold = parseFloat(rangeQuery.substring(1));
+      return !isNaN(threshold) && itemValue === threshold;
+    }
+
+    return false;
   }
 
   /**

@@ -37,9 +37,8 @@ class ProgressTrackingService {
       // Get data from multiple sources
       const sources = await this.gatherProjectData(filters);
       
-      // Create analytics for each project
-      const analytics = [];
-      for (const projectName of sources.projectNames) {
+      // Create analytics for each project in parallel
+      const analyticsPromises = sources.projectNames.map(async (projectName) => {
         try {
           const projectSources = {
             githubData: sources.githubData[projectName],
@@ -54,13 +53,21 @@ class ProgressTrackingService {
           );
 
           const progressAnalytics = this.consistencyService.createProgressAnalyticsModel(reconciledData);
-          analytics.push(progressAnalytics.toJSON());
+          return { projectName, data: progressAnalytics.toJSON(), error: null };
 
         } catch (error) {
           console.warn(`⚠️ Failed to create analytics for ${projectName}:`, error.message);
-          // Continue with other projects
+          return { projectName, data: null, error: error.message };
         }
-      }
+      });
+
+      // Wait for all analytics to be created in parallel
+      const analyticsResults = await Promise.all(analyticsPromises);
+      
+      // Filter out failed analytics and collect successful ones
+      const analytics = analyticsResults
+        .filter(result => result.data !== null)
+        .map(result => result.data);
 
       // Apply filters
       const filteredAnalytics = this.applyFilters(analytics, filters);
@@ -328,7 +335,7 @@ class ProgressTrackingService {
         return {};
       }
 
-      const data = await fs.readFileSync(COMMIT_LOG_PATH, 'utf8');
+      const data = await fs.readFile(COMMIT_LOG_PATH, 'utf8');
       const commitLog = JSON.parse(data);
 
       // Process commit log data
@@ -462,51 +469,184 @@ class ProgressTrackingService {
   }
 
   /**
-   * Calculate velocity trends (simplified)
+   * Calculate velocity trends from historical data
    */
   async calculateVelocityTrends(projectName = null) {
-    // This is a simplified implementation
-    // In a real system, you'd analyze historical data over time
-    
-    const trends = {
-      overall: {
-        trend: 'stable',
-        velocity: 0,
-        change: 0
-      },
-      projects: []
-    };
+    try {
+      const trends = {
+        overall: {
+          trend: 'stable',
+          velocity: 0,
+          change: 0
+        },
+        projects: []
+      };
 
-    if (projectName) {
-      // Get specific project trend
-      const analytics = await this.getProgressAnalytics({ projectName });
-      if (analytics.success && analytics.data.projects.length > 0) {
-        const project = analytics.data.projects[0];
-        trends.projects.push({
-          projectName: project.projectName,
-          velocity: project.velocity,
-          trend: project.trend,
-          change: 0 // Would be calculated from historical data
-        });
-      }
-    } else {
-      // Get all projects trends
-      const analytics = await this.getProgressAnalytics();
-      if (analytics.success) {
-        trends.projects = analytics.data.projects.map(project => ({
-          projectName: project.projectName,
-          velocity: project.velocity,
-          trend: project.trend,
-          change: 0 // Would be calculated from historical data
-        }));
+      // Get historical commit data for velocity calculation
+      const commitLogData = await this.getHistoricalCommitData();
+      
+      if (projectName) {
+        // Calculate trend for specific project
+        const projectTrend = await this.calculateProjectVelocityTrend(projectName, commitLogData);
+        trends.projects.push(projectTrend);
+        trends.overall = projectTrend;
+      } else {
+        // Calculate trends for all projects
+        const projectNames = Object.keys(commitLogData);
+        
+        for (const name of projectNames) {
+          const projectTrend = await this.calculateProjectVelocityTrend(name, commitLogData);
+          trends.projects.push(projectTrend);
+        }
 
         // Calculate overall trend
-        const totalVelocity = trends.projects.reduce((sum, p) => sum + p.velocity, 0);
-        trends.overall.velocity = Math.round((totalVelocity / trends.projects.length) * 10) / 10;
+        if (trends.projects.length > 0) {
+          const totalVelocity = trends.projects.reduce((sum, p) => sum + p.velocity, 0);
+          const totalChange = trends.projects.reduce((sum, p) => sum + p.change, 0);
+          
+          trends.overall.velocity = Math.round((totalVelocity / trends.projects.length) * 10) / 10;
+          trends.overall.change = Math.round((totalChange / trends.projects.length) * 10) / 10;
+          trends.overall.trend = this.determineTrendFromChange(trends.overall.change);
+        }
       }
+
+      return trends;
+    } catch (error) {
+      console.error('❌ Error calculating velocity trends:', error);
+      return {
+        overall: { trend: 'unknown', velocity: 0, change: 0 },
+        projects: []
+      };
+    }
+  }
+
+  /**
+   * Get historical commit data for velocity calculation
+   */
+  async getHistoricalCommitData() {
+    try {
+      const fs = require('fs').promises;
+      const path = require('path');
+      
+      const DATA_DIR = process.env.DATA_DIR || (require('fs').existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
+      const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
+      
+      if (!require('fs').existsSync(COMMIT_LOG_PATH)) {
+        return {};
+      }
+
+      const data = await fs.readFile(COMMIT_LOG_PATH, 'utf8');
+      const commitLog = JSON.parse(data);
+
+      // Process commit log data for velocity calculation
+      const projectData = {};
+      const today = new Date();
+      const ninetyDaysAgo = new Date(today);
+      ninetyDaysAgo.setDate(today.getDate() - 90);
+
+      commitLog
+        .filter(day => new Date(day.date) >= ninetyDaysAgo)
+        .forEach(day => {
+          Object.entries(day.projects).forEach(([projectName, commitCount]) => {
+            if (!projectData[projectName]) {
+              projectData[projectName] = {
+                dailyCommits: [],
+                weeklyVelocity: [],
+                monthlyVelocity: []
+              };
+            }
+            projectData[projectName].dailyCommits.push({
+              date: day.date,
+              commits: commitCount
+            });
+          });
+        });
+
+      // Calculate weekly and monthly velocity for each project
+      Object.keys(projectData).forEach(projectName => {
+        const project = projectData[projectName];
+        project.weeklyVelocity = this.calculateWeeklyVelocity(project.dailyCommits);
+        project.monthlyVelocity = this.calculateMonthlyVelocity(project.dailyCommits);
+      });
+
+      return projectData;
+    } catch (error) {
+      console.error('❌ Error getting historical commit data:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Calculate velocity trend for a specific project
+   */
+  async calculateProjectVelocityTrend(projectName, commitLogData) {
+    const projectData = commitLogData[projectName];
+    
+    if (!projectData || !projectData.weeklyVelocity || projectData.weeklyVelocity.length === 0) {
+      return {
+        projectName,
+        velocity: 0,
+        trend: 'unknown',
+        change: 0
+      };
     }
 
-    return trends;
+    const weeklyVelocity = projectData.weeklyVelocity;
+    const currentVelocity = weeklyVelocity[weeklyVelocity.length - 1] || 0;
+    const previousVelocity = weeklyVelocity[weeklyVelocity.length - 2] || 0;
+    
+    const change = previousVelocity > 0 ? 
+      Math.round(((currentVelocity - previousVelocity) / previousVelocity) * 100) : 0;
+    
+    const trend = this.determineTrendFromChange(change);
+
+    return {
+      projectName,
+      velocity: Math.round(currentVelocity * 10) / 10,
+      trend,
+      change
+    };
+  }
+
+  /**
+   * Calculate weekly velocity from daily commits
+   */
+  calculateWeeklyVelocity(dailyCommits) {
+    const weeklyVelocity = [];
+    const sortedCommits = dailyCommits.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    for (let i = 0; i < sortedCommits.length; i += 7) {
+      const weekCommits = sortedCommits.slice(i, i + 7);
+      const weekVelocity = weekCommits.reduce((sum, day) => sum + day.commits, 0);
+      weeklyVelocity.push(weekVelocity);
+    }
+    
+    return weeklyVelocity;
+  }
+
+  /**
+   * Calculate monthly velocity from daily commits
+   */
+  calculateMonthlyVelocity(dailyCommits) {
+    const monthlyVelocity = [];
+    const sortedCommits = dailyCommits.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    for (let i = 0; i < sortedCommits.length; i += 30) {
+      const monthCommits = sortedCommits.slice(i, i + 30);
+      const monthVelocity = monthCommits.reduce((sum, day) => sum + day.commits, 0);
+      monthlyVelocity.push(monthVelocity);
+    }
+    
+    return monthlyVelocity;
+  }
+
+  /**
+   * Determine trend from velocity change
+   */
+  determineTrendFromChange(change) {
+    if (change > 10) return 'increasing';
+    if (change < -10) return 'decreasing';
+    return 'stable';
   }
 
   /**

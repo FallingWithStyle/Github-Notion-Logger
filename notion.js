@@ -24,6 +24,13 @@ const existingCommitsCache = new Map();
 const schemaCache = { checked: false, hasShaProperty: false };
 const SHA_PROPERTY_NAME = 'SHA';
 
+// Cache for repositories to prevent repeated database calls
+const repositoriesCache = {
+  data: null,
+  lastUpdated: null,
+  ttl: 5 * 60 * 1000 // 5 minutes
+};
+
 // Enhanced caching with TTL and batch operations
 const CACHE_CONFIG = {
   ttl: 30 * 60 * 1000, // 30 minutes (increased from 5 minutes to prevent cache expiration during long backfills)
@@ -1697,6 +1704,15 @@ async function clearScanCache() {
 // Get all cached repositories
 async function getAllCachedRepositories() {
   try {
+    // Check if we have cached data that's still valid
+    const now = Date.now();
+    if (repositoriesCache.data && 
+        repositoriesCache.lastUpdated && 
+        (now - repositoriesCache.lastUpdated) < repositoriesCache.ttl) {
+      console.log('📊 Returning cached repositories');
+      return repositoriesCache.data;
+    }
+    
     await ensureScanCacheDatabase();
     
     if (!scanCacheDatabaseId) {
@@ -1719,8 +1735,21 @@ async function getAllCachedRepositories() {
       taskCount: entry.properties["Task Count"]?.number || 0,
       progress: entry.properties["Progress"]?.number || 0,
       status: entry.properties["Status"]?.select?.name || "unknown",
+      category: entry.properties["Category"]?.select?.name || "uncategorized",
+      lastUpdated: entry.properties["Last Updated"]?.date?.start || "",
+      created: entry.properties["Created"]?.date?.start || "",
+      chunkCount: entry.properties["Chunk Count"]?.number || 0,
+      cacheData: entry.properties["Cache Data"]?.rich_text?.[0]?.text?.content || "",
+      cacheData2: entry.properties["Cache Data 2"]?.rich_text?.[0]?.text?.content || "",
+      cacheData3: entry.properties["Cache Data 3"]?.rich_text?.[0]?.text?.content || "",
+      cacheData4: entry.properties["Cache Data 4"]?.rich_text?.[0]?.text?.content || "",
+      cacheData5: entry.properties["Cache Data 5"]?.rich_text?.[0]?.text?.content || "",
       cached: true
     }));
+    
+    // Update cache
+    repositoriesCache.data = repositories;
+    repositoriesCache.lastUpdated = now;
     
     console.log(`📊 Retrieved ${repositories.length} cached repositories`);
     return repositories;
@@ -1728,6 +1757,13 @@ async function getAllCachedRepositories() {
     console.error('❌ Error getting cached repositories:', error);
     return [];
   }
+}
+
+// Invalidate repositories cache
+function invalidateRepositoriesCache() {
+  repositoriesCache.data = null;
+  repositoriesCache.lastUpdated = null;
+  console.log('🔄 Repositories cache invalidated');
 }
 
 module.exports = { 
@@ -1750,5 +1786,6 @@ module.exports = {
   getCachedScanResult,
   hasRecentScanCache,
   clearScanCache,
-  getAllCachedRepositories
+  getAllCachedRepositories,
+  invalidateRepositoriesCache
 };

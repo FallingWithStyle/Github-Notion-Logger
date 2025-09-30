@@ -3919,11 +3919,6 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Handle 404 errors
-app.use((req, res) => {
-  console.log(`❌ 404 - ${req.method} ${req.path}`);
-  res.status(404).json({ error: 'Not found' });
-});
 
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
@@ -3997,23 +3992,8 @@ app.get('/api/v2/projects/overview', asyncHandler(async (req, res) => {
       return res.status(500).json(result);
     }
 
-    // Apply pagination
-    const startIndex = (filters.page - 1) * filters.limit;
-    const endIndex = startIndex + filters.limit;
-    const paginatedData = result.data.slice(startIndex, endIndex);
-
-    res.json({
-      ...result,
-      data: paginatedData,
-      pagination: {
-        page: filters.page,
-        limit: filters.limit,
-        total: result.data.length,
-        totalPages: Math.ceil(result.data.length / filters.limit),
-        hasNext: endIndex < result.data.length,
-        hasPrev: filters.page > 1
-      }
-    });
+    // Service already handles pagination, so just return the result
+    res.json(result);
 
   } catch (error) {
     console.error('❌ Error in project overview API:', error);
@@ -4456,4 +4436,10 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 server.timeout = 30000; // 30 seconds
 server.keepAliveTimeout = 65000; // 65 seconds
 server.headersTimeout = 66000; // 66 seconds
+
+// Handle 404 errors (must be last)
+app.use((req, res) => {
+  console.log(`❌ 404 - ${req.method} ${req.path}`);
+  res.status(404).json({ error: 'Not found' });
+});
 
