@@ -149,6 +149,76 @@
 - **Technical Notes**: Use efficient data aggregation for large datasets
 - **Dependencies**: Data synchronization completion
 
+### Epic 9: Projects and Progress View Redesign
+**Goal**: Redesign Projects and Progress views for better separation and user experience
+
+#### Story 9.1: Projects View Redesign - Project Management Focus
+- **User Story**: As a project manager, I want a clean project overview so that I can manage my project portfolio effectively
+- **Acceptance Criteria**:
+  - AC1: Projects view shows high-level project cards without individual story details
+  - AC2: Project health indicators show PRD status, activity, and completion metrics
+  - AC3: Project categorization and grouping is available
+  - AC4: Repository management (scan, ignore, link PRD) is accessible
+  - AC5: Project filtering by status, category, and activity works correctly
+  - AC6: Quick actions for each project are available
+- **Technical Notes**: Remove individual story cards, focus on project-level data
+- **Dependencies**: Existing project data APIs
+
+#### Story 9.2: Progress View Redesign - Completion Tracking Focus
+- **User Story**: As a developer, I want detailed progress tracking so that I can monitor work completion
+- **Acceptance Criteria**:
+  - AC1: Progress view focuses on completion metrics and incomplete work
+  - AC2: Detailed progress bars show story and task completion
+  - AC3: Incomplete work tracking identifies stories and tasks needing attention
+  - AC4: Progress analytics show velocity trends and completion rates
+  - AC5: Expandable details for specific work items are available
+  - AC6: Blocked and stale items are clearly identified
+- **Technical Notes**: Focus on completion tracking, detailed work item views
+- **Dependencies**: Story and task data APIs
+
+#### Story 9.3: API and Backend Updates
+- **User Story**: As a developer, I want optimized APIs so that the new views perform well
+- **Acceptance Criteria**:
+  - AC1: New project overview API provides aggregated data efficiently
+  - AC2: Project health status calculation is accurate and fast
+  - AC3: Incomplete work aggregation API returns relevant data
+  - AC4: Progress analytics data processing is optimized
+  - AC5: Project filtering and search work efficiently
+  - AC6: Performance optimization reduces load times
+- **Technical Notes**: Create new endpoints, optimize existing ones
+- **Dependencies**: Current data structure and APIs
+
+#### Story 9.4: UI/UX Improvements and Testing
+- **User Story**: As a user, I want intuitive and responsive interfaces so that I can use the system effectively
+- **Acceptance Criteria**:
+  - AC1: Navigation between views is smooth and intuitive
+  - AC2: Consistent design language across all views
+  - AC3: Responsive design works on mobile and desktop
+  - AC4: Loading states and error handling are user-friendly
+  - AC5: Accessibility features meet standards
+  - AC6: User testing feedback is incorporated
+- **Technical Notes**: Focus on user experience and accessibility
+- **Dependencies**: Frontend framework and design system
+
+#### Story 9.5: Code Refactoring and Architecture Improvements
+- **User Story**: As a developer, I want well-organized, maintainable code so that I can develop and debug more efficiently
+- **Acceptance Criteria**:
+  - AC1: server.js is broken into logical modules and route files
+  - AC2: API endpoints are organized into dedicated controllers
+  - AC3: Middleware functions are separated into reusable modules
+  - AC4: Business logic is separated into service layer
+  - AC5: Utility functions are organized in shared modules
+  - AC6: Error handling is centralized and consistent
+  - AC7: Input validation is implemented with proper schemas
+  - AC8: Configuration management is centralized
+  - AC9: Logging and monitoring utilities are standardized
+  - AC10: Code documentation and API docs are comprehensive
+  - AC11: Database operations are abstracted into a service layer
+  - AC12: Unit and integration tests cover refactored modules
+  - AC13: Code quality tools and linting rules are enforced
+- **Technical Notes**: Break down monolithic server.js into modular architecture
+- **Dependencies**: Current codebase structure and functionality
+
 ## 7. Constraints and Assumptions
 - **Technical Constraints**: GitHub API rate limits, Notion API limitations, Fly.io deployment constraints, browser compatibility requirements
 - **Business Constraints**: Budget for API usage, time for development and testing, resource availability

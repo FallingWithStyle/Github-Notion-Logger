@@ -3948,6 +3948,497 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
+// ============================================================================
+// EPIC 9: NEW API ENDPOINTS FOR PROJECTS AND PROGRESS VIEW REDESIGN
+// ============================================================================
+
+// Import services
+const ProjectManagementService = require('./services/project-management-service');
+const ProgressTrackingService = require('./services/progress-tracking-service');
+
+// Initialize services
+const projectManagementService = new ProjectManagementService();
+const progressTrackingService = new ProgressTrackingService();
+
+// ============================================================================
+// PROJECT OVERVIEW API ENDPOINTS
+// ============================================================================
+
+// Get project overview with health indicators
+app.get('/api/v2/projects/overview', asyncHandler(async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      status,
+      healthStatus,
+      activityStatus,
+      search,
+      sortBy = 'lastActivity'
+    } = req.query;
+
+    const filters = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      category,
+      status,
+      healthStatus,
+      activityStatus,
+      search,
+      sortBy
+    };
+
+    console.log('📊 Getting project overview with filters:', filters);
+
+    const result = await projectManagementService.getProjectOverview(filters);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    // Apply pagination
+    const startIndex = (filters.page - 1) * filters.limit;
+    const endIndex = startIndex + filters.limit;
+    const paginatedData = result.data.slice(startIndex, endIndex);
+
+    res.json({
+      ...result,
+      data: paginatedData,
+      pagination: {
+        page: filters.page,
+        limit: filters.limit,
+        total: result.data.length,
+        totalPages: Math.ceil(result.data.length / filters.limit),
+        hasNext: endIndex < result.data.length,
+        hasPrev: filters.page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in project overview API:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get project overview',
+      details: error.message
+    });
+  }
+}));
+
+// Get project health status
+app.get('/api/v2/projects/:projectName/health', asyncHandler(async (req, res) => {
+  try {
+    const { projectName } = req.params;
+    
+    console.log(`🏥 Getting health status for project: ${projectName}`);
+
+    const result = await projectManagementService.getProjectHealth(projectName);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    console.error(`❌ Error getting health for ${req.params.projectName}:`, error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get project health',
+      details: error.message
+    });
+  }
+}));
+
+// Get project categories
+app.get('/api/v2/projects/categories', asyncHandler(async (req, res) => {
+  try {
+    console.log('📂 Getting project categories');
+
+    const result = await projectManagementService.getProjectCategories();
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('❌ Error getting project categories:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get project categories',
+      details: error.message
+    });
+  }
+}));
+
+// Search projects
+app.get('/api/v2/projects/search', asyncHandler(async (req, res) => {
+  try {
+    const { q: query, category, status, healthStatus, activityStatus } = req.query;
+
+    if (!query || query.trim().length < 2) {
+      return res.json({
+        success: true,
+        data: [],
+        metadata: { query, total: 0 }
+      });
+    }
+
+    const filters = {
+      category,
+      status,
+      healthStatus,
+      activityStatus
+    };
+
+    console.log(`🔍 Searching projects: "${query}" with filters:`, filters);
+
+    const result = await projectManagementService.searchProjects(query, filters);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('❌ Error searching projects:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search projects',
+      details: error.message
+    });
+  }
+}));
+
+// ============================================================================
+// PROGRESS TRACKING API ENDPOINTS
+// ============================================================================
+
+// Get progress analytics
+app.get('/api/v2/progress/analytics', asyncHandler(async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      projectName,
+      minCompletion,
+      maxCompletion,
+      minVelocity
+    } = req.query;
+
+    const filters = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      projectName,
+      minCompletion: minCompletion ? parseInt(minCompletion) : undefined,
+      maxCompletion: maxCompletion ? parseInt(maxCompletion) : undefined,
+      minVelocity: minVelocity ? parseInt(minVelocity) : undefined
+    };
+
+    console.log('📈 Getting progress analytics with filters:', filters);
+
+    const result = await progressTrackingService.getProgressAnalytics(filters);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    // Apply pagination to projects
+    const startIndex = (filters.page - 1) * filters.limit;
+    const endIndex = startIndex + filters.limit;
+    const paginatedProjects = result.data.projects.slice(startIndex, endIndex);
+
+    res.json({
+      ...result,
+      data: {
+        ...result.data,
+        projects: paginatedProjects
+      },
+      pagination: {
+        page: filters.page,
+        limit: filters.limit,
+        total: result.data.projects.length,
+        totalPages: Math.ceil(result.data.projects.length / filters.limit),
+        hasNext: endIndex < result.data.projects.length,
+        hasPrev: filters.page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in progress analytics API:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get progress analytics',
+      details: error.message
+    });
+  }
+}));
+
+// Get incomplete work tracking
+app.get('/api/v2/progress/incomplete', asyncHandler(async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      projectName,
+      minCompletion,
+      maxCompletion,
+      minVelocity
+    } = req.query;
+
+    const filters = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      projectName,
+      minCompletion: minCompletion ? parseInt(minCompletion) : undefined,
+      maxCompletion: maxCompletion ? parseInt(maxCompletion) : undefined,
+      minVelocity: minVelocity ? parseInt(minVelocity) : undefined
+    };
+
+    console.log('📋 Getting incomplete work with filters:', filters);
+
+    const result = await progressTrackingService.getIncompleteWork(filters);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    // Apply pagination
+    const startIndex = (filters.page - 1) * filters.limit;
+    const endIndex = startIndex + filters.limit;
+    const paginatedData = result.data.slice(startIndex, endIndex);
+
+    res.json({
+      ...result,
+      data: paginatedData,
+      pagination: {
+        page: filters.page,
+        limit: filters.limit,
+        total: result.data.length,
+        totalPages: Math.ceil(result.data.length / filters.limit),
+        hasNext: endIndex < result.data.length,
+        hasPrev: filters.page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in incomplete work API:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get incomplete work',
+      details: error.message
+    });
+  }
+}));
+
+// Get velocity trends
+app.get('/api/v2/progress/velocity', asyncHandler(async (req, res) => {
+  try {
+    const { projectName } = req.query;
+
+    console.log(`📊 Getting velocity trends${projectName ? ` for ${projectName}` : ''}`);
+
+    const result = await progressTrackingService.getVelocityTrends(projectName);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('❌ Error getting velocity trends:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get velocity trends',
+      details: error.message
+    });
+  }
+}));
+
+// Get blocked and stale items
+app.get('/api/v2/progress/blocked', asyncHandler(async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      projectName,
+      minCompletion,
+      maxCompletion,
+      minVelocity
+    } = req.query;
+
+    const filters = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      projectName,
+      minCompletion: minCompletion ? parseInt(minCompletion) : undefined,
+      maxCompletion: maxCompletion ? parseInt(maxCompletion) : undefined,
+      minVelocity: minVelocity ? parseInt(minVelocity) : undefined
+    };
+
+    console.log('🚫 Getting blocked and stale items with filters:', filters);
+
+    const result = await progressTrackingService.getBlockedAndStaleItems(filters);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    // Apply pagination to both blocked and stale items
+    const startIndex = (filters.page - 1) * filters.limit;
+    const endIndex = startIndex + filters.limit;
+    
+    const paginatedBlocked = result.data.blockedItems.slice(startIndex, endIndex);
+    const paginatedStale = result.data.staleItems.slice(startIndex, endIndex);
+
+    res.json({
+      ...result,
+      data: {
+        ...result.data,
+        blockedItems: paginatedBlocked,
+        staleItems: paginatedStale
+      },
+      pagination: {
+        page: filters.page,
+        limit: filters.limit,
+        totalBlocked: result.data.blockedItems.length,
+        totalStale: result.data.staleItems.length,
+        totalPages: Math.ceil(Math.max(result.data.blockedItems.length, result.data.staleItems.length) / filters.limit),
+        hasNext: endIndex < Math.max(result.data.blockedItems.length, result.data.staleItems.length),
+        hasPrev: filters.page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting blocked and stale items:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get blocked and stale items',
+      details: error.message
+    });
+  }
+}));
+
+// ============================================================================
+// CACHE MANAGEMENT ENDPOINTS
+// ============================================================================
+
+// Clear project management cache
+app.post('/api/v2/cache/projects/clear', asyncHandler(async (req, res) => {
+  try {
+    projectManagementService.clearCache();
+    res.json({
+      success: true,
+      message: 'Project management cache cleared successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error clearing project cache:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear project cache',
+      details: error.message
+    });
+  }
+}));
+
+// Clear progress tracking cache
+app.post('/api/v2/cache/progress/clear', asyncHandler(async (req, res) => {
+  try {
+    progressTrackingService.clearCache();
+    res.json({
+      success: true,
+      message: 'Progress tracking cache cleared successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error clearing progress cache:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear progress cache',
+      details: error.message
+    });
+  }
+}));
+
+// Get cache status
+app.get('/api/v2/cache/status', asyncHandler(async (req, res) => {
+  try {
+    const projectCacheStatus = projectManagementService.getCacheStatus();
+    const progressCacheStatus = progressTrackingService.getCacheStatus();
+    
+    res.json({
+      success: true,
+      data: {
+        projects: projectCacheStatus,
+        progress: progressCacheStatus,
+        totalEntries: projectCacheStatus.size + progressCacheStatus.size
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting cache status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get cache status',
+      details: error.message
+    });
+  }
+}));
+
+// Get performance statistics
+app.get('/api/v2/performance/stats', asyncHandler(async (req, res) => {
+  try {
+    const projectStats = projectManagementService.performanceOptimizer.getPerformanceStatistics();
+    const progressStats = progressTrackingService.performanceOptimizer.getPerformanceStatistics();
+    
+    res.json({
+      success: true,
+      data: {
+        projects: projectStats,
+        progress: progressStats,
+        combined: {
+          totalOperations: projectStats.totalOperations + progressStats.totalOperations,
+          averageDuration: (projectStats.averageDuration + progressStats.averageDuration) / 2,
+          averageThroughput: (projectStats.averageThroughput + progressStats.averageThroughput) / 2
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting performance stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get performance statistics',
+      details: error.message
+    });
+  }
+}));
+
+// Clear all performance caches
+app.post('/api/v2/performance/clear', asyncHandler(async (req, res) => {
+  try {
+    projectManagementService.performanceOptimizer.clearAllCaches();
+    progressTrackingService.performanceOptimizer.clearAllCaches();
+    
+    res.json({
+      success: true,
+      message: 'All performance caches cleared successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error clearing performance caches:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear performance caches',
+      details: error.message
+    });
+  }
+}));
+
+// ============================================================================
+// SERVER STARTUP
+// ============================================================================
+
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server started on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);

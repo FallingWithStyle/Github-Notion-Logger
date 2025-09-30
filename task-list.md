@@ -240,6 +240,76 @@
 
 ---
 
+## Epic 9: Projects and Progress View Redesign
+**Goal**: Redesign Projects and Progress views for better separation and user experience
+
+### Story 9.1: Projects View Redesign - Project Management Focus
+- [ ] Task 1: Remove individual story/task cards from Projects view
+- [ ] Task 2: Create project overview cards with high-level metrics
+- [ ] Task 3: Implement project health dashboard (PRD status, activity, etc.)
+- [ ] Task 4: Add project categorization and grouping
+- [ ] Task 5: Create repository management interface (scan, ignore, link PRD)
+- [ ] Task 6: Add project filtering by status, category, and activity
+- [ ] Task 7: Implement project quick actions (scan, view details, link PRD)
+- [ ] Task 8: Add project health indicators and alerts
+- [ ] Task 9: Create responsive design for project cards
+- [ ] Task 10: Add project search and sorting functionality
+
+### Story 9.2: Progress View Redesign - Completion Tracking Focus
+- [ ] Task 1: Redesign progress view to focus on completion tracking
+- [ ] Task 2: Create detailed progress bars with completion metrics
+- [ ] Task 3: Implement incomplete work tracking (stories, tasks)
+- [ ] Task 4: Add progress analytics and velocity trends
+- [ ] Task 5: Create expandable story/task details for specific work items
+- [ ] Task 6: Add completion rate tracking and time-to-completion metrics
+- [ ] Task 7: Implement blocked/stale item identification
+- [ ] Task 8: Create progress filtering by status and priority
+- [ ] Task 9: Add progress export and reporting features
+- [ ] Task 10: Implement progress visualization improvements
+
+### Story 9.3: API and Backend Updates
+- [ ] Task 1: Create new API endpoint for project overview data
+- [ ] Task 2: Implement project health status calculation
+- [ ] Task 3: Add incomplete work aggregation API
+- [ ] Task 4: Create progress analytics data processing
+- [ ] Task 5: Implement project categorization logic
+- [ ] Task 6: Add project filtering and search backend
+- [ ] Task 7: Create project health monitoring system
+- [ ] Task 8: Implement progress trend calculation
+- [ ] Task 9: Add project status synchronization
+- [ ] Task 10: Create performance optimization for new endpoints
+
+### Story 9.4: UI/UX Improvements and Testing
+- [ ] Task 1: Update navigation and view switching
+- [ ] Task 2: Implement consistent design language across views
+- [ ] Task 3: Add loading states and error handling
+- [ ] Task 4: Create responsive design for mobile devices
+- [ ] Task 5: Implement accessibility improvements
+- [ ] Task 6: Add user feedback and confirmation dialogs
+- [ ] Task 7: Create view transition animations
+- [ ] Task 8: Implement keyboard navigation support
+- [ ] Task 9: Add tooltips and help text
+- [ ] Task 10: Conduct user testing and feedback integration
+
+### Story 9.5: Code Refactoring and Architecture Improvements
+- [ ] Task 1: Extract API routes from server.js into separate route files
+- [ ] Task 2: Create dedicated controllers for different API endpoints
+- [ ] Task 3: Break out middleware functions into separate modules
+- [ ] Task 4: Extract utility functions into shared utility modules
+- [ ] Task 5: Create service layer for business logic separation
+- [ ] Task 6: Implement proper error handling middleware
+- [ ] Task 7: Add input validation middleware and schemas
+- [ ] Task 8: Create configuration management module
+- [ ] Task 9: Implement proper logging and monitoring utilities
+- [ ] Task 10: Add code documentation and API documentation
+- [ ] Task 11: Create database abstraction layer
+- [ ] Task 12: Implement proper dependency injection
+- [ ] Task 13: Add unit tests for refactored modules
+- [ ] Task 14: Create integration tests for API endpoints
+- [ ] Task 15: Implement code quality tools and linting rules
+
+---
+
 ## Notes
 - Use `- [ ]` for incomplete tasks, `- [x]` for completed tasks
 - Keep tasks directly under the Story they belong to
