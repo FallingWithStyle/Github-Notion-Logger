@@ -368,32 +368,48 @@ class ProgressTrackingService {
     };
 
     try {
-      // Get cached repository data
-      const { getAllCachedRepositories } = require('../notion');
-      const cachedRepos = await getAllCachedRepositories();
-      
-      sources.projectNames = cachedRepos.map(repo => repo.name);
-      cachedRepos.forEach(repo => {
-        sources.cachedData[repo.name] = {
-          name: repo.name,
-          progress: repo.progress || 0,
-          storiesTotal: repo.storyCount || 0,
-          storiesCompleted: Math.round(((repo.storyCount || 0) * (repo.progress || 0)) / 100),
-          tasksTotal: repo.taskCount || 0,
-          tasksCompleted: Math.round(((repo.taskCount || 0) * (repo.progress || 0)) / 100),
-          hasPrd: repo.hasPrd || false,
-          hasTaskList: repo.taskCount > 0,
-          lastActivity: repo.lastScanned,
-          category: repo.category || 'Miscellaneous / Standalone',
-          status: repo.status || 'unknown'
+      // Get commit log data as primary source (same as /api/projects endpoint)
+      const commitLogData = await this.getCommitLogData();
+      sources.projectNames = Object.keys(commitLogData);
+      Object.entries(commitLogData).forEach(([projectName, data]) => {
+        sources.commitLogData[projectName] = data;
+        // Use commit log data as cached data for consistency
+        sources.cachedData[projectName] = {
+          name: projectName,
+          progress: data.progress || 0,
+          storiesTotal: data.storiesTotal || 0,
+          storiesCompleted: data.storiesCompleted || 0,
+          tasksTotal: data.tasksTotal || 0,
+          tasksCompleted: data.tasksCompleted || 0,
+          hasPrd: data.hasPrd || false,
+          hasTaskList: data.hasTaskList || false,
+          lastActivity: data.lastActivity,
+          category: data.category || 'Miscellaneous / Standalone',
+          status: data.status || 'unknown'
         };
       });
 
-      // Get commit log data
-      const commitLogData = await this.getCommitLogData();
-      Object.entries(commitLogData).forEach(([projectName, data]) => {
-        sources.commitLogData[projectName] = data;
-      });
+      // Try to get additional cached repository data if available
+      try {
+        const { getAllCachedRepositories } = require('../notion');
+        const cachedRepos = await getAllCachedRepositories();
+        
+        // Merge any additional data from cached repos
+        cachedRepos.forEach(repo => {
+          if (sources.cachedData[repo.name]) {
+            // Update existing data with cached repo data
+            sources.cachedData[repo.name] = {
+              ...sources.cachedData[repo.name],
+              hasPrd: repo.hasPrd || sources.cachedData[repo.name].hasPrd,
+              hasTaskList: repo.hasTaskList || sources.cachedData[repo.name].hasTaskList,
+              storiesTotal: repo.storyCount || sources.cachedData[repo.name].storiesTotal,
+              tasksTotal: repo.taskCount || sources.cachedData[repo.name].tasksTotal
+            };
+          }
+        });
+      } catch (cacheError) {
+        console.warn('⚠️ Could not load cached repository data, using commit log data only:', cacheError.message);
+      }
 
       // Filter project names based on filters
       if (filters.projectName) {

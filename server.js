@@ -118,7 +118,7 @@ app.get('/commit-log.json', (req, res) => {
 
 // Note: Static file serving moved to after API routes to prevent conflicts
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3260;
 const SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 
 // Validate required environment variables
