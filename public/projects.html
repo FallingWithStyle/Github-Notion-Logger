@@ -926,7 +926,7 @@
                 // Load both API data and weekly planning data in parallel
                 const [apiResponse, weeklyResponse] = await Promise.allSettled([
                     fetch('/api/v2/projects/overview'),
-                    fetch('/api/weekly-planning')
+                    fetch('/api/weekly-plans')
                 ]);
                 
                 let apiData = null;
@@ -943,8 +943,13 @@
                 // Process weekly planning response
                 if (weeklyResponse.status === 'fulfilled') {
                     const weeklyResult = await weeklyResponse.value.json();
-                    if (weeklyResult.success && weeklyResult.data) {
-                        weeklyData = weeklyResult.data;
+                    if (weeklyResult.success && weeklyResult.plans && weeklyResult.plans.length > 0) {
+                        // Get the most recent weekly plan
+                        const latestPlan = weeklyResult.plans[weeklyResult.plans.length - 1];
+                        weeklyData = {
+                            projects: latestPlan.planData?.projects || [],
+                            categories: latestPlan.planData?.userAnswers?.categories || []
+                        };
                     }
                 }
                 
@@ -1006,13 +1011,17 @@
         async function loadCategories() {
             try {
                 // Load categories from weekly planning data
-                const response = await fetch('/api/weekly-planning');
+                const response = await fetch('/api/weekly-plans');
                 const result = await response.json();
                 
-                if (result.success && result.data && result.data.categories) {
+                if (result.success && result.plans && result.plans.length > 0) {
+                    // Get the most recent weekly plan
+                    const latestPlan = result.plans[result.plans.length - 1];
+                    const categories = latestPlan.planData?.userAnswers?.categories || [];
+                    
                     // Extract unique categories from weekly planning data
                     const categorySet = new Set();
-                    result.data.categories.forEach(category => {
+                    categories.forEach(category => {
                         if (category) categorySet.add(category);
                     });
                     
