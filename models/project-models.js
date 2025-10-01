@@ -280,9 +280,9 @@ class ProjectOverviewModel {
     this.health.identifyRiskFactors();
     this.progress = Math.max(0, Math.min(100, data.progress || 0));
     this.storiesTotal = Math.max(0, data.storiesTotal || 0);
-    this.storiesCompleted = Math.max(0, data.storiesCompleted || 0);
+    this.storiesCompleted = Math.max(0, Math.min(this.storiesTotal, data.storiesCompleted || 0));
     this.tasksTotal = Math.max(0, data.tasksTotal || 0);
-    this.tasksCompleted = Math.max(0, data.tasksCompleted || 0);
+    this.tasksCompleted = Math.max(0, Math.min(this.tasksTotal, data.tasksCompleted || 0));
     this.lastActivity = data.lastActivity ? new Date(data.lastActivity) : null;
     this.totalCommits = Math.max(0, data.totalCommits || 0);
     this.color = data.color || '#6B7280';
@@ -348,9 +348,9 @@ class ProgressAnalyticsModel {
     this.projectId = data.projectId || '';
     this.projectName = data.projectName || '';
     this.totalStories = Math.max(0, data.totalStories || 0);
-    this.completedStories = Math.max(0, data.completedStories || 0);
+    this.completedStories = Math.max(0, Math.min(this.totalStories, data.completedStories || 0));
     this.totalTasks = Math.max(0, data.totalTasks || 0);
-    this.completedTasks = Math.max(0, data.completedTasks || 0);
+    this.completedTasks = Math.max(0, Math.min(this.totalTasks, data.completedTasks || 0));
     this.incompleteStories = Math.max(0, data.incompleteStories || 0);
     this.incompleteTasks = Math.max(0, data.incompleteTasks || 0);
     this.velocity = data.velocity || 0; // stories completed per week

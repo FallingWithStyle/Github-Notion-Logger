@@ -82,6 +82,30 @@ describe('Mock Verification Tests', () => {
 
   describe('External API Mocks', () => {
     it('should mock GitHub API calls', async () => {
+      // Mock Octokit
+      const mockOctokit = {
+        rest: {
+          repos: {
+            listCommits: jest.fn().mockResolvedValue({
+              data: [
+                {
+                  sha: 'abc123',
+                  commit: {
+                    message: 'Test commit',
+                    author: { name: 'Test Author', date: '2024-01-01T00:00:00Z' }
+                  }
+                }
+              ]
+            })
+          }
+        }
+      };
+      
+      // Mock the require call
+      jest.doMock('@octokit/rest', () => ({
+        Octokit: jest.fn(() => mockOctokit)
+      }));
+      
       const { Octokit } = require('@octokit/rest');
       const octokit = new Octokit();
       
@@ -95,6 +119,21 @@ describe('Mock Verification Tests', () => {
     });
 
     it('should mock Notion API calls', async () => {
+      // Mock Notion Client
+      const mockNotionClient = {
+        databases: {
+          retrieve: jest.fn().mockResolvedValue({
+            id: 'test-database-id',
+            title: [{ plain_text: 'Test Database' }]
+          })
+        }
+      };
+      
+      // Mock the require call
+      jest.doMock('@notionhq/client', () => ({
+        Client: jest.fn(() => mockNotionClient)
+      }));
+      
       const { Client } = require('@notionhq/client');
       const notion = new Client({ auth: 'test-key' });
       

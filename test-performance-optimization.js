@@ -3,6 +3,19 @@
  * Tests parallel processing and timeout handling
  */
 
+// Set up mocks before requiring services
+jest.mock('./notion', () => require('./__mocks__/notion'));
+jest.mock('@notionhq/client', () => ({
+  Client: jest.fn(() => ({
+    databases: {
+      retrieve: jest.fn().mockResolvedValue({
+        id: 'test-database-id',
+        title: [{ plain_text: 'Test Database' }]
+      })
+    }
+  }))
+}));
+
 const ProjectManagementService = require('./services/project-management-service');
 const ProgressTrackingService = require('./services/progress-tracking-service');
 

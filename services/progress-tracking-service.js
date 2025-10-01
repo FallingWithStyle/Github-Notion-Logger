@@ -47,10 +47,22 @@ class ProgressTrackingService {
             cachedData: sources.cachedData[projectName]
           };
 
+          // Skip projects without any data
+          if (!projectSources.cachedData && !projectSources.githubData && !projectSources.notionData) {
+            console.warn(`⚠️ Skipping project ${projectName} - no data available`);
+            return { projectName, data: null, error: 'No data available' };
+          }
+
           const reconciledData = await this.consistencyService.reconcileProjectData(
             projectName, 
             projectSources
           );
+
+          // Skip if reconciled data doesn't have a name (invalid data)
+          if (!reconciledData.name) {
+            console.warn(`⚠️ Skipping project ${projectName} - invalid reconciled data`);
+            return { projectName, data: null, error: 'Invalid reconciled data' };
+          }
 
           const progressAnalytics = this.consistencyService.createProgressAnalyticsModel(reconciledData);
           return { projectName, data: progressAnalytics.toJSON(), error: null };
@@ -571,7 +583,7 @@ class ProgressTrackingService {
       }
 
       return {
-        trends: trends,
+        projects: trends,
         overall: {
           trend: trends.length > 0 ? trends[0].trend : 'stable',
           velocity: trends.length > 0 ? trends.reduce((sum, p) => sum + p.velocity, 0) / trends.length : 0,

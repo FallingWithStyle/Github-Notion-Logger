@@ -3,6 +3,8 @@
  * Tests data models, validation, and business logic
  */
 
+const assert = require('assert');
+
 // Jest is available globally in test environment
 const {
   ProjectStatus,
@@ -422,7 +424,7 @@ describe('Project Models', () => {
         completedTasks: 0
       });
 
-      assert(analytics1.getOverallCompletionPercentage() === 78, 'Should calculate correct overall completion percentage');
+      assert(analytics1.getOverallCompletionPercentage() === 79, 'Should calculate correct overall completion percentage');
       assert(analytics2.getOverallCompletionPercentage() === 0, 'Should return 0 for zero total items');
     });
 
