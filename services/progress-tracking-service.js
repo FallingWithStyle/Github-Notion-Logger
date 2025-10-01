@@ -368,12 +368,12 @@ class ProgressTrackingService {
     };
 
     try {
-      // Get commit log data as primary source (same as /api/projects endpoint)
-      const commitLogData = await this.getCommitLogData();
-      sources.projectNames = Object.keys(commitLogData);
-      Object.entries(commitLogData).forEach(([projectName, data]) => {
+      // Get projects data as primary source (same as /api/projects endpoint)
+      const projectsData = await this.getProjectsData();
+      sources.projectNames = Object.keys(projectsData);
+      Object.entries(projectsData).forEach(([projectName, data]) => {
         sources.commitLogData[projectName] = data;
-        // Use commit log data as cached data for consistency
+        // Use projects data as cached data for consistency
         sources.cachedData[projectName] = {
           name: projectName,
           progress: data.progress || 0,
@@ -423,6 +423,154 @@ class ProgressTrackingService {
     } catch (error) {
       console.error('❌ Error gathering project data:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Get projects data (same logic as /api/projects endpoint)
+   */
+  async getProjectsData() {
+    try {
+      const fs = require('fs').promises;
+      const path = require('path');
+      
+      const DATA_DIR = process.env.DATA_DIR || (require('fs').existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
+      const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
+      
+      if (!require('fs').existsSync(COMMIT_LOG_PATH)) {
+        return {};
+      }
+
+      const data = await fs.readFile(COMMIT_LOG_PATH, 'utf8');
+      const commitLog = JSON.parse(data);
+
+      // Calculate date range (90 days ago from today for better project visibility)
+      const today = new Date();
+      const ninetyDaysAgo = new Date(today);
+      ninetyDaysAgo.setDate(today.getDate() - 90);
+      const startDate = ninetyDaysAgo.toISOString().split('T')[0];
+      
+      // Filter data to last 90 days
+      const recentData = commitLog.filter(day => day.date >= startDate);
+      
+      // Aggregate data by project
+      const projectData = {};
+      
+      recentData.forEach(day => {
+        Object.entries(day.projects).forEach(([projectName, commitCount]) => {
+          if (!projectData[projectName]) {
+            projectData[projectName] = {
+              name: projectName,
+              totalCommits: 0,
+              activityDates: [],
+              lastActivity: null,
+              category: null,
+              status: 'unknown'
+            };
+          }
+          
+          projectData[projectName].totalCommits += commitCount;
+          projectData[projectName].activityDates.push(day.date);
+          
+          const activityDate = new Date(day.date);
+          if (!projectData[projectName].lastActivity || activityDate > new Date(projectData[projectName].lastActivity)) {
+            projectData[projectName].lastActivity = day.date;
+          }
+        });
+      });
+
+      // Load color palettes and project status data
+      const colorPalettes = await this.loadColorPalettes();
+      const projectStatusData = await this.loadProjectStatusData();
+      
+      // Enhance project data with additional information
+      Object.values(projectData).forEach(project => {
+        const colorData = colorPalettes[project.name];
+        const statusData = projectStatusData[project.name];
+        
+        project.category = colorData?.category || 'Miscellaneous / Standalone';
+        project.status = statusData?.status || 'unknown';
+        project.color = colorData?.hex || '#6B7280';
+        project.hasPrd = statusData?.hasPrd || false;
+        project.hasTaskList = statusData?.hasTaskList || false;
+        project.storiesTotal = statusData?.storiesTotal || 0;
+        project.storiesCompleted = statusData?.storiesCompleted || 0;
+        project.tasksTotal = statusData?.tasksTotal || 0;
+        project.tasksCompleted = statusData?.tasksCompleted || 0;
+        project.progress = statusData?.progress || 0;
+      });
+
+      return projectData;
+
+    } catch (error) {
+      console.warn('⚠️ Could not load projects data:', error.message);
+      return {};
+    }
+  }
+
+  /**
+   * Load color palettes data
+   */
+  async loadColorPalettes() {
+    try {
+      const fs = require('fs').promises;
+      const path = require('path');
+      
+      const DATA_DIR = process.env.DATA_DIR || (require('fs').existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
+      const COLOR_PALETTES_PATH = path.join(DATA_DIR, 'color-palettes.json');
+      
+      if (!require('fs').existsSync(COLOR_PALETTES_PATH)) {
+        return {};
+      }
+
+      const data = await fs.readFile(COLOR_PALETTES_PATH, 'utf8');
+      return JSON.parse(data);
+    } catch (error) {
+      console.warn('⚠️ Could not load color palettes:', error.message);
+      return {};
+    }
+  }
+
+  /**
+   * Load project status data
+   */
+  async loadProjectStatusData() {
+    try {
+      const fs = require('fs').promises;
+      const path = require('path');
+      
+      const DATA_DIR = process.env.DATA_DIR || (require('fs').existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
+      const WEEKLY_PLANS_PATH = path.join(DATA_DIR, 'weekly-plans.json');
+      
+      if (!require('fs').existsSync(WEEKLY_PLANS_PATH)) {
+        return {};
+      }
+
+      const data = await fs.readFile(WEEKLY_PLANS_PATH, 'utf8');
+      const weeklyPlans = JSON.parse(data);
+      
+      const projectStatusData = {};
+      weeklyPlans.forEach(plan => {
+        if (plan.projects) {
+          plan.projects.forEach(project => {
+            projectStatusData[project.name] = {
+              status: project.status || 'unknown',
+              hasPrd: project.hasPrd || false,
+              hasTaskList: project.hasTaskList || false,
+              storiesTotal: project.storiesTotal || 0,
+              storiesCompleted: project.storiesCompleted || 0,
+              tasksTotal: project.tasksTotal || 0,
+              tasksCompleted: project.tasksCompleted || 0,
+              progress: project.progress || 0
+            };
+          });
+        }
+      });
+      
+      return projectStatusData;
+    } catch (error) {
+      console.warn('⚠️ Could not load project status data:', error.message);
+      return {};
     }
   }
 
