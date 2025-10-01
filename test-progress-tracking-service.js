@@ -131,6 +131,40 @@ describe('ProgressTrackingService', () => {
     });
 
     it('should apply filters correctly', async () => {
+      // Mock the getProjectsData method to return test data
+      service.getProjectsData = async () => ({
+        'test-project-1': {
+          name: 'test-project-1',
+          totalCommits: 10,
+          activityDates: ['2024-01-15'],
+          lastActivity: '2024-01-15',
+          category: 'Web Development',
+          status: 'active',
+          progress: 75,
+          storiesTotal: 20,
+          storiesCompleted: 15,
+          tasksTotal: 50,
+          tasksCompleted: 40,
+          hasPrd: true,
+          hasTaskList: true
+        },
+        'test-project-2': {
+          name: 'test-project-2',
+          totalCommits: 5,
+          activityDates: ['2024-01-14'],
+          lastActivity: '2024-01-14',
+          category: 'Mobile Development',
+          status: 'planning',
+          progress: 30,
+          storiesTotal: 10,
+          storiesCompleted: 3,
+          tasksTotal: 25,
+          tasksCompleted: 8,
+          hasPrd: false,
+          hasTaskList: false
+        }
+      });
+
       const result = await service.getProgressAnalytics({ projectName: 'test-project-1' });
 
       assert(result.success === true, 'Should return successful response');
