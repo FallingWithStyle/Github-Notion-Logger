@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Stories - Github Notion Logger</title>
+    <title>Projects - Github Notion Logger</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="/commit-logger-favicon_1.png">
@@ -76,7 +76,41 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             max-width: 1200px;
-            text-align: center;
+        }
+
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.25rem;
+            background: #f8f9fa;
+            padding: 0.25rem;
+            border-radius: 6px;
+        }
+
+        .view-toggle .btn {
+            margin: 0;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .view-toggle .btn.active {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
         }
 
         .btn {
@@ -87,7 +121,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 1rem;
-            margin: 0.5rem;
+            margin: 0.25rem;
             transition: all 0.3s ease;
         }
 
@@ -118,12 +152,63 @@
             background: #218838;
         }
 
-        .btn.primary {
-            background: #007bff;
+        .btn.danger {
+            background: #dc3545;
         }
 
-        .btn.primary:hover {
-            background: #0056b3;
+        .btn.danger:hover {
+            background: #c82333;
+        }
+
+        .btn.small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            min-width: 120px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding-left: 2.5rem;
+            width: 250px;
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
         }
 
         .status {
@@ -144,308 +229,216 @@
             color: #721c24;
         }
 
-        .filters {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            align-items: center;
-            margin: 1rem 0;
-            flex-wrap: wrap;
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
         }
 
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .filter-group label {
-            font-weight: 500;
-        }
-
-        .filter-group select, .filter-group input {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-
-        .repositories-overview {
-            max-width: 1200px;
-            margin: 1rem auto;
-            padding: 1rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .repositories-overview h3 {
-            margin-bottom: 1rem;
-            color: #333;
-        }
-
-        .repo-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .repo-stat-card {
-            background: #f8f9fa;
-            padding: 0.75rem;
-            border-radius: 6px;
-            text-align: center;
-        }
-
-        .repo-stat-number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .repo-stat-label {
-            font-size: 0.8rem;
-            color: #666;
-            text-transform: uppercase;
-        }
-
-        .repositories-list {
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 0.5rem;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .repo-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .repo-actions {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-        }
-        
-        .btn-loading {
-            background: #6c757d;
-            color: white;
-            cursor: not-allowed;
-            opacity: 0.7;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        
-        .btn-success {
-            background: #28a745;
-            color: white;
-            cursor: not-allowed;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
-        }
-        
-        .btn-ignore {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-ignore:hover {
-            background: #f1b0b7;
-            border-color: #f1b0b7;
-            transform: scale(1.05);
-        }
-        
-        .btn-unignore {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-unignore:hover {
-            background: #218838;
-            transform: scale(1.05);
-        }
-        
-        .repo-status.ignored {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .repo-item:last-child {
-            border-bottom: none;
-        }
-
-        .repo-item .repo-name {
-            font-weight: 600;
-        }
-
-        .repo-item .repo-status {
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-
-        .repo-item .repo-status.has-prd { background: #d4edda; color: #155724; }
-        .repo-item .repo-status.no-prd { background: #f8d7da; color: #721c24; }
-        .repo-item .repo-status.needs-update { background: #fff3cd; color: #856404; }
-        .repo-item .repo-status.prd-linked { background: #cce5ff; color: #004085; }
-
-        .stories-container {
+        .projects-container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 1rem;
         }
-        
-        .project-group {
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
             margin: 2rem 0;
         }
-        
-        .project-header {
+
+        .projects-bar {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: #f8f9fa;
+            gap: 0.75rem;
+            margin: 2rem 0;
+        }
+
+        .project-bar {
+            background: white;
             border-radius: 8px;
-            border-left: 4px solid #007bff;
-        }
-        
-        .project-header-top {
-            display: flex;
-            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1rem 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            gap: 1rem;
             align-items: center;
+            transition: transform 0.2s ease;
+            border-left: 4px solid #667eea;
         }
-        
-        .project-header h3 {
-            margin: 0;
+
+        .project-bar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .project-bar.excellent {
+            border-left-color: #28a745;
+        }
+
+        .project-bar.good {
+            border-left-color: #17a2b8;
+        }
+
+        .project-bar.fair {
+            border-left-color: #ffc107;
+        }
+
+        .project-bar.poor {
+            border-left-color: #fd7e14;
+        }
+
+        .project-bar.critical {
+            border-left-color: #dc3545;
+        }
+
+        .project-bar-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .project-bar-name {
+            font-size: 1.1rem;
+            font-weight: 600;
             color: #333;
-            font-size: 1.2rem;
         }
-        
-        .project-stats {
+
+        .project-bar-category {
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            width: fit-content;
+        }
+
+        .project-bar-meta {
             display: flex;
             gap: 0.5rem;
-            flex-wrap: wrap;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #666;
         }
-        
-        .status-count {
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
+
+        .project-bar-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 120px;
         }
-        
-        .status-count.active { background: #d4edda; color: #155724; }
-        .status-count.planning { background: #cce5ff; color: #004085; }
-        .status-count.review { background: #fff3cd; color: #856404; }
-        .status-count.idea { background: #e2e3e5; color: #383d41; }
-        .status-count.done { background: #28a745; color: #ffffff; }
-        
-        .project-progress {
-            margin-top: 0.5rem;
+
+        .project-bar-progress-bar {
             width: 100%;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
+            height: 6px;
             background: #e9ecef;
-            border-radius: 4px;
+            border-radius: 3px;
             overflow: hidden;
-            margin-bottom: 0.5rem;
         }
-        
-        .progress-fill {
+
+        .project-bar-progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #28a745, #20c997);
             transition: width 0.3s ease;
         }
-        
-        .progress-stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+
+        .project-bar-progress-text {
             font-size: 0.8rem;
-            color: #6c757d;
+            color: #666;
+            text-align: center;
         }
-        
-        .progress-percentage {
-            font-weight: 600;
-            color: #28a745;
+
+        .project-bar-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            text-align: center;
+            min-width: 80px;
         }
-        
-        .progress-details {
+
+        .project-bar-stat-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .project-bar-stat-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .project-bar-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .project-bar .btn-sm {
+            padding: 0.4rem 0.8rem;
             font-size: 0.75rem;
         }
-        
-        .project-stories {
-            display: grid;
-            gap: 1rem;
-        }
 
-        .story-card {
+        .project-card {
             background: white;
-            padding: 1.5rem;
             border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
             transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
         }
 
-        .story-card:hover {
+        .project-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
         }
 
-        .story-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
+        .project-card.excellent {
+            border-left-color: #28a745;
         }
 
-        .story-title {
-            font-size: 1.3rem;
+        .project-card.good {
+            border-left-color: #17a2b8;
+        }
+
+        .project-card.fair {
+            border-left-color: #ffc107;
+        }
+
+        .project-card.poor {
+            border-left-color: #fd7e14;
+        }
+
+        .project-card.critical {
+            border-left-color: #dc3545;
+        }
+
+        .project-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .project-title {
+            font-size: 1.25rem;
             font-weight: 600;
             color: #333;
             margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .story-project {
+        .project-category {
             background: #e9ecef;
             color: #495057;
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 500;
         }
 
-        .story-meta {
+        .project-meta {
             display: flex;
             gap: 1rem;
             margin-bottom: 1rem;
@@ -460,27 +453,229 @@
             color: #666;
         }
 
+        .health-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .health-excellent {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .health-good {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .health-fair {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .health-poor {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .health-critical {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .project-body {
+            padding: 1.5rem;
+        }
+
+        .progress-section {
+            margin-bottom: 1rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .progress-percentage {
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .risk-factors {
+            margin-top: 1rem;
+        }
+
+        .risk-factors h4 {
+            font-size: 0.9rem;
+            color: #dc3545;
+            margin-bottom: 0.5rem;
+        }
+
+        .risk-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .risk-item {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin: 0.25rem 0;
+            display: inline-block;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .activity-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .activity-recent {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .activity-moderate {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .activity-stale {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .activity-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Status-specific styling for weekly planning statuses */
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-planning {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-idea {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .status-paused {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-done {
+            background: #28a745;
+            color: #ffffff;
+        }
+
+        .status-released {
+            background: #17a2b8;
+            color: #ffffff;
+        }
+
+        .status-unknown {
+            background: #6c757d;
+            color: #ffffff;
+        }
+
+        .status-parking-lot {
+            background: #fd7e14;
+            color: #ffffff;
+        }
+
+        .status-abandoned {
+            background: #dc3545;
+            color: #ffffff;
+        }
+
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .status-idea { background: #f8f9fa; color: #6c757d; }
-        .status-planning { background: #fff3cd; color: #856404; }
-        .status-active { background: #cce5ff; color: #004085; }
-        .status-review { background: #ffeaa7; color: #d63031; }
-        .status-done { background: #28a745; color: #ffffff; }
-
-        .story-notes {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: #666;
+            text-transform: capitalize;
         }
 
         .loading {
@@ -497,33 +692,47 @@
             margin: 1rem 0;
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
             gap: 1rem;
             margin: 2rem 0;
         }
 
-        .stat-card {
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
             background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 0.5rem;
+        .pagination button:hover:not(:disabled) {
+            background: #f8f9fa;
         }
 
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .current-page {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
         }
 
         @media (max-width: 768px) {
@@ -541,15 +750,36 @@
                 align-items: stretch;
             }
             
-            .story-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
+            .projects-grid {
+                grid-template-columns: 1fr;
             }
             
-            .story-meta {
+            .project-meta {
                 flex-direction: column;
                 gap: 0.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .project-bar {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+                text-align: center;
+            }
+
+            .project-bar-info {
+                align-items: center;
+            }
+
+            .project-bar-stats {
+                flex-direction: row;
+                justify-content: space-around;
+            }
+
+            .project-bar-actions {
+                justify-content: center;
             }
         }
     </style>
@@ -557,346 +787,643 @@
 <body>
     <div class="header">
         <h1>Github Notion Logger</h1>
+        <p>Project Management Dashboard</p>
     </div>
     
     <div class="nav-links">
         <a href="/" class="nav-link">🏃 Activity View</a>
         <a href="/week" class="nav-link">📅 Weekly Planning</a>
-        <a href="/projects-v2.html" class="nav-link active">📁 Projects</a>
-        <a href="/progress-v2.html" class="nav-link">📊 Progress</a>
+        <a href="/projects" class="nav-link active">📁 Projects</a>
+        <a href="/progress" class="nav-link">📊 Progress</a>
     </div>
     
     <div class="controls">
-        <button id="refresh-btn" class="btn">🔄 Refresh</button>
-        <button id="scan-repos-btn" class="btn primary">🔍 Scan Repos</button>
-        <button id="toggle-ignored-btn" class="btn secondary">🚫 Show Ignored</button>
-        <button id="clear-cache-btn" class="btn secondary">🗑️ Clear Cache</button>
+        <div class="controls-header">
+            <h2 class="controls-title">Project Overview</h2>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="view-toggle">
+                    <button id="card-view-btn" class="btn secondary active">📋 Card View</button>
+                    <button id="bar-view-btn" class="btn secondary">📊 Bar View</button>
+                </div>
+                <div>
+                    <button id="refresh-btn" class="btn">🔄 Refresh</button>
+                    <button id="clear-cache-btn" class="btn secondary">🗑️ Clear Cache</button>
+                </div>
+            </div>
+        </div>
         
         <div class="filters">
+            <div class="filter-group search-box">
+                <input type="text" id="search-input" placeholder="Search projects...">
+            </div>
             <div class="filter-group">
-                <label for="project-filter">Project:</label>
-                <select id="project-filter">
-                    <option value="">All Projects</option>
+                <label for="category-filter">Category:</label>
+                <select id="category-filter">
+                    <option value="">All Categories</option>
                 </select>
             </div>
             <div class="filter-group">
                 <label for="status-filter">Status:</label>
                 <select id="status-filter">
                     <option value="">All Statuses</option>
-                    <option value="Idea">Idea</option>
-                    <option value="Planning">Planning</option>
-                    <option value="Active">Active</option>
-                    <option value="Review">Review</option>
-                    <option value="Done">Done</option>
+                    <option value="active">Active</option>
+                    <option value="planning">Planning</option>
+                    <option value="idea">Idea</option>
+                    <option value="paused">Paused</option>
+                    <option value="done">Done</option>
+                    <option value="released">Released</option>
+                    <option value="unknown">Unknown</option>
+                    <option value="parking-lot">Parking Lot</option>
+                    <option value="abandoned">Abandoned</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="health-filter">Health:</label>
+                <select id="health-filter">
+                    <option value="">All Health</option>
+                    <option value="excellent">Excellent</option>
+                    <option value="good">Good</option>
+                    <option value="fair">Fair</option>
+                    <option value="poor">Poor</option>
+                    <option value="critical">Critical</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="activity-filter">Activity:</label>
+                <select id="activity-filter">
+                    <option value="">All Activity</option>
+                    <option value="recent">Recent</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="stale">Stale</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="sort-filter">Sort by:</label>
+                <select id="sort-filter">
+                    <option value="lastActivity">Last Activity</option>
+                    <option value="name">Name</option>
+                    <option value="healthScore">Health Score</option>
+                    <option value="progress">Progress</option>
                 </select>
             </div>
         </div>
         
-        <div class="status" id="status">Ready to load stories</div>
+        <div class="status" id="status">Ready to load projects</div>
     </div>
     
-    <!-- Repository Overview Section -->
-    <div id="repositories-overview" class="repositories-overview" style="display: none;">
-        <h3>📊 Repository PRD Status</h3>
-        <div class="repo-stats">
-            <div class="repo-stat-card">
-                <div class="repo-stat-number" id="total-repos">0</div>
-                <div class="repo-stat-label">Total</div>
-            </div>
-            <div class="repo-stat-card">
-                <div class="repo-stat-number" id="repos-with-prd">0</div>
-                <div class="repo-stat-label">With PRD</div>
-            </div>
-            <div class="repo-stat-card">
-                <div class="repo-stat-number" id="repos-without-prd">0</div>
-                <div class="repo-stat-label">Without PRD</div>
-            </div>
-            <div class="repo-stat-card">
-                <div class="repo-stat-number" id="repos-needing-update">0</div>
-                <div class="repo-stat-label">Needs Update</div>
-            </div>
-        </div>
-        <div id="repositories-list" class="repositories-list">
-            <!-- Repository details will be populated here -->
-        </div>
-    </div>
-
-    <!-- Stories Section -->
-    <div class="main-content">
-        <div class="stats" id="stats" style="display: none;">
-            <div class="stat-card">
-                <div class="stat-number" id="total-stories">0</div>
-                <div class="stat-label">Total Stories</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="active-stories">0</div>
-                <div class="stat-label">Active</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="planning-stories">0</div>
-                <div class="stat-label">Planning</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="done-stories">0</div>
-                <div class="stat-label">Done</div>
-            </div>
-        </div>
-        
+    <div class="projects-container">
         <div id="loading" class="loading">
-            <p>Loading stories...</p>
+            <p>Loading projects...</p>
         </div>
         
-        <div id="error" class="error hidden"></div>
+        <div id="error" class="error" style="display: none;"></div>
         
-        <div id="stories-container" class="stories-container" style="display: none;"></div>
+        <div id="projects-grid" class="projects-grid" style="display: none;"></div>
+        
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <h3>No Projects Found</h3>
+            <p>No projects match your current filters. Try adjusting your search criteria.</p>
+        </div>
+        
+        <div id="pagination" class="pagination" style="display: none;"></div>
     </div>
     
     <script>
-        let stories = [];
-        let projects = new Set();
-        let projectProgress = new Map();
-        let showingIgnored = false;
-        let ignoredRepos = [];
+        let projects = [];
+        let filteredProjects = [];
+        let currentPage = 1;
+        let pageSize = 12;
+        let totalPages = 1;
+        let categories = [];
+        let currentView = 'card'; // Default to card view
         
-        // Load stories and repository overview on page load
+        // Load projects on page load
         document.addEventListener('DOMContentLoaded', () => {
-            loadStories();
-            loadRepositoryOverview();
-            loadProjectProgress();
+            loadProjects();
+            loadCategories();
             setupEventListeners();
         });
         
         function setupEventListeners() {
-            document.getElementById('refresh-btn').addEventListener('click', loadStories);
-            document.getElementById('scan-repos-btn').addEventListener('click', scanAllRepositories);
-            document.getElementById('toggle-ignored-btn').addEventListener('click', toggleIgnoredView);
-            document.getElementById('clear-cache-btn').addEventListener('click', clearScanCache);
-            document.getElementById('project-filter').addEventListener('change', filterStories);
-            document.getElementById('status-filter').addEventListener('change', filterStories);
+            document.getElementById('refresh-btn').addEventListener('click', loadProjects);
+            document.getElementById('clear-cache-btn').addEventListener('click', clearCache);
+            document.getElementById('search-input').addEventListener('input', debounce(filterProjects, 300));
+            document.getElementById('category-filter').addEventListener('change', filterProjects);
+            document.getElementById('status-filter').addEventListener('change', filterProjects);
+            document.getElementById('health-filter').addEventListener('change', filterProjects);
+            document.getElementById('activity-filter').addEventListener('change', filterProjects);
+            document.getElementById('sort-filter').addEventListener('change', filterProjects);
+            document.getElementById('card-view-btn').addEventListener('click', () => switchView('card'));
+            document.getElementById('bar-view-btn').addEventListener('click', () => switchView('bar'));
         }
         
-        async function loadStories() {
+        async function loadProjects() {
             try {
                 showLoading(true);
-                updateStatus('Loading stories...', '');
+                updateStatus('Loading projects...', '');
                 
-                const response = await fetch('/api/prd-stories');
-                const result = await response.json();
+                // Load both API data and weekly planning data in parallel
+                const [apiResponse, weeklyResponse] = await Promise.allSettled([
+                    fetch('/api/v2/projects/overview'),
+                    fetch('/api/weekly-planning')
+                ]);
                 
-                if (result.success) {
-                    stories = result.data;
-                    projects = new Set(stories.map(s => s.projectName));
-                    
-                    updateProjectFilter();
-                    displayStories();
-                    updateStats();
-                    showLoading(false);
-                    
-                    // Show filtering and deduplication info
-                    let statusMessage = `Loaded ${stories.length} stories`;
-                    if (result.archivedVersionsRemoved > 0) {
-                        statusMessage += ` (archived ${result.archivedVersionsRemoved} old PRD versions)`;
+                let apiData = null;
+                let weeklyData = null;
+                
+                // Process API response
+                if (apiResponse.status === 'fulfilled') {
+                    const apiResult = await apiResponse.value.json();
+                    if (apiResult.success) {
+                        apiData = apiResult.data;
                     }
-                    if (result.duplicatesRemoved > 0) {
-                        statusMessage += ` (removed ${result.duplicatesRemoved} duplicates)`;
-                    }
-                    updateStatus(statusMessage, 'success');
-                } else {
-                    throw new Error(result.error || 'Failed to load stories');
                 }
+                
+                // Process weekly planning response
+                if (weeklyResponse.status === 'fulfilled') {
+                    const weeklyResult = await weeklyResponse.value.json();
+                    if (weeklyResult.success && weeklyResult.data) {
+                        weeklyData = weeklyResult.data;
+                    }
+                }
+                
+                if (!apiData) {
+                    throw new Error('Failed to load project data from API');
+                }
+                
+                // Merge API data with weekly planning data
+                projects = mergeProjectData(apiData, weeklyData);
+                filteredProjects = [...projects];
+                
+                // Update category filter with project counts
+                updateCategoryFilter();
+                
+                displayProjects();
+                updateStatus(`Loaded ${projects.length} projects (merged with weekly planning data)`, 'success');
+                showLoading(false);
             } catch (error) {
                 showLoading(false);
-                showError(`Error loading stories: ${error.message}`);
-                updateStatus('Failed to load stories', 'error');
+                showError(`Error loading projects: ${error.message}`);
+                updateStatus('Failed to load projects', 'error');
             }
         }
-        
-        async function loadProjectProgress() {
-            try {
-                console.log('📊 Loading project progress data...');
+
+        function mergeProjectData(apiData, weeklyData) {
+            // Create a map of weekly planning data by project name for quick lookup
+            const weeklyMap = new Map();
+            if (weeklyData && weeklyData.projects) {
+                weeklyData.projects.forEach(project => {
+                    if (project.name) {
+                        weeklyMap.set(project.name, project);
+                    }
+                });
+            }
+            
+            // Merge API data with weekly planning data
+            return apiData.map(apiProject => {
+                const weeklyProject = weeklyMap.get(apiProject.name) || weeklyMap.get(apiProject.repository);
                 
-                const response = await fetch('/api/project-progress');
+                if (weeklyProject) {
+                    // Merge the data, prioritizing weekly planning for status and category
+                    return {
+                        ...apiProject, // Start with API data (health scores, progress, etc.)
+                        status: weeklyProject.status || apiProject.status, // Weekly planning status takes priority
+                        category: weeklyProject.category || apiProject.category, // Weekly planning category takes priority
+                        // Keep any additional weekly planning data
+                        head: weeklyProject.head,
+                        heart: weeklyProject.heart,
+                        // Update lastActivity if weekly planning has more recent data
+                        lastActivity: weeklyProject.lastActivity || apiProject.lastActivity
+                    };
+                }
+                
+                // If no weekly planning data found, return API data as-is
+                return apiProject;
+            });
+        }
+        
+        async function loadCategories() {
+            try {
+                // Load categories from weekly planning data
+                const response = await fetch('/api/weekly-planning');
                 const result = await response.json();
                 
-                if (result.success) {
-                    // Store progress data in a Map for easy lookup
-                    projectProgress.clear();
-                    result.data.forEach(project => {
-                        if (project.progress) {
-                            projectProgress.set(project.repository, project.progress);
-                        }
+                if (result.success && result.data && result.data.categories) {
+                    // Extract unique categories from weekly planning data
+                    const categorySet = new Set();
+                    result.data.categories.forEach(category => {
+                        if (category) categorySet.add(category);
                     });
                     
-                    console.log(`📈 Loaded progress data for ${projectProgress.size} projects`);
-                    
-                    // Update display if stories are already loaded
-                    if (stories.length > 0) {
-                        displayStories();
+                    // Also add categories from loaded projects if available
+                    if (projects && projects.length > 0) {
+                        projects.forEach(project => {
+                            if (project.category) {
+                                categorySet.add(project.category);
+                            }
+                        });
                     }
+                    
+                    categories = Array.from(categorySet).map(category => ({
+                        name: category,
+                        count: 0 // Will be calculated when projects are loaded
+                    }));
+                    
+                    updateCategoryFilter();
                 } else {
-                    console.warn('⚠️ Failed to load project progress:', result.error);
+                    // Fallback to default categories if weekly planning data is not available
+                    categories = [
+                        { name: 'Writing & Story Tools', count: 0 },
+                        { name: 'Infrastructure & Utilities', count: 0 },
+                        { name: 'Avoros (Shared Fantasy/Game World)', count: 0 },
+                        { name: 'Miscellaneous / Standalone', count: 0 }
+                    ];
+                    updateCategoryFilter();
                 }
             } catch (error) {
-                console.error('❌ Error loading project progress:', error.message);
+                console.warn('Failed to load categories from weekly planning, using defaults:', error.message);
+                // Fallback to default categories
+                categories = [
+                    { name: 'Writing & Story Tools', count: 0 },
+                    { name: 'Infrastructure & Utilities', count: 0 },
+                    { name: 'Avoros (Shared Fantasy/Game World)', count: 0 },
+                    { name: 'Miscellaneous / Standalone', count: 0 }
+                ];
+                updateCategoryFilter();
             }
         }
         
-        function updateProjectFilter() {
-            const filter = document.getElementById('project-filter');
+        function updateCategoryFilter() {
+            const filter = document.getElementById('category-filter');
             const currentValue = filter.value;
             
-            filter.innerHTML = '<option value="">All Projects</option>';
-            Array.from(projects).sort().forEach(project => {
+            // Calculate counts based on loaded projects
+            const categoryCounts = {};
+            projects.forEach(project => {
+                if (project.category) {
+                    categoryCounts[project.category] = (categoryCounts[project.category] || 0) + 1;
+                }
+            });
+            
+            filter.innerHTML = '<option value="">All Categories</option>';
+            categories.forEach(category => {
+                const count = categoryCounts[category.name] || 0;
                 const option = document.createElement('option');
-                option.value = project;
-                option.textContent = project;
-                if (project === currentValue) {
+                option.value = category.name;
+                option.textContent = `${category.name} (${count})`;
+                if (category.name === currentValue) {
                     option.selected = true;
                 }
                 filter.appendChild(option);
             });
         }
         
-        function displayStories() {
-            const container = document.getElementById('stories-container');
-            const filteredStories = getFilteredStories();
+        function filterProjects() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const category = document.getElementById('category-filter').value;
+            const status = document.getElementById('status-filter').value;
+            const health = document.getElementById('health-filter').value;
+            const activity = document.getElementById('activity-filter').value;
+            const sortBy = document.getElementById('sort-filter').value;
             
-            if (filteredStories.length === 0) {
-                container.innerHTML = '<div class="loading"><p>No stories found matching the current filters</p></div>';
-                container.style.display = 'block';
+            filteredProjects = projects.filter(project => {
+                // Search filter
+                if (searchTerm && !project.name.toLowerCase().includes(searchTerm) &&
+                    !project.category.toLowerCase().includes(searchTerm) &&
+                    !project.repository.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                
+                // Category filter
+                if (category && project.category !== category) {
+                    return false;
+                }
+                
+                // Status filter
+                if (status && project.status !== status) {
+                    return false;
+                }
+                
+                // Health filter
+                if (health && project.health.healthStatus !== health) {
+                    return false;
+                }
+                
+                // Activity filter
+                if (activity && project.activityStatus !== activity) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            // Sort projects
+            filteredProjects.sort((a, b) => {
+                switch (sortBy) {
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'healthScore':
+                        return b.health.healthScore - a.health.healthScore;
+                    case 'progress':
+                        return b.progress - a.progress;
+                    case 'lastActivity':
+                    default:
+                        if (!a.lastActivity && !b.lastActivity) return 0;
+                        if (!a.lastActivity) return 1;
+                        if (!b.lastActivity) return -1;
+                        return new Date(b.lastActivity) - new Date(a.lastActivity);
+                }
+            });
+            
+            currentPage = 1;
+            displayProjects();
+        }
+        
+        function displayProjects() {
+            const container = document.getElementById('projects-grid');
+            const emptyState = document.getElementById('empty-state');
+            const pagination = document.getElementById('pagination');
+            
+            if (filteredProjects.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+                pagination.style.display = 'none';
                 return;
             }
             
-            // Group stories by project
-            const groupedStories = {};
-            filteredStories.forEach(story => {
-                const project = story.projectName || 'Unknown Project';
-                if (!groupedStories[project]) {
-                    groupedStories[project] = [];
-                }
-                groupedStories[project].push(story);
-            });
+            // Calculate pagination
+            totalPages = Math.ceil(filteredProjects.length / pageSize);
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const pageProjects = filteredProjects.slice(startIndex, endIndex);
             
-            // Generate HTML with project headers
-            let html = '';
-            Object.keys(groupedStories).sort().forEach(project => {
-                const projectStories = groupedStories[project];
-                const projectStatusCounts = projectStories.reduce((acc, story) => {
-                    acc[story.status] = (acc[story.status] || 0) + 1;
-                    return acc;
-                }, {});
-                
-                // Get progress data for this project
-                const progress = projectProgress.get(project);
-                const progressHtml = progress ? `
-                    <div class="project-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${progress.progressPercentage}%"></div>
-                        </div>
-                        <div class="progress-stats">
-                            <span class="progress-percentage">${progress.progressPercentage}%</span>
-                            <span class="progress-details">
-                                ${progress.totalStories > 0 ? `${progress.completedStories}/${progress.totalStories} stories` : ''}
-                                ${progress.totalTasks > 0 ? ` • ${progress.completedTasks}/${progress.totalTasks} tasks` : ''}
-                            </span>
-                        </div>
-                    </div>
-                ` : '';
-                
-                html += `
-                    <div class="project-group">
-                        <div class="project-header">
-                            <div class="project-header-top">
-                                <h3>${project}</h3>
-                                <div class="project-stats">
-                                    ${Object.entries(projectStatusCounts).map(([status, count]) => 
-                                        `<span class="status-count status-${status.toLowerCase()}">${status}: ${count}</span>`
-                                    ).join(' ')}
-                                </div>
-                            </div>
-                            ${progressHtml}
-                        </div>
-                        <div class="project-stories">
-                            ${projectStories.map(story => `
-                                <div class="story-card">
-                                    <div class="story-header">
-                                        <div>
-                                            <div class="story-title">${story.storyTitle}</div>
-                                            <div class="story-project">${story.projectName}</div>
-                                        </div>
-                                        <span class="status-badge status-${story.status.toLowerCase()}">${story.status}</span>
-                                    </div>
-                                    
-                                    <div class="story-meta">
-                                        ${story.priority ? `<div class="meta-item">🎯 Priority: ${story.priority}</div>` : ''}
-                                        ${story.storyPoints ? `<div class="meta-item">📏 Story Points: ${story.storyPoints}</div>` : ''}
-                                        ${story.repository ? `<div class="meta-item">📁 Repo: ${story.repository}</div>` : ''}
-                                        <div class="meta-item">📅 Created: ${formatDate(story.created)}</div>
-                                        <div class="meta-item">🔄 Updated: ${formatDate(story.lastUpdated)}</div>
-                                    </div>
-                                    
-                                    ${story.notes ? `<div class="story-notes">${story.notes}</div>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
+            // Generate projects based on current view
+            if (currentView === 'bar') {
+                container.innerHTML = `
+                    <div class="projects-bar">
+                        ${pageProjects.map(project => createProjectBar(project)).join('')}
                     </div>
                 `;
-            });
-            
-            container.innerHTML = html;
-            container.style.display = 'block';
-        }
-        
-        function getFilteredStories() {
-            let filtered = [...stories];
-            
-            const projectFilter = document.getElementById('project-filter').value;
-            const statusFilter = document.getElementById('status-filter').value;
-            
-            if (projectFilter) {
-                filtered = filtered.filter(s => s.projectName === projectFilter);
+                container.style.display = 'block';
+            } else {
+                container.innerHTML = pageProjects.map(project => createProjectCard(project)).join('');
+                container.style.display = 'grid';
             }
             
-            if (statusFilter) {
-                filtered = filtered.filter(s => s.status === statusFilter);
+            emptyState.style.display = 'none';
+            
+            // Show pagination if needed
+            if (totalPages > 1) {
+                displayPagination();
+                pagination.style.display = 'flex';
+            } else {
+                pagination.style.display = 'none';
+            }
+        }
+        
+        function createProjectCard(project) {
+            const healthClass = project.health.healthStatus || 'unknown';
+            const activityClass = project.activityStatus || 'inactive';
+            
+            return `
+                <div class="project-card ${healthClass}">
+                    <div class="project-header">
+                        <div class="project-title">
+                            <span>${project.name}</span>
+                            <span class="project-category">${project.category}</span>
+                        </div>
+                        <div class="project-meta">
+                            <div class="meta-item">
+                                <span>📁</span>
+                                <span>${project.repository}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="status-badge status-${project.status || 'unknown'}">${project.status || 'unknown'}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="activity-status activity-${activityClass}">${activityClass}</span>
+                            </div>
+                        </div>
+                        <div class="health-indicator health-${healthClass}">
+                            <span>🏥</span>
+                            <span>${project.health.healthScore}/100 - ${project.health.healthStatus}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="project-body">
+                        <div class="progress-section">
+                            <div class="progress-header">
+                                <span class="progress-label">Progress</span>
+                                <span class="progress-percentage">${project.progress}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <div class="progress-stats">
+                                <span>${project.storiesCompleted}/${project.storiesTotal} stories</span>
+                                <span>${project.tasksCompleted}/${project.tasksTotal} tasks</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">${project.totalCommits}</div>
+                                <div class="stat-label">Commits</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${project.health.completionVelocity}</div>
+                                <div class="stat-label">Velocity</div>
+                            </div>
+                            ${project.head && project.heart ? `
+                                <div class="stat-item">
+                                    <div class="stat-number">${project.head}/${project.heart}</div>
+                                    <div class="stat-label">Head/Heart</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${project.health.riskFactors && project.health.riskFactors.length > 0 ? `
+                            <div class="risk-factors">
+                                <h4>⚠️ Risk Factors</h4>
+                                <ul class="risk-list">
+                                    ${project.health.riskFactors.map(risk => `<li class="risk-item">${risk}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="project-actions">
+                            <button class="btn btn-small" onclick="viewProjectDetails('${project.name}')">
+                                📋 Details
+                            </button>
+                            <button class="btn btn-small secondary" onclick="scanProject('${project.name}')">
+                                🔍 Scan
+                            </button>
+                            ${project.hasPrd ? '' : `
+                                <button class="btn btn-small danger" onclick="linkPrd('${project.name}')">
+                                    📄 Link PRD
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createProjectBar(project) {
+            const healthClass = project.health.healthStatus || 'unknown';
+            const activityClass = project.activityStatus || 'inactive';
+            
+            return `
+                <div class="project-bar ${healthClass}">
+                    <div class="project-bar-info">
+                        <div class="project-bar-name">${project.name}</div>
+                        <div class="project-bar-category">${project.category}</div>
+                        <div class="project-bar-meta">
+                            <span>📁 ${project.repository}</span>
+                            <span class="status-badge status-${project.status || 'unknown'}">${project.status || 'unknown'}</span>
+                            <span class="activity-status activity-${activityClass}">${activityClass}</span>
+                        </div>
+                    </div>
+                    <div class="project-bar-progress">
+                        <div class="project-bar-progress-bar">
+                            <div class="project-bar-progress-fill" style="width: ${project.progress}%"></div>
+                        </div>
+                        <div class="project-bar-progress-text">${project.progress}% Complete</div>
+                    </div>
+                    <div class="project-bar-stats">
+                        <div class="project-bar-stat-value">${project.storiesCompleted}/${project.storiesTotal}</div>
+                        <div class="project-bar-stat-label">Stories</div>
+                    </div>
+                    <div class="project-bar-stats">
+                        <div class="project-bar-stat-value">${project.tasksCompleted}/${project.tasksTotal}</div>
+                        <div class="project-bar-stat-label">Tasks</div>
+                    </div>
+                    ${project.head && project.heart ? `
+                        <div class="project-bar-stats">
+                            <div class="project-bar-stat-value">${project.head}/${project.heart}</div>
+                            <div class="project-bar-stat-label">Head/Heart</div>
+                        </div>
+                    ` : ''}
+                    <div class="project-bar-actions">
+                        <button class="btn btn-sm" onclick="viewProjectDetails('${project.name}')">
+                            📋 Details
+                        </button>
+                        <button class="btn btn-sm secondary" onclick="scanProject('${project.name}')">
+                            🔍 Scan
+                        </button>
+                        ${project.hasPrd ? '' : `
+                            <button class="btn btn-sm danger" onclick="linkPrd('${project.name}')">
+                                📄 Link PRD
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function displayPagination() {
+            const pagination = document.getElementById('pagination');
+            let html = '';
+            
+            // Previous button
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
+            
+            // Page numbers
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                html += `<button onclick="changePage(1)">1</button>`;
+                if (startPage > 2) {
+                    html += `<span>...</span>`;
+                }
             }
             
-            return filtered;
-        }
-        
-        function filterStories() {
-            displayStories();
-        }
-        
-        function updateStats() {
-            const stats = document.getElementById('stats');
-            const total = stories.length;
-            const active = stories.filter(s => s.status === 'Active').length;
-            const planning = stories.filter(s => s.status === 'Planning').length;
-            const done = stories.filter(s => s.status === 'Done').length;
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button onclick="changePage(${i})" ${i === currentPage ? 'class="current-page"' : ''}>${i}</button>`;
+            }
             
-            document.getElementById('total-stories').textContent = total;
-            document.getElementById('active-stories').textContent = active;
-            document.getElementById('planning-stories').textContent = planning;
-            document.getElementById('done-stories').textContent = done;
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<span>...</span>`;
+                }
+                html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
+            }
             
-            stats.style.display = 'grid';
+            // Next button
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+            
+            pagination.innerHTML = html;
         }
         
+        function changePage(page) {
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                displayProjects();
+            }
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            // Update button states
+            document.getElementById('card-view-btn').classList.toggle('active', view === 'card');
+            document.getElementById('bar-view-btn').classList.toggle('active', view === 'bar');
+            
+            // Redisplay projects with new view
+            displayProjects();
+        }
         
+        function viewProjectDetails(projectName) {
+            // TODO: Implement project details modal or navigation
+            alert(`View details for ${projectName}`);
+        }
         
+        function scanProject(projectName) {
+            // TODO: Implement project scanning
+            alert(`Scan project ${projectName}`);
+        }
         
+        function linkPrd(projectName) {
+            // TODO: Implement PRD linking
+            alert(`Link PRD for ${projectName}`);
+        }
+        
+        async function clearCache() {
+            try {
+                if (!confirm('Are you sure you want to clear the cache? This will refresh all project data.')) {
+                    return;
+                }
+                
+                updateStatus('Clearing cache...', '');
+                
+                const response = await fetch('/api/v2/cache/projects/clear', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('Cache cleared successfully', 'success');
+                    loadProjects();
+                } else {
+                    throw new Error(result.error || 'Failed to clear cache');
+                }
+            } catch (error) {
+                updateStatus(`Failed to clear cache: ${error.message}`, 'error');
+            }
+        }
         
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
-            document.getElementById('stories-container').style.display = show ? 'none' : 'block';
+            document.getElementById('projects-grid').style.display = show ? 'none' : 'grid';
         }
         
         function showError(message) {
             const errorDiv = document.getElementById('error');
             errorDiv.textContent = message;
-            errorDiv.classList.remove('hidden');
-            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
         }
         
         function updateStatus(message, type) {
@@ -904,453 +1431,17 @@
             statusDiv.textContent = message;
             statusDiv.className = `status ${type}`;
         }
-
-        async function scanAllRepositories() {
-            const button = document.getElementById('scan-repos-btn');
-            const originalText = button.textContent;
-            
-            try {
-                // Show loading state
-                button.disabled = true;
-                button.textContent = '⏳ Scanning All...';
-                button.className = 'btn primary btn-loading';
-                
-                updateStatus('🔍 Scanning all repositories...', '');
-                
-                // Since we don't have a bulk scan endpoint, we'll scan each repository individually
-                const reposResponse = await fetch('/api/prd-stories/repositories');
-                const reposResult = await reposResponse.json();
-                
-                if (reposResult.success) {
-                    const repos = reposResult.repositories.filter(repo => repo.status === 'not-processed');
-                    let processed = 0;
-                    
-                    for (const repo of repos) {
-                        try {
-                            const response = await fetch('/api/prd-stories/process-repo', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ repository: repo.name })
-                            });
-                            
-                            if (response.ok) {
-                                processed++;
-                                updateStatus(`🔍 Scanning all repositories... (${processed}/${repos.length})`, '');
-                            }
-                        } catch (error) {
-                            console.warn(`Failed to scan ${repo.name}:`, error.message);
-                        }
-                    }
-                    
-                    updateStatus(`✅ Scanned ${processed} repositories`, 'success');
-                    loadRepositoryOverview();
-                    loadStories();
-                    loadProjectProgress();
-                } else {
-                    throw new Error(reposResult.error || 'Failed to get repositories');
-                }
-            } catch (error) {
-                updateStatus(`❌ Scan failed: ${error.message}`, 'error');
-            } finally {
-                // Reset button
-                button.disabled = false;
-                button.textContent = originalText;
-                button.className = 'btn primary';
-            }
-        }
         
-        function parseRepositoryScanOutput(output) {
-            const repos = [];
-            const lines = output.split('\n');
-            let currentRepo = null;
-            
-            for (const line of lines) {
-                if (line.includes('🔄 Processing repository:')) {
-                    const repoName = line.split(':')[1]?.trim();
-                    if (repoName) {
-                        currentRepo = { name: repoName, status: 'unknown', prdCount: 0 };
-                        repos.push(currentRepo);
-                    }
-                }
-                
-                if (line.includes('📁 Found') && line.includes('potential PRD files')) {
-                    const match = line.match(/Found (\d+) potential PRD files/);
-                    if (match && currentRepo) {
-                        const count = parseInt(match[1]);
-                        currentRepo.status = count > 0 ? 'prd-found' : 'prd-missing';
-                        currentRepo.prdCount = count;
-                    }
-                }
-                
-                if (line.includes('⚠️ PRD') && line.includes('does not match expected schema')) {
-                    if (currentRepo) currentRepo.status = 'prd-needs-update';
-                }
-            }
-            
-            return repos;
-        }
-        
-        function displayRepositoryOverview(repos) {
-            document.getElementById('total-repos').textContent = repos.length;
-            document.getElementById('repos-with-prd').textContent = repos.filter(r => r.status === 'prd-found' || r.status === 'prd-only' || r.status === 'prd-and-tasks').length;
-            document.getElementById('repos-without-prd').textContent = repos.filter(r => r.status === 'prd-missing' || r.status === 'not-processed').length;
-            document.getElementById('repos-needing-update').textContent = repos.filter(r => r.status === 'prd-needs-update').length;
-            
-            const container = document.getElementById('repositories-list');
-            container.innerHTML = repos.map(repo => `
-                <div class="repo-item">
-                    <div class="repo-name">${repo.name}</div>
-                    <div class="repo-actions">
-                        <div class="repo-status ${getRepoStatusClass(repo.status)}">${getRepoStatusText(repo)}</div>
-                        <button class="btn btn-sm process-repo-btn" data-repo="${repo.name}" ${repo.status === 'not-processed' ? '' : 'disabled'}>
-                            ${repo.status === 'not-processed' ? '🔍 Scan' : '✅ Scanned'}
-                        </button>
-                        <button class="btn btn-sm btn-ignore ignore-repo-btn" data-repo="${repo.name}" title="Ignore this repository">
-                            ❌
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-            
-            // Add event listeners for process buttons
-            container.querySelectorAll('.process-repo-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const repoName = e.target.getAttribute('data-repo');
-                    processRepository(repoName);
-                });
-            });
-            
-            // Add event listeners for ignore buttons
-            container.querySelectorAll('.ignore-repo-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const repoName = e.target.getAttribute('data-repo');
-                    ignoreRepository(repoName);
-                });
-            });
-            
-            document.getElementById('repositories-overview').style.display = 'block';
-        }
-        
-        function getRepoStatusClass(status) {
-            switch (status) {
-                case 'prd-found': return 'has-prd';
-                case 'prd-missing': return 'no-prd';
-                case 'prd-needs-update': return 'needs-update';
-                case 'prd-linked': return 'prd-linked';
-                default: return 'unknown';
-            }
-        }
-        
-        function getRepoStatusText(repo) {
-            switch (repo.status) {
-                case 'prd-found': return `✅ PRD (${repo.prdCount})`;
-                case 'prd-missing': return '❌ No PRD';
-                case 'prd-needs-update': return '⚠️ Update needed';
-                case 'prd-linked': return `🔗 Linked (${repo.projectName || 'Unknown'})`;
-                case 'prd-only': return `📄 PRD Only (${repo.prdCount})`;
-                case 'tasks-only': return `✅ Tasks Only (${repo.taskCount})`;
-                case 'prd-and-tasks': return `📄✅ PRD + Tasks (${repo.prdCount}/${repo.taskCount})`;
-                case 'no-files': return '❌ No Files';
-                case 'not-processed': return '⏳ Not Processed';
-                default: return '❓ Unknown';
-            }
-        }
-        
-        async function processRepository(repoName) {
-            const button = document.querySelector(`[data-repo="${repoName}"]`);
-            const originalText = button.textContent;
-            
-            try {
-                // Show loading state
-                button.disabled = true;
-                button.textContent = '⏳ Scanning...';
-                button.className = 'btn btn-sm btn-loading';
-                
-                updateStatus(`Scanning ${repoName}...`, '');
-                
-                const response = await fetch('/api/prd-stories/process-repo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ repository: repoName })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`✅ Scanned ${repoName}: ${result.repository.prdCount} PRD, ${result.repository.taskCount} tasks`, 'success');
-                    
-                    // Update the repository in the list
-                    const repoItem = button.closest('.repo-item');
-                    const statusDiv = repoItem.querySelector('.repo-status');
-                    
-                    statusDiv.textContent = getRepoStatusText(result.repository);
-                    statusDiv.className = `repo-status ${getRepoStatusClass(result.repository.status)}`;
-                    button.textContent = '✅ Scanned';
-                    button.className = 'btn btn-sm btn-success';
-                    
-                    // Reload stories if we found any
-                    if (result.repository.storyCount > 0) {
-                        setTimeout(() => {
-                            loadStories();
-                            loadProjectProgress();
-                        }, 1000);
-                    }
-                } else {
-                    throw new Error(result.error || 'Failed to scan repository');
-                }
-            } catch (error) {
-                // Reset button on error
-                button.disabled = false;
-                button.textContent = originalText;
-                button.className = 'btn btn-sm process-repo-btn';
-                updateStatus(`❌ Failed to scan ${repoName}: ${error.message}`, 'error');
-            }
-        }
-        
-        async function ignoreRepository(repoName) {
-            try {
-                if (!confirm(`Are you sure you want to ignore "${repoName}"? It will be moved to the ignored list.`)) {
-                    return;
-                }
-                
-                updateStatus(`Ignoring ${repoName}...`, '');
-                
-                const response = await fetch('/api/prd-stories/ignore-repo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ repository: repoName })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`✅ Ignored ${repoName}`, 'success');
-                    
-                    // Remove the repository from the current list
-                    const repoItem = document.querySelector(`[data-repo="${repoName}"]`).closest('.repo-item');
-                    repoItem.remove();
-                    
-                    // Update the counts
-                    loadRepositoryOverview();
-                } else {
-                    throw new Error(result.error || 'Failed to ignore repository');
-                }
-            } catch (error) {
-                updateStatus(`❌ Failed to ignore ${repoName}: ${error.message}`, 'error');
-            }
-        }
-        
-        async function toggleIgnoredView() {
-            const button = document.getElementById('toggle-ignored-btn');
-            const reposOverview = document.getElementById('repositories-overview');
-            const storiesContainer = document.getElementById('stories-container');
-            
-            if (!showingIgnored) {
-                // Show ignored repositories
-                try {
-                    updateStatus('Loading ignored repositories...', '');
-                    
-                    const response = await fetch('/api/prd-stories/ignored');
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        ignoredRepos = result.repositories;
-                        displayIgnoredRepositories();
-                        
-                        button.textContent = '📋 Show Active';
-                        button.className = 'btn primary';
-                        showingIgnored = true;
-                        
-                        // Hide stories and show ignored repos
-                        storiesContainer.style.display = 'none';
-                        reposOverview.style.display = 'block';
-                        
-                        updateStatus(`Showing ${ignoredRepos.length} ignored repositories`, 'success');
-                    } else {
-                        throw new Error(result.error || 'Failed to load ignored repositories');
-                    }
-                } catch (error) {
-                    updateStatus(`❌ Failed to load ignored repositories: ${error.message}`, 'error');
-                }
-            } else {
-                // Show active repositories
-                button.textContent = '🚫 Show Ignored';
-                button.className = 'btn secondary';
-                showingIgnored = false;
-                
-                // Show stories and hide ignored repos
-                storiesContainer.style.display = 'block';
-                loadRepositoryOverview();
-                updateStatus('Showing active repositories', 'success');
-            }
-        }
-        
-        function displayIgnoredRepositories() {
-            const container = document.getElementById('repositories-list');
-            
-            if (ignoredRepos.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No Ignored Repositories</h3>
-                        <p>Repositories that you ignore will appear here. You can unignore them at any time.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = ignoredRepos.map(repo => `
-                <div class="repo-item">
-                    <div class="repo-name">${repo.name}</div>
-                    <div class="repo-actions">
-                        <div class="repo-status ignored">🚫 Ignored</div>
-                        <button class="btn btn-sm btn-unignore unignore-repo-btn" data-repo="${repo.name}">
-                            🔄 Unignore
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-            
-            // Add event listeners for unignore buttons
-            container.querySelectorAll('.unignore-repo-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const repoName = e.target.getAttribute('data-repo');
-                    unignoreRepository(repoName);
-                });
-            });
-        }
-        
-        async function unignoreRepository(repoName) {
-            try {
-                if (!confirm(`Are you sure you want to unignore "${repoName}"? It will be added back to the active repository list.`)) {
-                    return;
-                }
-                
-                updateStatus(`Unignoring ${repoName}...`, '');
-                
-                const response = await fetch('/api/prd-stories/unignore-repo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ repository: repoName })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`✅ Unignored ${repoName}`, 'success');
-                    
-                    // Remove from local list
-                    ignoredRepos = ignoredRepos.filter(repo => repo.name !== repoName);
-                    displayIgnoredRepositories();
-                    
-                    // If we're showing ignored repos, refresh the display
-                    if (showingIgnored) {
-                        updateStatus(`Showing ${ignoredRepos.length} ignored repositories`, 'success');
-                    }
-                } else {
-                    throw new Error(result.error || 'Failed to unignore repository');
-                }
-            } catch (error) {
-                updateStatus(`❌ Failed to unignore ${repoName}: ${error.message}`, 'error');
-            }
-        }
-        
-        function formatDate(dateString) {
-            if (!dateString) return 'Unknown';
-            const date = new Date(dateString);
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-        }
-
-        async function showLinkPrdForm() {
-            const prdUrl = prompt('GitHub PRD File URL (e.g., https://github.com/username/repo/blob/main/PRD.md):');
-            if (!prdUrl) return;
-            
-            // Extract repo name and file path from URL
-            const urlMatch = prdUrl.match(/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)/);
-            if (!urlMatch) {
-                alert('Invalid GitHub URL format. Please use a URL like: https://github.com/username/repo/blob/main/PRD.md');
-                return;
-            }
-            
-            const [, owner, repoName, branch, filePath] = urlMatch;
-            
-            try {
-                updateStatus('🔗 Linking PRD file...', '');
-                
-                const response = await fetch('/api/prd-stories/link-prd', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        owner,
-                        repoName,
-                        branch,
-                        filePath,
-                        prdUrl
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`✅ PRD linked successfully! Found ${result.data.storiesFound} stories, added ${result.data.storiesAdded} to Notion`, 'success');
-                    
-                    // Refresh stories to show the new ones
-                    setTimeout(() => {
-                        loadStories();
-                        // Also refresh repository overview if visible
-                        if (document.getElementById('repositories-overview').style.display !== 'none') {
-                            loadRepositoryOverview();
-                        }
-                    }, 1000);
-                } else {
-                    throw new Error(result.error || 'Failed to link PRD');
-                }
-            } catch (error) {
-                updateStatus(`❌ Failed to link PRD: ${error.message}`, 'error');
-            }
-        }
-
-        async function clearScanCache() {
-            try {
-                if (!confirm('Are you sure you want to clear the scan cache? This will remove all cached scan results and force re-scanning of all repositories.')) {
-                    return;
-                }
-                
-                updateStatus('🗑️ Clearing scan cache...', '');
-                
-                const response = await fetch('/api/prd-stories/clear-cache', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`✅ ${result.message}`, 'success');
-                    // Refresh the repository overview to show updated cache status
-                    setTimeout(() => {
-                        loadRepositoryOverview();
-                    }, 1000);
-                } else {
-                    throw new Error(result.error || 'Failed to clear scan cache');
-                }
-            } catch (error) {
-                updateStatus(`❌ Failed to clear scan cache: ${error.message}`, 'error');
-            }
-        }
-
-        async function loadRepositoryOverview() {
-            try {
-                const response = await fetch('/api/prd-stories/repositories');
-                const result = await response.json();
-                
-                if (result.success) {
-                    displayRepositoryOverview(result.repositories);
-                } else {
-                    throw new Error(result.error || 'Failed to load repositories');
-                }
-            } catch (error) {
-                updateStatus(`❌ Failed to load repositories: ${error.message}`, 'error');
-            }
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
     </script>
 </body>
