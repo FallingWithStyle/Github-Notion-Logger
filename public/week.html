@@ -2452,7 +2452,7 @@
                         
                         ${sortProjectsByPriority(projects).map(project => `
                             <div class="plan-project priority-${Math.floor(project.priorityScore / 2)}">
-                                <h5>${getProjectColor(project.name)} ${project.name}</h5>
+                                <h5>${getProjectColorSquare(project.name)} ${project.name}</h5>
                                 <div class="project-scores">
                                     <span class="priority-score">Priority: ${project.priorityScore}/10</span>
                                     <span class="base-score">Base: ${project.basePriorityScore}/10</span>
