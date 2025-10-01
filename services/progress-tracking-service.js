@@ -479,28 +479,68 @@ class ProgressTrackingService {
         });
       });
 
-      // Load color palettes and project status data
-      const colorPalettes = await this.loadColorPalettes();
-      const projectStatusData = await this.loadProjectStatusData();
+      // Load cached repository data (same as /api/projects endpoint)
+      let cachedRepos = [];
+      try {
+        const { getAllCachedRepositories } = require('../notion');
+        cachedRepos = await getAllCachedRepositories();
+      } catch (error) {
+        console.warn('⚠️ Could not load cached repository data:', error.message);
+      }
       
-      // Enhance project data with additional information
-      Object.values(projectData).forEach(project => {
-        const colorData = colorPalettes[project.name];
-        const statusData = projectStatusData[project.name];
-        
-        project.category = colorData?.category || 'Miscellaneous / Standalone';
-        project.status = statusData?.status || 'unknown';
-        project.color = colorData?.hex || '#6B7280';
-        project.hasPrd = statusData?.hasPrd || false;
-        project.hasTaskList = statusData?.hasTaskList || false;
-        project.storiesTotal = statusData?.storiesTotal || 0;
-        project.storiesCompleted = statusData?.storiesCompleted || 0;
-        project.tasksTotal = statusData?.tasksTotal || 0;
-        project.tasksCompleted = statusData?.tasksCompleted || 0;
-        project.progress = statusData?.progress || 0;
+      const cachedRepoMap = new Map();
+      cachedRepos.forEach(cachedRepo => {
+        cachedRepoMap.set(cachedRepo.repository, cachedRepo);
       });
 
-      return projectData;
+      // Load color palettes
+      const colorPalettes = await this.loadColorPalettes();
+      
+      // Build final project list (same as /api/projects endpoint)
+      const projects = Object.values(projectData).map(project => {
+        const cachedRepo = cachedRepoMap.get(project.name);
+        const colorData = colorPalettes[project.name];
+        
+        // Determine project status based on activity and planning data
+        let status = project.status;
+        if (status === 'unknown') {
+          const daysSinceActivity = project.lastActivity ? 
+            Math.floor((new Date() - new Date(project.lastActivity)) / (1000 * 60 * 60 * 24)) : 999;
+          
+          if (daysSinceActivity <= 7) {
+            status = 'active';
+          } else if (daysSinceActivity <= 30) {
+            status = 'planning';
+          } else {
+            status = 'paused';
+          }
+        }
+        
+        return {
+          name: project.name,
+          status: status,
+          progress: cachedRepo ? (cachedRepo.progress || 0) : 0,
+          category: project.category || 'Miscellaneous / Standalone',
+          lastActivity: project.lastActivity,
+          totalCommits: project.totalCommits,
+          hasPrd: cachedRepo ? cachedRepo.hasPrd : false,
+          hasTaskList: cachedRepo ? cachedRepo.hasTaskList : false,
+          storiesTotal: cachedRepo ? (cachedRepo.storyCount || 0) : 0,
+          storiesCompleted: cachedRepo ? Math.round(((cachedRepo.storyCount || 0) * (cachedRepo.progress || 0)) / 100) : 0,
+          tasksTotal: cachedRepo ? (cachedRepo.taskCount || 0) : 0,
+          tasksCompleted: cachedRepo ? Math.round(((cachedRepo.taskCount || 0) * (cachedRepo.progress || 0)) / 100) : 0,
+          color: colorData ? colorData.hex : '#6B7280',
+          repository: project.name
+        };
+      });
+
+      // Convert to object with project names as keys
+      const projectDataMap = {};
+      projects.forEach(project => {
+        projectDataMap[project.name] = project;
+      });
+
+      return projectDataMap;
 
     } catch (error) {
       console.warn('⚠️ Could not load projects data:', error.message);
@@ -527,49 +567,6 @@ class ProgressTrackingService {
       return JSON.parse(data);
     } catch (error) {
       console.warn('⚠️ Could not load color palettes:', error.message);
-      return {};
-    }
-  }
-
-  /**
-   * Load project status data
-   */
-  async loadProjectStatusData() {
-    try {
-      const fs = require('fs').promises;
-      const path = require('path');
-      
-      const DATA_DIR = process.env.DATA_DIR || (require('fs').existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
-      const WEEKLY_PLANS_PATH = path.join(DATA_DIR, 'weekly-plans.json');
-      
-      if (!require('fs').existsSync(WEEKLY_PLANS_PATH)) {
-        return {};
-      }
-
-      const data = await fs.readFile(WEEKLY_PLANS_PATH, 'utf8');
-      const weeklyPlans = JSON.parse(data);
-      
-      const projectStatusData = {};
-      weeklyPlans.forEach(plan => {
-        if (plan.projects) {
-          plan.projects.forEach(project => {
-            projectStatusData[project.name] = {
-              status: project.status || 'unknown',
-              hasPrd: project.hasPrd || false,
-              hasTaskList: project.hasTaskList || false,
-              storiesTotal: project.storiesTotal || 0,
-              storiesCompleted: project.storiesCompleted || 0,
-              tasksTotal: project.tasksTotal || 0,
-              tasksCompleted: project.tasksCompleted || 0,
-              progress: project.progress || 0
-            };
-          });
-        }
-      });
-      
-      return projectStatusData;
-    } catch (error) {
-      console.warn('⚠️ Could not load project status data:', error.message);
       return {};
     }
   }
