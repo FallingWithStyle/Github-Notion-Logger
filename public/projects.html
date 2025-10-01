@@ -865,6 +865,8 @@
                     <option value="name">Name</option>
                     <option value="healthScore">Health Score</option>
                     <option value="progress">Progress</option>
+                    <option value="priorityScoreDesc">Priority Score (High to Low)</option>
+                    <option value="priorityScoreAsc">Priority Score (Low to High)</option>
                 </select>
             </div>
         </div>
@@ -1136,6 +1138,10 @@
                         return b.health.healthScore - a.health.healthScore;
                     case 'progress':
                         return b.progress - a.progress;
+                    case 'priorityScoreDesc':
+                        return (b.priorityScore || 0) - (a.priorityScore || 0);
+                    case 'priorityScoreAsc':
+                        return (a.priorityScore || 0) - (b.priorityScore || 0);
                     case 'lastActivity':
                     default:
                         if (!a.lastActivity && !b.lastActivity) return 0;
@@ -1244,6 +1250,10 @@
                                 <div class="stat-number">${project.health.completionVelocity}</div>
                                 <div class="stat-label">Velocity</div>
                             </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${project.priorityScore || 0}</div>
+                                <div class="stat-label">Priority</div>
+                            </div>
                             ${project.head && project.heart ? `
                                 <div class="stat-item">
                                     <div class="stat-number">${project.head}/${project.heart}</div>
@@ -1307,6 +1317,10 @@
                     <div class="project-bar-stats">
                         <div class="project-bar-stat-value">${project.tasksCompleted}/${project.tasksTotal}</div>
                         <div class="project-bar-stat-label">Tasks</div>
+                    </div>
+                    <div class="project-bar-stats">
+                        <div class="project-bar-stat-value">${project.priorityScore || 0}</div>
+                        <div class="project-bar-stat-label">Priority</div>
                     </div>
                     ${project.head && project.heart ? `
                         <div class="project-bar-stats">
