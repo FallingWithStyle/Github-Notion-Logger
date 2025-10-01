@@ -161,14 +161,25 @@ class ProgressTrackingService {
 
   /**
    * Get velocity trends
-   * @param {string} projectName - Optional project name for specific project trends
+   * @param {Object|string} options - Options object with days, or project name string
    * @returns {Promise<Object>} Velocity trend data
    */
-  async getVelocityTrends(projectName = null) {
+  async getVelocityTrends(options = {}) {
     try {
+      // Handle both old string parameter and new options object
+      let projectName = null;
+      let days = 30; // Default to 30 days
+      
+      if (typeof options === 'string') {
+        projectName = options;
+      } else if (typeof options === 'object' && options !== null) {
+        projectName = options.projectName || null;
+        days = options.days || 30;
+      }
+
       console.log(`📊 Getting velocity trends${projectName ? ` for ${projectName}` : ''}...`);
 
-      const cacheKey = `velocity:${projectName || 'all'}`;
+      const cacheKey = `velocity:${projectName || 'all'}:${days}`;
       const cached = this.cache.get(cacheKey);
       
       if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
@@ -176,7 +187,7 @@ class ProgressTrackingService {
       }
 
       // Get historical data (simplified - in real implementation would use time-series data)
-      const trends = await this.calculateVelocityTrends(projectName);
+      const trends = await this.calculateVelocityTrends(projectName, days);
 
       // Cache the results
       this.cache.set(cacheKey, {
@@ -190,6 +201,15 @@ class ProgressTrackingService {
       console.error('❌ Error getting velocity trends:', error);
       return ApiResponseModel.error(`Failed to get velocity trends: ${error.message}`);
     }
+  }
+
+  /**
+   * Get blocked items (alias for getBlockedAndStaleItems)
+   * @param {Object} filters - Filter criteria
+   * @returns {Promise<Object>} Blocked items data
+   */
+  async getBlockedItems(filters = {}) {
+    return this.getBlockedAndStaleItems(filters);
   }
 
   /**
@@ -471,46 +491,35 @@ class ProgressTrackingService {
   /**
    * Calculate velocity trends from historical data
    */
-  async calculateVelocityTrends(projectName = null) {
+  async calculateVelocityTrends(projectName = null, days = 30) {
     try {
-      const trends = {
-        overall: {
-          trend: 'stable',
-          velocity: 0,
-          change: 0
-        },
-        projects: []
-      };
-
       // Get historical commit data for velocity calculation
-      const commitLogData = await this.getHistoricalCommitData();
+      const commitLogData = await this.getHistoricalCommitData(days);
+      
+      const trends = [];
       
       if (projectName) {
         // Calculate trend for specific project
         const projectTrend = await this.calculateProjectVelocityTrend(projectName, commitLogData);
-        trends.projects.push(projectTrend);
-        trends.overall = projectTrend;
+        trends.push(projectTrend);
       } else {
         // Calculate trends for all projects
         const projectNames = Object.keys(commitLogData);
         
         for (const name of projectNames) {
           const projectTrend = await this.calculateProjectVelocityTrend(name, commitLogData);
-          trends.projects.push(projectTrend);
-        }
-
-        // Calculate overall trend
-        if (trends.projects.length > 0) {
-          const totalVelocity = trends.projects.reduce((sum, p) => sum + p.velocity, 0);
-          const totalChange = trends.projects.reduce((sum, p) => sum + p.change, 0);
-          
-          trends.overall.velocity = Math.round((totalVelocity / trends.projects.length) * 10) / 10;
-          trends.overall.change = Math.round((totalChange / trends.projects.length) * 10) / 10;
-          trends.overall.trend = this.determineTrendFromChange(trends.overall.change);
+          trends.push(projectTrend);
         }
       }
 
-      return trends;
+      return {
+        trends: trends,
+        overall: {
+          trend: trends.length > 0 ? trends[0].trend : 'stable',
+          velocity: trends.length > 0 ? trends.reduce((sum, p) => sum + p.velocity, 0) / trends.length : 0,
+          change: trends.length > 0 ? trends.reduce((sum, p) => sum + p.change, 0) / trends.length : 0
+        }
+      };
     } catch (error) {
       console.error('❌ Error calculating velocity trends:', error);
       return {
@@ -523,7 +532,7 @@ class ProgressTrackingService {
   /**
    * Get historical commit data for velocity calculation
    */
-  async getHistoricalCommitData() {
+  async getHistoricalCommitData(days = 30) {
     try {
       const fs = require('fs').promises;
       const path = require('path');
@@ -541,11 +550,11 @@ class ProgressTrackingService {
       // Process commit log data for velocity calculation
       const projectData = {};
       const today = new Date();
-      const ninetyDaysAgo = new Date(today);
-      ninetyDaysAgo.setDate(today.getDate() - 90);
+      const cutoffDate = new Date(today);
+      cutoffDate.setDate(today.getDate() - days);
 
       commitLog
-        .filter(day => new Date(day.date) >= ninetyDaysAgo)
+        .filter(day => new Date(day.date) >= cutoffDate)
         .forEach(day => {
           Object.entries(day.projects).forEach(([projectName, commitCount]) => {
             if (!projectData[projectName]) {

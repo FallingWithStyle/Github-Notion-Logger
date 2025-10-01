@@ -531,7 +531,9 @@ class ProjectManagementService {
       const { getAllCachedRepositories } = require('../notion');
       const cachedRepos = await getAllCachedRepositories();
       
-      const projectRepo = cachedRepos.find(repo => repo.repository === projectName);
+      const projectRepo = cachedRepos.find(repo => 
+        repo.repository && repo.repository.toLowerCase() === projectName.toLowerCase()
+      );
       
       if (projectRepo) {
         return {

@@ -61,44 +61,44 @@ class ProjectHealthModel {
     let factors = 0;
     this.healthFactors = {};
 
-    // Activity factor (25% weight)
+    // Activity factor (30% weight) - Most important for project health
     const activityScore = this.calculateActivityScore();
-    score += activityScore * 0.25;
-    factors += 25;
+    score += activityScore * 0.30;
+    factors += 30;
     this.healthFactors.activity = activityScore;
-    
 
-    // Commit frequency factor (20% weight)
+    // Commit frequency factor (25% weight) - Shows development activity
     const commitScore = this.calculateCommitScore();
-    score += commitScore * 0.20;
-    factors += 20;
+    score += commitScore * 0.25;
+    factors += 25;
     this.healthFactors.commits = commitScore;
 
-    // PR activity factor (15% weight)
+    // PR activity factor (15% weight) - Shows collaboration
     const prScore = this.calculatePRScore();
     score += prScore * 0.15;
     factors += 15;
     this.healthFactors.prs = prScore;
 
-    // Issue resolution factor (10% weight)
+    // Issue resolution factor (10% weight) - Shows maintenance
     const issueScore = this.calculateIssueScore();
     score += issueScore * 0.10;
     factors += 10;
     this.healthFactors.issues = issueScore;
 
-    // Documentation factor (10% weight)
+    // Documentation factor (10% weight) - Shows project maturity
     const docScore = this.calculateDocumentationScore();
     score += docScore * 0.10;
     factors += 10;
     this.healthFactors.documentation = docScore;
 
-    // PRD status factor (10% weight)
+    // PRD status factor (10% weight) - Shows planning quality
     const prdScore = this.calculatePRDScore();
     score += prdScore * 0.10;
     factors += 10;
     this.healthFactors.prd = prdScore;
 
     this.healthScore = factors > 0 ? Math.round((score / factors) * 100) : 0;
+    this.healthStatus = this.getHealthStatus();
     return this.healthScore;
   }
 
@@ -109,24 +109,34 @@ class ProjectHealthModel {
     if (!this.lastActivity) return 0;
     
     const daysSinceActivity = Math.floor((Date.now() - this.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
-    if (daysSinceActivity <= 7) return 100;
-    if (daysSinceActivity <= 30) return 75;
-    if (daysSinceActivity <= 90) return 50;
-    if (daysSinceActivity <= 180) return 25;
-    return 0;
+    
+    // More granular scoring for better differentiation
+    if (daysSinceActivity <= 1) return 100;
+    if (daysSinceActivity <= 3) return 95;
+    if (daysSinceActivity <= 7) return 90;
+    if (daysSinceActivity <= 14) return 80;
+    if (daysSinceActivity <= 30) return 70;
+    if (daysSinceActivity <= 60) return 50;
+    if (daysSinceActivity <= 90) return 30;
+    if (daysSinceActivity <= 180) return 15;
+    return 5; // Never completely zero for very old projects
   }
 
   /**
    * Calculate commit score based on commit frequency
    */
   calculateCommitScore() {
-    // This would use real GitHub commit data
     const commitCount = this.githubCommits || 0;
-    if (commitCount >= 50) return 100;
-    if (commitCount >= 20) return 80;
+    
+    // More realistic scoring based on commit volume
+    if (commitCount >= 200) return 100;
+    if (commitCount >= 100) return 90;
+    if (commitCount >= 50) return 80;
+    if (commitCount >= 25) return 70;
     if (commitCount >= 10) return 60;
-    if (commitCount >= 5) return 40;
-    if (commitCount >= 1) return 20;
+    if (commitCount >= 5) return 50;
+    if (commitCount >= 2) return 40;
+    if (commitCount >= 1) return 30;
     return 0;
   }
 
@@ -134,11 +144,15 @@ class ProjectHealthModel {
    * Calculate PR score based on PR activity
    */
   calculatePRScore() {
-    // This would use real GitHub PR data
     const prCount = this.githubPRs || 0;
-    if (prCount >= 10) return 100;
-    if (prCount >= 5) return 80;
-    if (prCount >= 3) return 60;
+    
+    // More realistic PR scoring
+    if (prCount >= 50) return 100;
+    if (prCount >= 25) return 90;
+    if (prCount >= 15) return 80;
+    if (prCount >= 10) return 70;
+    if (prCount >= 5) return 60;
+    if (prCount >= 3) return 50;
     if (prCount >= 1) return 40;
     return 0;
   }
@@ -147,11 +161,16 @@ class ProjectHealthModel {
    * Calculate issue score based on issue resolution
    */
   calculateIssueScore() {
-    // This would use real GitHub issue data
     const issueCount = this.githubIssues || 0;
-    if (issueCount >= 5) return 100;
-    if (issueCount >= 3) return 80;
-    if (issueCount >= 1) return 60;
+    
+    // More realistic issue scoring
+    if (issueCount >= 100) return 100;
+    if (issueCount >= 50) return 90;
+    if (issueCount >= 25) return 80;
+    if (issueCount >= 10) return 70;
+    if (issueCount >= 5) return 60;
+    if (issueCount >= 2) return 50;
+    if (issueCount >= 1) return 40;
     return 0;
   }
 
@@ -161,15 +180,15 @@ class ProjectHealthModel {
   calculateDocumentationScore() {
     let score = 0;
     
-    // PRD presence
-    if (this.prdStatus === PrdStatus.PRESENT) score += 50;
-    else if (this.prdStatus === PrdStatus.OUTDATED) score += 25;
+    // PRD presence (60% of documentation score)
+    if (this.prdStatus === PrdStatus.PRESENT) score += 60;
+    else if (this.prdStatus === PrdStatus.OUTDATED) score += 30;
     
-    // Task list presence
-    if (this.taskListStatus === TaskListStatus.PRESENT) score += 50;
-    else if (this.taskListStatus === TaskListStatus.OUTDATED) score += 25;
+    // Task list presence (40% of documentation score)
+    if (this.taskListStatus === TaskListStatus.PRESENT) score += 40;
+    else if (this.taskListStatus === TaskListStatus.OUTDATED) score += 20;
     
-    return score;
+    return Math.min(100, score);
   }
 
   /**
