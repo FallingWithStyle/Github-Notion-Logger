@@ -3,7 +3,7 @@
  * Tests data models, validation, and business logic
  */
 
-const assert = require('assert');
+// Jest is available globally in test environment
 const {
   ProjectStatus,
   PrdStatus,
@@ -19,13 +19,13 @@ describe('Project Models', () => {
     it('should create health model with default values', () => {
       const health = new ProjectHealthModel();
       
-      assert(health.status === ProjectStatus.UNKNOWN, 'Should have unknown status by default');
-      assert(health.healthScore === 0, 'Should have zero health score by default');
-      assert(health.lastActivity === null, 'Should have null last activity by default');
-      assert(health.prdStatus === PrdStatus.MISSING, 'Should have missing PRD by default');
-      assert(health.taskListStatus === TaskListStatus.MISSING, 'Should have missing task list by default');
-      assert(health.completionVelocity === 0, 'Should have zero velocity by default');
-      assert(Array.isArray(health.riskFactors), 'Should have empty risk factors array');
+      expect(health.status).toBe(ProjectStatus.UNKNOWN);
+      expect(health.healthScore).toBe(0);
+      expect(health.lastActivity).toBeNull();
+      expect(health.prdStatus).toBe(PrdStatus.MISSING);
+      expect(health.taskListStatus).toBe(TaskListStatus.MISSING);
+      expect(health.completionVelocity).toBe(0);
+      expect(Array.isArray(health.riskFactors)).toBe(true);
     });
 
     it('should create health model with provided data', () => {
