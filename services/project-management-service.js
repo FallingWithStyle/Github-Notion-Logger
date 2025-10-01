@@ -112,14 +112,22 @@ class ProjectManagementService {
    * @returns {Array} Paginated project data
    */
   applyPagination(projects, filters) {
-    const page = parseInt(filters.page) || 1;
     const limit = parseInt(filters.limit) || 10;
+    let startIndex = 0;
     
-    // Ensure page and limit are positive
-    const validPage = Math.max(1, page);
+    // Support both page-based and offset-based pagination
+    if (filters.offset !== undefined) {
+      // Offset-based pagination
+      startIndex = parseInt(filters.offset) || 0;
+    } else {
+      // Page-based pagination (default)
+      const page = parseInt(filters.page) || 1;
+      const validPage = Math.max(1, page);
+      startIndex = (validPage - 1) * limit;
+    }
+    
+    // Ensure limit is positive and capped
     const validLimit = Math.max(1, Math.min(100, limit)); // Cap at 100 items per page
-    
-    const startIndex = (validPage - 1) * validLimit;
     const endIndex = startIndex + validLimit;
     
     return projects.slice(startIndex, endIndex);
@@ -132,24 +140,39 @@ class ProjectManagementService {
    * @returns {Object} Pagination metadata
    */
   calculatePaginationMetadata(totalItems, filters) {
-    const page = parseInt(filters.page) || 1;
     const limit = parseInt(filters.limit) || 10;
-    
-    // Ensure page and limit are positive
-    const validPage = Math.max(1, page);
     const validLimit = Math.max(1, Math.min(100, limit)); // Cap at 100 items per page
     
+    let page, offset, hasMore;
+    
+    // Support both page-based and offset-based pagination
+    if (filters.offset !== undefined) {
+      // Offset-based pagination
+      offset = parseInt(filters.offset) || 0;
+      page = Math.floor(offset / validLimit) + 1;
+      hasMore = (offset + validLimit) < totalItems;
+    } else {
+      // Page-based pagination (default)
+      page = parseInt(filters.page) || 1;
+      const validPage = Math.max(1, page);
+      offset = (validPage - 1) * validLimit;
+      const totalPages = Math.ceil(totalItems / validLimit);
+      hasMore = validPage < totalPages;
+    }
+    
     const totalPages = Math.ceil(totalItems / validLimit);
-    const hasNext = validPage < totalPages;
-    const hasPrev = validPage > 1;
+    const hasNext = hasMore;
+    const hasPrev = page > 1;
     
     return {
-      page: validPage,
+      page: page,
       limit: validLimit,
+      offset: offset,
       total: totalItems,
       totalPages: totalPages,
       hasNext: hasNext,
-      hasPrev: hasPrev
+      hasPrev: hasPrev,
+      hasMore: hasMore
     };
   }
 

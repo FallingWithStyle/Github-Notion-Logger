@@ -260,9 +260,18 @@ class ProgressTrackingService {
       blockedItems.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
       staleItems.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
 
+      // Apply pagination if specified
+      const limit = parseInt(filters.limit) || 100; // Default to 100 items
+      const offset = parseInt(filters.offset) || 0;
+      const validLimit = Math.max(1, Math.min(1000, limit)); // Cap at 1000 items
+      const validOffset = Math.max(0, offset);
+
+      const paginatedBlockedItems = blockedItems.slice(validOffset, validOffset + validLimit);
+      const paginatedStaleItems = staleItems.slice(validOffset, validOffset + validLimit);
+
       const result = {
-        blockedItems,
-        staleItems,
+        blockedItems: paginatedBlockedItems,
+        staleItems: paginatedStaleItems,
         summary: {
           totalBlocked: blockedItems.length,
           totalStale: staleItems.length,
@@ -277,12 +286,61 @@ class ProgressTrackingService {
         timestamp: Date.now()
       });
 
-      return ApiResponseModel.success(result, { cached: false });
+      // Calculate pagination metadata
+      const pagination = this.calculatePaginationMetadata(blockedItems.length + staleItems.length, filters);
+
+      return ApiResponseModel.success(result, { 
+        cached: false,
+        pagination: pagination
+      });
 
     } catch (error) {
       console.error('❌ Error getting blocked and stale items:', error);
       return ApiResponseModel.error(`Failed to get blocked and stale items: ${error.message}`);
     }
+  }
+
+  /**
+   * Calculate pagination metadata
+   * @param {number} totalItems - Total number of items
+   * @param {Object} filters - Filter criteria including pagination
+   * @returns {Object} Pagination metadata
+   */
+  calculatePaginationMetadata(totalItems, filters) {
+    const limit = parseInt(filters.limit) || 100;
+    const validLimit = Math.max(1, Math.min(1000, limit)); // Cap at 1000 items per page
+    
+    let page, offset, hasMore;
+    
+    // Support both page-based and offset-based pagination
+    if (filters.offset !== undefined) {
+      // Offset-based pagination
+      offset = parseInt(filters.offset) || 0;
+      page = Math.floor(offset / validLimit) + 1;
+      hasMore = (offset + validLimit) < totalItems;
+    } else {
+      // Page-based pagination (default)
+      page = parseInt(filters.page) || 1;
+      const validPage = Math.max(1, page);
+      offset = (validPage - 1) * validLimit;
+      const totalPages = Math.ceil(totalItems / validLimit);
+      hasMore = validPage < totalPages;
+    }
+    
+    const totalPages = Math.ceil(totalItems / validLimit);
+    const hasNext = hasMore;
+    const hasPrev = page > 1;
+    
+    return {
+      page: page,
+      limit: validLimit,
+      offset: offset,
+      total: totalItems,
+      totalPages: totalPages,
+      hasNext: hasNext,
+      hasPrev: hasPrev,
+      hasMore: hasMore
+    };
   }
 
   /**
