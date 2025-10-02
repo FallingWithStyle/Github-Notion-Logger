@@ -9,6 +9,7 @@ const timezoneConfig = require('./timezone-config');
 const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('./color-palette');
 const { Client } = require('@notionhq/client');
 const { scheduleDailyProcessing, runManualProcessing } = require('./wanderlog-processor');
+const LlamaHubService = require('./services/llama-hub-service');
 
 dotenv.config();
 const app = express();
@@ -136,6 +137,9 @@ if (missingEnvVars.length > 0) {
 
 // Initialize Notion client
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+// Initialize Llama-hub service
+const llamaHub = new LlamaHubService();
 
 console.log('✅ All required environment variables are set');
 
@@ -4416,6 +4420,175 @@ app.post('/api/v2/performance/clear', asyncHandler(async (req, res) => {
 }));
 
 // ============================================================================
+// LLAMA-HUB API ENDPOINTS
+// ============================================================================
+
+// Health check for Llama-hub
+app.get('/api/llama/health', asyncHandler(async (req, res) => {
+  try {
+    const health = await llamaHub.getHealth();
+    res.json({
+      success: true,
+      llamaHub: health,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error checking Llama-hub health:', error);
+    res.status(503).json({
+      success: false,
+      error: 'Llama-hub service unavailable',
+      details: error.message
+    });
+  }
+}));
+
+// Get available models
+app.get('/api/llama/models', asyncHandler(async (req, res) => {
+  try {
+    const models = await llamaHub.getModels();
+    res.json({
+      success: true,
+      models,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Llama-hub models:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch models',
+      details: error.message
+    });
+  }
+}));
+
+// Chat completion endpoint
+app.post('/api/llama/chat', asyncHandler(async (req, res) => {
+  try {
+    const { model, messages, maxTokens, temperature, stream } = req.body;
+    
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Messages array is required and cannot be empty'
+      });
+    }
+
+    const response = await llamaHub.chatCompletion({
+      model,
+      messages,
+      maxTokens,
+      temperature,
+      stream
+    });
+
+    res.json({
+      success: true,
+      response,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error in Llama-hub chat completion:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Chat completion failed',
+      details: error.message
+    });
+  }
+}));
+
+// Generate text endpoint
+app.post('/api/llama/generate', asyncHandler(async (req, res) => {
+  try {
+    const { prompt, model, maxTokens, temperature } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Prompt is required'
+      });
+    }
+
+    const text = await llamaHub.generateText(prompt, {
+      model,
+      maxTokens,
+      temperature
+    });
+
+    res.json({
+      success: true,
+      text,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error in Llama-hub text generation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Text generation failed',
+      details: error.message
+    });
+  }
+}));
+
+// Project analysis endpoint
+app.post('/api/llama/analyze-project', asyncHandler(async (req, res) => {
+  try {
+    const { projectData, analysisType } = req.body;
+    
+    if (!projectData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project data is required'
+      });
+    }
+
+    const analysis = await llamaHub.analyzeProject(projectData, analysisType);
+
+    res.json({
+      success: true,
+      analysis,
+      analysisType: analysisType || 'general',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error in Llama-hub project analysis:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Project analysis failed',
+      details: error.message
+    });
+  }
+}));
+
+// Commit message suggestion endpoint
+app.post('/api/llama/suggest-commit', asyncHandler(async (req, res) => {
+  try {
+    const { changes, context } = req.body;
+    
+    if (!changes || !Array.isArray(changes)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Changes array is required'
+      });
+    }
+
+    const suggestion = await llamaHub.suggestCommitMessage(changes, context || '');
+
+    res.json({
+      success: true,
+      suggestion,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error in Llama-hub commit suggestion:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Commit suggestion failed',
+      details: error.message
+    });
+  }
+}));
+
+// ============================================================================
 // SERVER STARTUP
 // ============================================================================
 
@@ -4427,6 +4600,9 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🗄️ Notion commit database ID configured: ${process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID ? 'Yes' : 'No'}`);
   console.log(`🤖 OpenAI API key configured: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
   console.log(`🐙 GitHub token configured: ${process.env.GITHUB_TOKEN ? 'Yes' : 'No'}`);
+  console.log(`🦙 Llama-hub URL configured: ${process.env.LLAMA_HUB_URL || 'http://localhost:9000'}`);
+  console.log(`🔑 Llama-hub API key configured: ${process.env.LLAMA_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`🤖 Default Llama model: ${process.env.LLAMA_DEFAULT_MODEL || 'llama3-7b'}`);
   
   // Start Wanderlog daily processing
   scheduleDailyProcessing();
