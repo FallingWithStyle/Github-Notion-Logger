@@ -219,6 +219,59 @@
 - **Technical Notes**: Break down monolithic server.js into modular architecture
 - **Dependencies**: Current codebase structure and functionality
 
+### Epic 10: AI-Powered Project Assistant
+**Goal**: Integrate an AI agent using existing llama-hub infrastructure to provide intelligent insights and recommendations for project selection, focus areas, and quick wins
+
+#### Story 10.1: AI Context Service and Data Integration
+- **User Story**: As a project manager, I want an AI agent that understands my project portfolio so that I can get intelligent, data-driven recommendations for project selection and focus areas
+- **Acceptance Criteria**:
+  - AC1: AI agent can access all project health, progress, and activity data
+  - AC2: Data is properly formatted and contextual for AI analysis
+  - AC3: Real-time data updates are reflected in AI responses
+  - AC4: Caching is implemented for performance optimization
+- **Technical Notes**: Leverage existing llama-hub infrastructure and data services
+- **Dependencies**: Existing ProjectManagementService, ProgressTrackingService, and LlamaHubService
+
+#### Story 10.2: Enhanced Chat API and AI Integration
+- **User Story**: As a developer, I want to chat with an AI agent that provides project-specific insights so that I can make better decisions about where to focus my time
+- **Acceptance Criteria**:
+  - AC1: Chat interface provides natural conversation flow with project context
+  - AC2: AI responses are based on actual project data, not generic advice
+  - AC3: Message history is maintained during session
+  - AC4: Error handling gracefully degrades when AI service unavailable
+- **Technical Notes**: Extend existing /api/llama/chat with project context and system prompts
+- **Dependencies**: LlamaHubService and AIContextService
+
+#### Story 10.3: Proactive Recommendations and Insights
+- **User Story**: As a project manager, I want proactive recommendations about quick wins and focus areas so that I can optimize my project portfolio without manual analysis
+- **Acceptance Criteria**:
+  - AC1: AI identifies quick wins based on completion rates and remaining work
+  - AC2: Focus area recommendations are prioritized with supporting evidence
+  - AC3: Health analysis identifies projects at risk with specific reasons
+  - AC4: Comparative analysis helps with resource allocation decisions
+- **Technical Notes**: Use existing analyze-project functionality with different analysis types
+- **Dependencies**: Progress analytics and project health data
+
+#### Story 10.4: Chat UI Integration and User Experience
+- **User Story**: As a user, I want an intuitive chat interface integrated into my existing workflow so that I can easily access AI assistance when needed
+- **Acceptance Criteria**:
+  - AC1: AI Assistant tab is accessible from main navigation
+  - AC2: Contextual help buttons are available throughout the interface
+  - AC3: Chat interface is responsive and works on mobile and desktop
+  - AC4: Quick action buttons provide common queries with one click
+- **Technical Notes**: Integrate chat UI into existing web interface design
+- **Dependencies**: Existing web UI framework and navigation structure
+
+#### Story 10.5: Testing, Optimization, and Documentation
+- **User Story**: As a developer, I want comprehensive testing and documentation for the AI agent so that I can maintain and extend the system reliably
+- **Acceptance Criteria**:
+  - AC1: Unit tests cover all AI context service methods
+  - AC2: Integration tests validate AI chat endpoints
+  - AC3: Performance testing ensures response times < 5 seconds
+  - AC4: Documentation includes usage guides and troubleshooting
+- **Technical Notes**: Follow existing testing patterns and documentation standards
+- **Dependencies**: Existing testing framework and documentation tools
+
 ## 7. Constraints and Assumptions
 - **Technical Constraints**: GitHub API rate limits, Notion API limitations, Fly.io deployment constraints, browser compatibility requirements
 - **Business Constraints**: Budget for API usage, time for development and testing, resource availability
@@ -228,6 +281,7 @@
 ## 8. Success Criteria
 - **Minimum Viable Product (MVP)**: Basic GitHub to Notion sync with web interface for single repository
 - **Success Metrics**: 100% commit coverage, real-time sync (< 5 minutes), 99.9% uptime, 90% reduction in manual documentation effort
+- **AI Agent Success Metrics**: Response time < 5 seconds, 99% uptime, 80% user satisfaction with recommendations, 90% accuracy in quick win identification
 - **Quality Gates**: All acceptance criteria met, security audit passed, performance benchmarks achieved, user acceptance testing completed
 
 ## 9. Timeline and Milestones
@@ -235,6 +289,8 @@
 - **Phase 2 (Weeks 3-4)**: Web interface and configuration
 - **Phase 3 (Weeks 5-6)**: Advanced features and optimization
 - **Phase 4 (Week 7)**: Testing, deployment, and documentation
+- **Phase 5 (Weeks 8-9)**: AI Agent implementation and integration
+- **Phase 6 (Week 10)**: AI Agent testing, optimization, and user acceptance
 
 ## 10. Appendices
 - **Glossary**: 
@@ -242,10 +298,15 @@
   - **Webhook**: HTTP callback for real-time notifications
   - **Notion Page**: Individual entry in a Notion database
   - **API Rate Limit**: Maximum number of API requests per time period
+  - **AI Agent**: Intelligent assistant that provides project recommendations based on data analysis
+  - **Llama-Hub**: Local AI service running llama3-7b model for processing
+  - **Quick Win**: Project or task with high completion rate and low remaining effort
+  - **Focus Area**: Project or area identified as priority based on health and progress analysis
 - **References**: 
   - GitHub API Documentation
   - Notion API Documentation
   - Fly.io Deployment Guide
 - **Change Log**: 
   - 2025-09-08: Updated PRD to align with template format, added detailed user stories and acceptance criteria
+  - 2025-01-15: Added Epic 10 AI-Powered Project Assistant with llama-hub integration, updated success criteria and timeline
 

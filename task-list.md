@@ -308,6 +308,83 @@
 - [x] Task 14: Create integration tests for API endpoints
 - [x] Task 15: Implement code quality tools and linting rules
 
+### Story 9.6: Large File Refactoring and Maintainability
+- [x] Task 1: Identify all files over 1000 lines in the codebase
+- [x] Task 2: Analyze server.js (4,621 lines) - main server file
+- [x] Task 3: Analyze public/week.html (3,314 lines) - weekly planning interface
+- [x] Task 4: Analyze notion.js (1,791 lines) - Notion API integration
+- [x] Task 5: Analyze public/progress.html (1,489 lines) - progress tracking interface
+- [x] Task 6: Analyze public/projects.html (1,471 lines) - projects management interface
+- [x] Task 7: Analyze public/progress-v2.html (1,127 lines) - progress v2 interface
+- [x] Task 8: Analyze public/index.html (1,104 lines) - main dashboard interface
+- [x] Task 9: Analyze public/projects-v2.html (1,025 lines) - projects v2 interface
+- [x] Task 10: Refactor server.js (4,621 lines) - extract remaining large functions
+- [ ] Task 11: Refactor public/week.html (3,314 lines) - extract components and scripts
+- [x] Task 12: Refactor notion.js (1,791 lines) - extract database operations
+- [ ] Task 13: Refactor public/progress.html (1,489 lines) - modularize JavaScript and CSS
+- [ ] Task 14: Refactor public/projects.html (1,471 lines) - extract reusable components
+- [ ] Task 15: Refactor public/progress-v2.html (1,127 lines) - optimize and modularize
+- [ ] Task 16: Refactor public/index.html (1,104 lines) - extract dashboard components
+- [ ] Task 17: Refactor public/projects-v2.html (1,025 lines) - modularize interface
+- [ ] Task 18: Create shared CSS framework for consistent styling
+- [ ] Task 19: Extract common JavaScript utilities into shared modules
+- [ ] Task 20: Implement component-based architecture for HTML interfaces
+
+---
+
+## Epic 10: AI-Powered Project Assistant
+**Goal**: Integrate an AI agent using existing llama-hub infrastructure to provide intelligent insights and recommendations for project selection, focus areas, and quick wins
+
+### Story 10.1: AI Context Service and Data Integration
+- [ ] Task 1: Create AIContextService class for data aggregation
+- [ ] Task 2: Integrate with existing ProjectManagementService and ProgressTrackingService
+- [ ] Task 3: Implement data formatting methods for AI consumption
+- [ ] Task 4: Add context caching for performance optimization
+- [ ] Task 5: Create quick wins identification algorithm
+- [ ] Task 6: Implement focus area analysis using existing analyze-project functionality
+- [ ] Task 7: Add health analysis and risk assessment methods
+- [ ] Task 8: Create context aggregation for different analysis types
+
+### Story 10.2: Enhanced Chat API and AI Integration
+- [ ] Task 1: Extend existing /api/llama/chat with project context
+- [ ] Task 2: Add system prompts for project management assistant role
+- [ ] Task 3: Implement conversation context management
+- [ ] Task 4: Add error handling and graceful degradation
+- [ ] Task 5: Create new /api/v2/ai/chat endpoint with enhanced functionality
+- [ ] Task 6: Implement message history and session management
+- [ ] Task 7: Add input validation and sanitization
+- [ ] Task 8: Create response formatting and structure
+
+### Story 10.3: Proactive Recommendations and Insights
+- [ ] Task 1: Create /api/v2/ai/recommendations endpoint
+- [ ] Task 2: Implement quick wins identification using progress analytics
+- [ ] Task 3: Add focus area recommendations using planning analysis type
+- [ ] Task 4: Create health analysis and risk assessment features
+- [ ] Task 5: Implement comparative project analysis
+- [ ] Task 6: Add momentum analysis and trend identification
+- [ ] Task 7: Create resource allocation suggestions
+- [ ] Task 8: Implement documentation gap analysis
+
+### Story 10.4: Chat UI Integration and User Experience
+- [ ] Task 1: Add "AI Assistant" tab to main navigation
+- [ ] Task 2: Create chat interface component with message history
+- [ ] Task 3: Implement real-time chat functionality with typing indicators
+- [ ] Task 4: Add contextual help buttons throughout existing interface
+- [ ] Task 5: Create "Ask AI" buttons on project cards and progress views
+- [ ] Task 6: Implement responsive design for mobile and desktop
+- [ ] Task 7: Add quick action buttons for common queries
+- [ ] Task 8: Create proactive insights dashboard
+
+### Story 10.5: Testing, Optimization, and Documentation
+- [ ] Task 1: Create unit tests for AIContextService
+- [ ] Task 2: Add integration tests for AI chat endpoints
+- [ ] Task 3: Implement performance testing and optimization
+- [ ] Task 4: Add error handling and recovery testing
+- [ ] Task 5: Create user acceptance testing scenarios
+- [ ] Task 6: Add AI response quality validation
+- [ ] Task 7: Implement caching optimization and monitoring
+- [ ] Task 8: Create comprehensive documentation and usage guides
+
 ---
 
 ## Notes
