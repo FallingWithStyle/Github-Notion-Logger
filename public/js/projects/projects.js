@@ -1,574 +1,397 @@
-let projects = [];
-let filteredProjects = [];
-let currentPage = 1;
-let pageSize = 12;
-let totalPages = 1;
-let categories = [];
-let currentView = 'card'; // Default to card view
+/**
+ * Projects Application (Legacy)
+ * 
+ * This file uses the shared utilities and components for project management.
+ * Refactored to eliminate code duplication and use modular architecture.
+ */
 
-// Load projects on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadProjects();
-    loadCategories();
-    setupEventListeners();
-});
+import { Utils } from '../shared/utils.js';
+import { ProjectCard, FilterControls, Pagination } from '../shared/components.js';
 
-function setupEventListeners() {
-    document.getElementById('refresh-btn').addEventListener('click', loadProjects);
-    document.getElementById('clear-cache-btn').addEventListener('click', clearCache);
-    document.getElementById('search-input').addEventListener('input', debounce(filterProjects, 300));
-    document.getElementById('category-filter').addEventListener('change', filterProjects);
-    document.getElementById('status-filter').addEventListener('change', filterProjects);
-    document.getElementById('health-filter').addEventListener('change', filterProjects);
-    document.getElementById('activity-filter').addEventListener('change', filterProjects);
-    document.getElementById('sort-filter').addEventListener('change', filterProjects);
-    document.getElementById('card-view-btn').addEventListener('click', () => switchView('card'));
-    document.getElementById('bar-view-btn').addEventListener('click', () => switchView('bar'));
-}
+class ProjectsApp {
+  constructor() {
+    this.projects = [];
+    this.filteredProjects = [];
+    this.currentPage = 1;
+    this.pageSize = 12;
+    this.totalPages = 1;
+    this.categories = [];
+    this.currentView = 'card';
+    this.filterControls = null;
+    this.pagination = null;
+  }
 
-async function loadProjects() {
+  /**
+   * Initialize the application
+   */
+  init() {
+    this.loadProjects();
+    this.loadCategories();
+    this.setupEventListeners();
+  }
+
+  /**
+   * Setup event listeners
+   */
+  setupEventListeners() {
+    document.getElementById('refresh-btn').addEventListener('click', () => this.loadProjects());
+    document.getElementById('clear-cache-btn').addEventListener('click', () => this.clearCache());
+    document.getElementById('search-input').addEventListener('input', Utils.debounce(() => this.filterProjects(), 300));
+    document.getElementById('category-filter').addEventListener('change', () => this.filterProjects());
+    document.getElementById('status-filter').addEventListener('change', () => this.filterProjects());
+    document.getElementById('health-filter').addEventListener('change', () => this.filterProjects());
+    document.getElementById('activity-filter').addEventListener('change', () => this.filterProjects());
+    document.getElementById('sort-filter').addEventListener('change', () => this.filterProjects());
+    document.getElementById('card-view-btn').addEventListener('click', () => this.switchView('card'));
+    document.getElementById('bar-view-btn').addEventListener('click', () => this.switchView('bar'));
+  }
+
+  /**
+   * Load projects from API
+   */
+  async loadProjects() {
     try {
-        showLoading(true);
-        updateStatus('Loading projects...', '');
-        
-        // Load both API data and weekly planning data in parallel
-        const [apiResponse, weeklyResponse] = await Promise.allSettled([
-            fetch('/api/v2/projects/overview'),
-            fetch('/api/weekly-plans')
-        ]);
-        
-        let apiData = null;
-        let weeklyData = null;
-        
-        // Process API response
-        if (apiResponse.status === 'fulfilled') {
-            const apiResult = await apiResponse.value.json();
-            if (apiResult.success) {
-                apiData = apiResult.data;
-            }
+      Utils.showLoading(true);
+      Utils.updateStatus('Loading projects...', '');
+      
+      // Load both API data and weekly planning data in parallel
+      const [apiResponse, weeklyResponse] = await Promise.allSettled([
+        Utils.api.get('/api/v2/projects/overview'),
+        Utils.api.get('/api/weekly-plans')
+      ]);
+      
+      let apiData = null;
+      let weeklyData = null;
+      
+      // Process API response
+      if (apiResponse.status === 'fulfilled') {
+        apiData = apiResponse.value;
+        if (apiData.success) {
+          this.projects = apiData.data;
         }
-        
-        // Process weekly planning response
-        if (weeklyResponse.status === 'fulfilled') {
-            const weeklyResult = await weeklyResponse.value.json();
-            if (weeklyResult.success && weeklyResult.plans && weeklyResult.plans.length > 0) {
-                // Get the most recent weekly plan
-                const latestPlan = weeklyResult.plans[weeklyResult.plans.length - 1];
-                weeklyData = {
-                    projects: latestPlan.planData?.projects || [],
-                    categories: latestPlan.planData?.userAnswers?.categories || []
-                };
-            }
+      }
+      
+      // Process weekly planning data
+      if (weeklyResponse.status === 'fulfilled') {
+        weeklyData = weeklyResponse.value;
+        if (weeklyData.success) {
+          this.mergeWeeklyData(weeklyData.data);
         }
-        
-        if (!apiData) {
-            throw new Error('Failed to load project data from API');
-        }
-        
-        // Merge API data with weekly planning data
-        projects = mergeProjectData(apiData, weeklyData);
-        filteredProjects = [...projects];
-        
-        // Update category filter with project counts
-        updateCategoryFilter();
-        
-        displayProjects();
-        updateStatus(`Loaded ${projects.length} projects (merged with weekly planning data)`, 'success');
-        showLoading(false);
+      }
+      
+      this.filteredProjects = [...this.projects];
+      this.displayProjects();
+      this.updateStatus(`Loaded ${this.projects.length} projects`, 'success');
+      Utils.showLoading(false);
+      
     } catch (error) {
-        showLoading(false);
-        showError(`Error loading projects: ${error.message}`);
-        updateStatus('Failed to load projects', 'error');
+      Utils.showLoading(false);
+      Utils.showError(`Error loading projects: ${error.message}`);
+      Utils.updateStatus('Failed to load projects', 'error');
     }
-}
+  }
 
-function mergeProjectData(apiData, weeklyData) {
-    // Create a map of weekly planning data by project name for quick lookup
-    const weeklyMap = new Map();
-    if (weeklyData && weeklyData.projects) {
-        weeklyData.projects.forEach(project => {
-            if (project.name) {
-                weeklyMap.set(project.name, project);
-            }
+  /**
+   * Merge weekly planning data with projects
+   */
+  mergeWeeklyData(weeklyData) {
+    if (!weeklyData || !Array.isArray(weeklyData)) return;
+    
+    weeklyData.forEach(weeklyProject => {
+      const existingProject = this.projects.find(p => p.name === weeklyProject.projectName);
+      if (existingProject) {
+        // Merge weekly planning data
+        existingProject.weeklyFocus = weeklyProject.weeklyFocus;
+        existingProject.headRating = weeklyProject.headRating;
+        existingProject.heartRating = weeklyProject.heartRating;
+        existingProject.notes = weeklyProject.notes;
+        existingProject.category = weeklyProject.category;
+      } else {
+        // Add new project from weekly planning
+        this.projects.push({
+          name: weeklyProject.projectName,
+          progress: 0,
+          healthScore: 0,
+          lastActivity: new Date().toISOString(),
+          storyCount: 0,
+          taskCount: 0,
+          category: weeklyProject.category,
+          status: 'planning',
+          weeklyFocus: weeklyProject.weeklyFocus,
+          headRating: weeklyProject.headRating,
+          heartRating: weeklyProject.heartRating,
+          notes: weeklyProject.notes
         });
-    }
-    
-    // Merge API data with weekly planning data
-    return apiData.map(apiProject => {
-        const weeklyProject = weeklyMap.get(apiProject.name) || weeklyMap.get(apiProject.repository);
-        
-        if (weeklyProject) {
-            // Merge the data, prioritizing weekly planning for status and category
-            return {
-                ...apiProject, // Start with API data (health scores, progress, etc.)
-                status: weeklyProject.status || apiProject.status, // Weekly planning status takes priority
-                category: weeklyProject.category || apiProject.category, // Weekly planning category takes priority
-                // Keep any additional weekly planning data
-                head: weeklyProject.head,
-                heart: weeklyProject.heart,
-                // Update lastActivity if weekly planning has more recent data
-                lastActivity: weeklyProject.lastActivity || apiProject.lastActivity
-            };
-        }
-        
-        // If no weekly planning data found, return API data as-is
-        return apiProject;
+      }
     });
-}
+  }
 
-async function loadCategories() {
+  /**
+   * Load categories for filtering
+   */
+  async loadCategories() {
     try {
-        // Load categories from weekly planning data
-        const response = await fetch('/api/weekly-plans');
-        const result = await response.json();
-        
-        if (result.success && result.plans && result.plans.length > 0) {
-            // Get the most recent weekly plan
-            const latestPlan = result.plans[result.plans.length - 1];
-            const categories = latestPlan.planData?.userAnswers?.categories || [];
-            
-            // Extract unique categories from weekly planning data
-            const categorySet = new Set();
-            categories.forEach(category => {
-                if (category) categorySet.add(category);
-            });
-            
-            // Also add categories from loaded projects if available
-            if (projects && projects.length > 0) {
-                projects.forEach(project => {
-                    if (project.category) {
-                        categorySet.add(project.category);
-                    }
-                });
-            }
-            
-            categories = Array.from(categorySet).map(category => ({
-                name: category,
-                count: 0 // Will be calculated when projects are loaded
-            }));
-            
-            updateCategoryFilter();
-        } else {
-            // Fallback to default categories if weekly planning data is not available
-            categories = [
-                { name: 'Writing & Story Tools', count: 0 },
-                { name: 'Infrastructure & Utilities', count: 0 },
-                { name: 'Avoros (Shared Fantasy/Game World)', count: 0 },
-                { name: 'Miscellaneous / Standalone', count: 0 }
-            ];
-            updateCategoryFilter();
-        }
+      const response = await Utils.api.get('/api/v2/projects/categories');
+      if (response.success) {
+        this.categories = response.data;
+        this.updateCategoryFilter();
+      }
     } catch (error) {
-        console.warn('Failed to load categories from weekly planning, using defaults:', error.message);
-        // Fallback to default categories
-        categories = [
-            { name: 'Writing & Story Tools', count: 0 },
-            { name: 'Infrastructure & Utilities', count: 0 },
-            { name: 'Avoros (Shared Fantasy/Game World)', count: 0 },
-            { name: 'Miscellaneous / Standalone', count: 0 }
-        ];
-        updateCategoryFilter();
+      console.error('Failed to load categories:', error);
     }
-}
+  }
 
-function updateCategoryFilter() {
-    const filter = document.getElementById('category-filter');
-    const currentValue = filter.value;
+  /**
+   * Display projects in the current view
+   */
+  displayProjects() {
+    const container = document.getElementById('projects-container');
+    if (!container) return;
     
-    // Calculate counts based on loaded projects
-    const categoryCounts = {};
-    projects.forEach(project => {
-        if (project.category) {
-            categoryCounts[project.category] = (categoryCounts[project.category] || 0) + 1;
-        }
-    });
-    
-    filter.innerHTML = '<option value="">All Categories</option>';
-    categories.forEach(category => {
-        const count = categoryCounts[category.name] || 0;
-        const option = document.createElement('option');
-        option.value = category.name;
-        option.textContent = `${category.name} (${count})`;
-        if (category.name === currentValue) {
-            option.selected = true;
-        }
-        filter.appendChild(option);
-    });
-}
+    if (this.currentView === 'card') {
+      this.displayCardView();
+    } else {
+      this.displayBarView();
+    }
+  }
 
-function filterProjects() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase();
-    const category = document.getElementById('category-filter').value;
-    const status = document.getElementById('status-filter').value;
-    const health = document.getElementById('health-filter').value;
-    const activity = document.getElementById('activity-filter').value;
-    const sortBy = document.getElementById('sort-filter').value;
+  /**
+   * Display projects in card view
+   */
+  displayCardView() {
+    const container = document.getElementById('projects-container');
+    container.innerHTML = '';
     
-    filteredProjects = projects.filter(project => {
-        // Search filter
-        if (searchTerm && !project.name.toLowerCase().includes(searchTerm) &&
-            !project.category.toLowerCase().includes(searchTerm) &&
-            !project.repository.toLowerCase().includes(searchTerm)) {
-            return false;
-        }
-        
-        // Category filter
-        if (category && project.category !== category) {
-            return false;
-        }
-        
-        // Status filter
-        if (status && project.status !== status) {
-            return false;
-        }
-        
-        // Health filter
-        if (health && project.health.healthStatus !== health) {
-            return false;
-        }
-        
-        // Activity filter
-        if (activity && project.activityStatus !== activity) {
-            return false;
-        }
-        
-        return true;
+    if (this.filteredProjects.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📁</div>
+          <h3 class="empty-state-title">No Projects Found</h3>
+          <p class="empty-state-description">No projects match your current filters.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    this.filteredProjects.forEach(project => {
+      const projectData = {
+        name: project.name,
+        progress: project.progress || 0,
+        healthScore: project.healthScore || 0,
+        lastActivity: project.lastActivity,
+        storyCount: project.storyCount || 0,
+        taskCount: project.taskCount || 0,
+        category: project.category,
+        status: project.status,
+        health: Utils.getHealthLabel(project.healthScore || 0)
+      };
+      
+      const card = new ProjectCard(projectData, container);
+      card.render();
+    });
+  }
+
+  /**
+   * Display projects in bar view
+   */
+  displayBarView() {
+    const container = document.getElementById('projects-container');
+    container.innerHTML = '';
+    
+    if (this.filteredProjects.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📊</div>
+          <h3 class="empty-state-title">No Projects Found</h3>
+          <p class="empty-state-description">No projects match your current filters.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    this.filteredProjects.forEach(project => {
+      const projectItem = document.createElement('div');
+      projectItem.className = 'project-item';
+      projectItem.innerHTML = `
+        <div class="project-header">
+          <div class="project-name">${project.name}</div>
+          <div class="project-priority priority-${this.getPriorityClass(project.progress || 0)}">
+            ${this.getPriorityText(project.progress || 0)}
+          </div>
+        </div>
+        <div class="project-metrics">
+          <div class="metric">
+            <div class="metric-value">${Utils.formatPercentage(project.progress || 0)}</div>
+            <div class="metric-label">Completion</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">${Utils.formatNumber(project.storyCount || 0)}</div>
+            <div class="metric-label">Stories</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">${Utils.formatNumber(project.taskCount || 0)}</div>
+            <div class="metric-label">Tasks</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">${Utils.timeAgo(project.lastActivity)}</div>
+            <div class="metric-label">Last Activity</div>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${project.progress || 0}%"></div>
+        </div>
+      `;
+      container.appendChild(projectItem);
+    });
+  }
+
+  /**
+   * Filter projects based on current filters
+   */
+  filterProjects() {
+    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
+    const categoryFilter = document.getElementById('category-filter')?.value || '';
+    const statusFilter = document.getElementById('status-filter')?.value || '';
+    const healthFilter = document.getElementById('health-filter')?.value || '';
+    const activityFilter = document.getElementById('activity-filter')?.value || '';
+    const sortFilter = document.getElementById('sort-filter')?.value || 'name';
+    
+    this.filteredProjects = this.projects.filter(project => {
+      const matchesSearch = !searchTerm || 
+        project.name.toLowerCase().includes(searchTerm);
+      const matchesCategory = !categoryFilter || 
+        project.category === categoryFilter;
+      const matchesStatus = !statusFilter || 
+        project.status === statusFilter;
+      const matchesHealth = !healthFilter || 
+        Utils.getHealthLabel(project.healthScore || 0).toLowerCase() === healthFilter;
+      const matchesActivity = !activityFilter || 
+        this.getActivityLevel(project.lastActivity) === activityFilter;
+      
+      return matchesSearch && matchesCategory && matchesStatus && matchesHealth && matchesActivity;
     });
     
     // Sort projects
-    filteredProjects.sort((a, b) => {
-        switch (sortBy) {
-            case 'name':
-                return a.name.localeCompare(b.name);
-            case 'healthScore':
-                return b.health.healthScore - a.health.healthScore;
-            case 'progress':
-                return b.progress - a.progress;
-            case 'priorityScoreDesc':
-                return (b.priorityScore || 0) - (a.priorityScore || 0);
-            case 'priorityScoreAsc':
-                return (a.priorityScore || 0) - (b.priorityScore || 0);
-            case 'lastActivity':
-            default:
-                if (!a.lastActivity && !b.lastActivity) return 0;
-                if (!a.lastActivity) return 1;
-                if (!b.lastActivity) return -1;
-                return new Date(b.lastActivity) - new Date(a.lastActivity);
-        }
+    this.sortProjects(sortFilter);
+    
+    this.currentPage = 1;
+    this.displayProjects();
+  }
+
+  /**
+   * Sort projects based on sort filter
+   */
+  sortProjects(sortFilter) {
+    switch (sortFilter) {
+      case 'name':
+        this.filteredProjects.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'progress':
+        this.filteredProjects.sort((a, b) => (b.progress || 0) - (a.progress || 0));
+        break;
+      case 'health':
+        this.filteredProjects.sort((a, b) => (b.healthScore || 0) - (a.healthScore || 0));
+        break;
+      case 'lastActivity':
+        this.filteredProjects.sort((a, b) => new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0));
+        break;
+    }
+  }
+
+  /**
+   * Get activity level based on last activity date
+   */
+  getActivityLevel(lastActivity) {
+    if (!lastActivity) return 'inactive';
+    
+    const daysSinceActivity = Math.floor((new Date() - new Date(lastActivity)) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceActivity <= 7) return 'recent';
+    if (daysSinceActivity <= 30) return 'moderate';
+    if (daysSinceActivity <= 90) return 'stale';
+    return 'inactive';
+  }
+
+  /**
+   * Get priority class based on progress
+   */
+  getPriorityClass(progress) {
+    if (progress >= 80) return 'low-priority';
+    if (progress >= 50) return 'medium-priority';
+    return 'high-priority';
+  }
+
+  /**
+   * Get priority text based on progress
+   */
+  getPriorityText(progress) {
+    if (progress >= 80) return 'Low Priority';
+    if (progress >= 50) return 'Medium Priority';
+    return 'High Priority';
+  }
+
+  /**
+   * Switch between card and bar view
+   */
+  switchView(view) {
+    this.currentView = view;
+    
+    // Update view toggle buttons
+    document.querySelectorAll('.view-toggle .btn').forEach(btn => {
+      btn.classList.remove('active');
     });
+    document.getElementById(`${view}-view-btn`).classList.add('active');
     
-    currentPage = 1;
-    displayProjects();
-}
+    this.displayProjects();
+  }
 
-function displayProjects() {
-    const container = document.getElementById('projects-grid');
-    const emptyState = document.getElementById('empty-state');
-    const pagination = document.getElementById('pagination');
+  /**
+   * Update category filter dropdown
+   */
+  updateCategoryFilter() {
+    const categoryFilter = document.getElementById('category-filter');
+    if (!categoryFilter) return;
     
-    if (filteredProjects.length === 0) {
-        container.style.display = 'none';
-        emptyState.style.display = 'block';
-        pagination.style.display = 'none';
-        return;
-    }
+    const currentValue = categoryFilter.value;
+    categoryFilter.innerHTML = '<option value="">All Categories</option>';
     
-    // Calculate pagination
-    totalPages = Math.ceil(filteredProjects.length / pageSize);
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const pageProjects = filteredProjects.slice(startIndex, endIndex);
-    
-    // Generate projects based on current view
-    if (currentView === 'bar') {
-        container.innerHTML = `
-            <div class="projects-bar">
-                ${pageProjects.map(project => createProjectBar(project)).join('')}
-            </div>
-        `;
-        container.style.display = 'block';
-    } else {
-        container.innerHTML = pageProjects.map(project => createProjectCard(project)).join('');
-        container.style.display = 'grid';
-    }
-    
-    emptyState.style.display = 'none';
-    
-    // Show pagination if needed
-    if (totalPages > 1) {
-        displayPagination();
-        pagination.style.display = 'flex';
-    } else {
-        pagination.style.display = 'none';
-    }
-}
+    this.categories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      if (category === currentValue) {
+        option.selected = true;
+      }
+      categoryFilter.appendChild(option);
+    });
+  }
 
-function createProjectCard(project) {
-    const healthClass = project.health.healthStatus || 'unknown';
-    const activityClass = project.activityStatus || 'inactive';
-    
-    return `
-        <div class="project-card ${healthClass}">
-            <div class="project-header">
-                <div class="project-title">
-                    <span>${project.name}</span>
-                    <span class="project-category">${project.category}</span>
-                </div>
-                <div class="project-meta">
-                    <div class="meta-item">
-                        <span>📁</span>
-                        <span>${project.repository}</span>
-                    </div>
-                    <div class="meta-item">
-                        <span class="status-badge status-${project.status || 'unknown'}">${project.status || 'unknown'}</span>
-                    </div>
-                    <div class="meta-item">
-                        <span class="activity-status activity-${activityClass}">${activityClass}</span>
-                    </div>
-                </div>
-                <div class="health-indicator health-${healthClass}">
-                    <span>🏥</span>
-                    <span>${project.health.healthScore}/100 - ${project.health.healthStatus}</span>
-                </div>
-            </div>
-            
-            <div class="project-body">
-                <div class="progress-section">
-                    <div class="progress-header">
-                        <span class="progress-label">Progress</span>
-                        <span class="progress-percentage">${project.progress}%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${project.progress}%"></div>
-                    </div>
-                    <div class="progress-stats">
-                        <span>${project.storiesCompleted}/${project.storiesTotal} stories</span>
-                        <span>${project.tasksCompleted}/${project.tasksTotal} tasks</span>
-                    </div>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number">${project.totalCommits}</div>
-                        <div class="stat-label">Commits</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">${project.health.completionVelocity}</div>
-                        <div class="stat-label">Velocity</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">${project.priorityScore || 0}</div>
-                        <div class="stat-label">Priority</div>
-                    </div>
-                    ${project.head && project.heart ? `
-                        <div class="stat-item">
-                            <div class="stat-number">${project.head}/${project.heart}</div>
-                            <div class="stat-label">Head/Heart</div>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                ${project.health.riskFactors && project.health.riskFactors.length > 0 ? `
-                    <div class="risk-factors">
-                        <h4>⚠️ Risk Factors</h4>
-                        <ul class="risk-list">
-                            ${project.health.riskFactors.map(risk => `<li class="risk-item">${risk}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-                
-                <div class="project-actions">
-                    <button class="btn btn-small" onclick="viewProjectDetails('${project.name}')">
-                        📋 Details
-                    </button>
-                    <button class="btn btn-small secondary" onclick="scanProject('${project.name}')">
-                        🔍 Scan
-                    </button>
-                    ${project.hasPrd ? '' : `
-                        <button class="btn btn-small danger" onclick="linkPrd('${project.name}')">
-                            📄 Link PRD
-                        </button>
-                    `}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function createProjectBar(project) {
-    const healthClass = project.health.healthStatus || 'unknown';
-    const activityClass = project.activityStatus || 'inactive';
-    
-    return `
-        <div class="project-bar ${healthClass}">
-            <div class="project-bar-info">
-                <div class="project-bar-name">${project.name}</div>
-                <div class="project-bar-category">${project.category}</div>
-                <div class="project-bar-meta">
-                    <span>📁 ${project.repository}</span>
-                    <span class="status-badge status-${project.status || 'unknown'}">${project.status || 'unknown'}</span>
-                    <span class="activity-status activity-${activityClass}">${activityClass}</span>
-                </div>
-            </div>
-            <div class="project-bar-progress">
-                <div class="project-bar-progress-bar">
-                    <div class="project-bar-progress-fill" style="width: ${project.progress}%"></div>
-                </div>
-                <div class="project-bar-progress-text">${project.progress}% Complete</div>
-            </div>
-            <div class="project-bar-stats">
-                <div class="project-bar-stat-value">${project.storiesCompleted}/${project.storiesTotal}</div>
-                <div class="project-bar-stat-label">Stories</div>
-            </div>
-            <div class="project-bar-stats">
-                <div class="project-bar-stat-value">${project.tasksCompleted}/${project.tasksTotal}</div>
-                <div class="project-bar-stat-label">Tasks</div>
-            </div>
-            <div class="project-bar-stats">
-                <div class="project-bar-stat-value">${project.priorityScore || 0}</div>
-                <div class="project-bar-stat-label">Priority</div>
-            </div>
-            ${project.head && project.heart ? `
-                <div class="project-bar-stats">
-                    <div class="project-bar-stat-value">${project.head}/${project.heart}</div>
-                    <div class="project-bar-stat-label">Head/Heart</div>
-                </div>
-            ` : ''}
-            <div class="project-bar-actions">
-                <button class="btn btn-sm" onclick="viewProjectDetails('${project.name}')">
-                    📋 Details
-                </button>
-                <button class="btn btn-sm secondary" onclick="scanProject('${project.name}')">
-                    🔍 Scan
-                </button>
-                ${project.hasPrd ? '' : `
-                    <button class="btn btn-sm danger" onclick="linkPrd('${project.name}')">
-                        📄 Link PRD
-                    </button>
-                `}
-            </div>
-        </div>
-    `;
-}
-
-function displayPagination() {
-    const pagination = document.getElementById('pagination');
-    let html = '';
-    
-    // Previous button
-    html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
-    
-    // Page numbers
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
-    
-    if (startPage > 1) {
-        html += `<button onclick="changePage(1)">1</button>`;
-        if (startPage > 2) {
-            html += `<span>...</span>`;
-        }
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-        html += `<button onclick="changePage(${i})" ${i === currentPage ? 'class="current-page"' : ''}>${i}</button>`;
-    }
-    
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            html += `<span>...</span>`;
-        }
-        html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
-    }
-    
-    // Next button
-    html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
-    
-    pagination.innerHTML = html;
-}
-
-function changePage(page) {
-    if (page >= 1 && page <= totalPages) {
-        currentPage = page;
-        displayProjects();
-    }
-}
-
-function switchView(view) {
-    currentView = view;
-    
-    // Update button states
-    document.getElementById('card-view-btn').classList.toggle('active', view === 'card');
-    document.getElementById('bar-view-btn').classList.toggle('active', view === 'bar');
-    
-    // Redisplay projects with new view
-    displayProjects();
-}
-
-function viewProjectDetails(projectName) {
-    // TODO: Implement project details modal or navigation
-    alert(`View details for ${projectName}`);
-}
-
-function scanProject(projectName) {
-    // TODO: Implement project scanning
-    alert(`Scan project ${projectName}`);
-}
-
-function linkPrd(projectName) {
-    // TODO: Implement PRD linking
-    alert(`Link PRD for ${projectName}`);
-}
-
-async function clearCache() {
+  /**
+   * Clear cache
+   */
+  async clearCache() {
     try {
-        if (!confirm('Are you sure you want to clear the cache? This will refresh all project data.')) {
-            return;
-        }
-        
-        updateStatus('Clearing cache...', '');
-        
-        const response = await fetch('/api/v2/cache/projects/clear', {
-            method: 'POST'
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            updateStatus('Cache cleared successfully', 'success');
-            loadProjects();
-        } else {
-            throw new Error(result.error || 'Failed to clear cache');
-        }
+      if (!confirm('Are you sure you want to clear the cache? This will refresh all project data.')) {
+        return;
+      }
+      
+      Utils.updateStatus('Clearing cache...', '');
+      
+      const response = await Utils.api.post('/api/v2/cache/projects/clear');
+      
+      if (response.success) {
+        Utils.updateStatus('Cache cleared successfully', 'success');
+        this.loadProjects();
+      } else {
+        throw new Error(response.error || 'Failed to clear cache');
+      }
     } catch (error) {
-        updateStatus(`Failed to clear cache: ${error.message}`, 'error');
+      Utils.updateStatus(`Failed to clear cache: ${error.message}`, 'error');
     }
+  }
 }
 
-function showLoading(show) {
-    document.getElementById('loading').style.display = show ? 'block' : 'none';
-    document.getElementById('projects-grid').style.display = show ? 'none' : 'grid';
-}
-
-function showError(message) {
-    const errorDiv = document.getElementById('error');
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-    setTimeout(() => errorDiv.style.display = 'none', 5000);
-}
-
-function updateStatus(message, type) {
-    const statusDiv = document.getElementById('status');
-    statusDiv.textContent = message;
-    statusDiv.className = `status ${type}`;
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+// Initialize the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  new ProjectsApp().init();
+});

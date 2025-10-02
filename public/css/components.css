@@ -1,0 +1,377 @@
+/**
+ * Components CSS - Reusable UI Components
+ * 
+ * This file contains all reusable UI components used across the application.
+ * Components should be self-contained and use design tokens from base.css.
+ */
+
+/* Button Component */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: var(--spacing-3) var(--spacing-6);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  text-decoration: none;
+  transition: all var(--transition-base);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--secondary-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:disabled {
+  background: var(--gray-400);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Button Variants */
+.btn--secondary {
+  background: var(--gray-600);
+}
+
+.btn--secondary:hover {
+  background: var(--gray-700);
+}
+
+.btn--success {
+  background: var(--success-color);
+}
+
+.btn--success:hover {
+  background: #218838;
+}
+
+.btn--danger {
+  background: var(--error-color);
+}
+
+.btn--danger:hover {
+  background: #c82333;
+}
+
+.btn--warning {
+  background: var(--warning-color);
+  color: var(--gray-900);
+}
+
+.btn--warning:hover {
+  background: #e0a800;
+}
+
+/* Button Sizes */
+.btn--sm {
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+}
+
+.btn--lg {
+  padding: var(--spacing-4) var(--spacing-8);
+  font-size: var(--font-size-lg);
+}
+
+/* Header Component */
+.header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: var(--white);
+  padding: var(--spacing-8);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.header h1 {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-2);
+  font-weight: var(--font-weight-bold);
+}
+
+.header p {
+  font-size: var(--font-size-lg);
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+/* Navigation Links Component */
+.nav-links {
+  background: var(--white);
+  padding: var(--spacing-4);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-2) var(--spacing-4);
+  color: var(--primary-color);
+  text-decoration: none;
+  border-radius: var(--border-radius-md);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-base);
+}
+
+.nav-link:hover {
+  background: #f0f2ff;
+  color: var(--secondary-color);
+}
+
+.nav-link.active {
+  background: var(--primary-color);
+  color: var(--white);
+}
+
+/* Controls Component */
+.controls {
+  background: var(--white);
+  margin: var(--spacing-8) auto;
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+  max-width: 1200px;
+}
+
+.controls-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+}
+
+.controls-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+  margin: 0;
+}
+
+/* Project Card Component */
+.project-card {
+  background: var(--white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  border: 1px solid var(--gray-200);
+}
+
+.project-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-4);
+}
+
+.project-header h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+  margin: 0;
+  flex: 1;
+}
+
+.health-badge {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.health-badge.health-excellent {
+  background: #d4edda;
+  color: #155724;
+}
+
+.health-badge.health-good {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.health-badge.health-fair {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.health-badge.health-poor {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.health-badge.health-critical {
+  background: #f5c6cb;
+  color: #721c24;
+}
+
+.project-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.metric .label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.metric .value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+}
+
+/* Progress Bar Component */
+.progress-bar {
+  position: relative;
+  background: var(--gray-200);
+  border-radius: var(--border-radius-full);
+  height: var(--spacing-6);
+  overflow: hidden;
+  margin: var(--spacing-2) 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  border-radius: var(--border-radius-full);
+  transition: width var(--transition-base);
+  position: relative;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--white);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Filter Controls Component */
+.filters {
+  display: flex;
+  gap: var(--spacing-4);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-4);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 150px;
+}
+
+.filter-group label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color);
+}
+
+.filter-group input,
+.filter-group select {
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  background: var(--white);
+  transition: border-color var(--transition-fast);
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Status Component */
+.status {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--spacing-2);
+  border-radius: var(--border-radius-md);
+  background: var(--gray-100);
+}
+
+.status.success {
+  color: var(--success-color);
+  background: #d4edda;
+}
+
+.status.error {
+  color: var(--error-color);
+  background: #f8d7da;
+}
+
+.status.warning {
+  color: #856404;
+  background: #fff3cd;
+}
+
+/* Loading and Error components are now in utilities.css */
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .nav-links {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+  
+  .controls-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filters {
+    flex-direction: column;
+  }
+  
+  .filter-group {
+    min-width: auto;
+  }
+  
+  .project-metrics {
+    grid-template-columns: 1fr;
+  }
+}

@@ -4,16 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Projects - Github Notion Logger</title>
-    
-    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="/commit-logger-favicon_1.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/commit-logger-favicon_2.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/commit-logger-favicon_3.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/commit-logger-favicon_3.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/commit-logger-favicon_3.png">
-    
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/utilities.css">
     <link rel="stylesheet" href="/css/projects-v2.css">
-</head>
 </head>
 <body>
     <div class="header">
@@ -33,12 +32,12 @@
             <h2 class="controls-title">Project Overview</h2>
             <div>
                 <button id="refresh-btn" class="btn">🔄 Refresh</button>
-                <button id="clear-cache-btn" class="btn secondary">🗑️ Clear Cache</button>
+                <button id="clear-cache-btn" class="btn btn--secondary">🗑️ Clear Cache</button>
             </div>
         </div>
         
         <div class="filters">
-            <div class="filter-group search-box">
+            <div class="filter-group">
                 <input type="text" id="search-input" placeholder="Search projects...">
             </div>
             <div class="filter-group">
@@ -52,40 +51,45 @@
                 <select id="status-filter">
                     <option value="">All Statuses</option>
                     <option value="active">Active</option>
-                    <option value="planning">Planning</option>
-                    <option value="paused">Paused</option>
                     <option value="completed">Completed</option>
+                    <option value="paused">Paused</option>
                 </select>
             </div>
             <div class="filter-group">
                 <label for="health-filter">Health:</label>
                 <select id="health-filter">
-                    <option value="">All Health</option>
+                    <option value="">All Health Levels</option>
                     <option value="excellent">Excellent</option>
                     <option value="good">Good</option>
                     <option value="fair">Fair</option>
                     <option value="poor">Poor</option>
-                    <option value="critical">Critical</option>
                 </select>
             </div>
             <div class="filter-group">
                 <label for="activity-filter">Activity:</label>
                 <select id="activity-filter">
                     <option value="">All Activity</option>
-                    <option value="recent">Recent</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="stale">Stale</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="recent">Recent (7 days)</option>
+                    <option value="stale">Stale (30+ days)</option>
                 </select>
             </div>
             <div class="filter-group">
                 <label for="sort-filter">Sort by:</label>
                 <select id="sort-filter">
-                    <option value="lastActivity">Last Activity</option>
-                    <option value="name">Name</option>
-                    <option value="healthScore">Health Score</option>
-                    <option value="progress">Progress</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="health-desc">Health (Best First)</option>
+                    <option value="health-asc">Health (Worst First)</option>
+                    <option value="activity-desc">Activity (Most Recent)</option>
+                    <option value="activity-asc">Activity (Oldest)</option>
                 </select>
+            </div>
+        </div>
+        
+        <div class="view-controls">
+            <div class="view-toggle">
+                <button id="card-view-btn" class="btn active">📋 Card View</button>
+                <button id="bar-view-btn" class="btn">📊 Bar View</button>
             </div>
         </div>
         
@@ -93,22 +97,17 @@
     </div>
     
     <div class="projects-container">
-        <div id="loading" class="loading">
-            <p>Loading projects...</p>
+        <div id="loading" class="loading">Loading projects...</div>
+        <div id="error" class="error hidden"></div>
+        
+        <div id="projects-content">
+            <div class="projects-grid" id="projects-grid"></div>
+            <div class="pagination" id="pagination"></div>
         </div>
-        
-        <div id="error" class="error" style="display: none;"></div>
-        
-        <div id="projects-grid" class="projects-grid" style="display: none;"></div>
-        
-        <div id="empty-state" class="empty-state" style="display: none;">
-            <h3>No Projects Found</h3>
-            <p>No projects match your current filters. Try adjusting your search criteria.</p>
-        </div>
-        
-        <div id="pagination" class="pagination" style="display: none;"></div>
     </div>
     
-    <script src="/js/projects-v2/projects-v2.js"></script>
+    <script type="module" src="/js/shared/utils.js"></script>
+    <script type="module" src="/js/shared/components.js"></script>
+    <script type="module" src="/js/projects-v2/projects-v2.js"></script>
 </body>
 </html>
