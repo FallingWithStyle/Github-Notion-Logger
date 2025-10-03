@@ -311,6 +311,7 @@ app.post('/api/gnl/chat', async (req, res) => {
         });
         
         responseContent = aiResponse.choices?.[0]?.message?.content || 'No response generated';
+        console.log('🔍 [GNL] AI Response content:', responseContent);
       } catch (aiError) {
         console.error('❌ [GNL] AI service failed:', aiError);
         responseContent = 'I apologize, but I\'m experiencing technical difficulties with the GNL Assistant. Please try again in a moment.';
@@ -322,7 +323,13 @@ app.post('/api/gnl/chat', async (req, res) => {
 
       // Validate response
       const validationStart = Date.now();
-      const validation = aiResponseValidator.validateResponse(responseContent, context, contextType);
+      const responseObject = {
+        content: responseContent,
+        response: responseContent,
+        text: responseContent
+      };
+      console.log('🔍 [GNL] Validating response object:', JSON.stringify(responseObject, null, 2));
+      const validation = aiResponseValidator.validateResponse(responseObject, context, contextType);
       const validationTime = Date.now() - validationStart;
       gnlMetrics.validationTime += validationTime;
 
