@@ -66,6 +66,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Mount static routes first (for root path and static files)
+const staticRoutes = require('./routes/static');
+app.use('/', staticRoutes);
+
 // Mount API routes
 app.use('/api', apiRoutes);
 app.use('/api/v2/ai', aiChatRoutes);

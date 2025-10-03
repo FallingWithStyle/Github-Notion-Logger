@@ -9,7 +9,6 @@ const commitsRoutes = require('./commits');
 const timezoneRoutes = require('./timezone');
 const colorPaletteRoutes = require('./color-palette');
 const webhookRoutes = require('./webhook');
-const staticRoutes = require('./static');
 const apiV2Routes = require('./api-v2');
 const aiChatRoutes = require('./ai-chat');
 const apiRemainingRoutes = require('./api-remaining');
@@ -25,6 +24,5 @@ router.use('/v2', apiV2Routes);
 router.use('/v2/ai', aiChatRoutes);
 router.use('/', apiRemainingRoutes);
 router.use('/', webhookRoutes);
-router.use('/', staticRoutes);
 
 module.exports = router;
