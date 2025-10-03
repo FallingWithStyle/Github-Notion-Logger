@@ -393,6 +393,19 @@
 - [ ] Task 5: Add proper test teardown and cleanup procedures
 - [ ] Task 6: Fix test environment setup and mocking issues
 
+### Story 10.7: GNL Assistant Migration for Cost Optimization
+- [x] Task 1: Extract AI services into standalone GNL Assistant server
+- [x] Task 2: Create API proxy endpoints in Fly.io app for AI requests
+- [x] Task 3: Implement GNL Assistant server with Fly.io data integration
+- [x] Task 4: Update frontend to route AI calls to GNL Assistant
+- [x] Task 5: Add GNL Assistant startup scripts and configuration
+- [x] Task 6: Test hybrid architecture with GNL Assistant and Fly.io data
+- [x] Task 7: Update documentation for GNL Assistant setup
+- [x] Task 8: Optimize resource usage and performance monitoring
+- [x] Task 9: Consolidate to single GNL Assistant (remove redundant local assistant)
+- [x] Task 10: Update proxy routes to use GNL Assistant exclusively
+- [x] Task 11: Fix llama-hub API key authentication and connection
+
 ---
 
 ## Notes
