@@ -1,19 +1,24 @@
 /**
  * Unit Tests for AISessionService - Epic 10 TDD Implementation
  * Tests cover session management, message handling, and conversation state
+ * Updated to use new test utilities for better stability and consistency
  */
 
-const AISessionService = require('./services/ai-session-service');
-
-// Mock uuid
+// Mock uuid before importing the service
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'mock-uuid-123')
 }));
 
+const AISessionService = require('./services/ai-session-service');
+const testUtils = require('./test-utilities');
+
 describe('AISessionService', () => {
   let sessionService;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    // Use test utilities for setup
+    await testUtils.waitForPendingOperations();
+    
     // Clear any existing sessions from previous test runs
     const tempService = new AISessionService();
     if (tempService.sessions) {
@@ -24,16 +29,23 @@ describe('AISessionService', () => {
     }
   });
 
-  beforeEach(() => {
-    // Clear all mocks
-    jest.clearAllMocks();
+  beforeEach(async () => {
+    // Use test utilities for consistent setup
+    testUtils.cleanup();
+    
+    // Reset UUID mock to ensure it returns the expected value
+    const { v4: uuidv4 } = require('uuid');
+    uuidv4.mockReturnValue('mock-uuid-123');
     
     // Create new service instance
     sessionService = new AISessionService();
+    
+    // Wait for any pending operations
+    await testUtils.waitForPendingOperations();
   });
 
-  afterEach(() => {
-    // Clean up any active sessions and stop cleanup interval
+  afterEach(async () => {
+    // Use test utilities for proper cleanup
     if (sessionService) {
       if (sessionService.sessions) {
         sessionService.sessions.clear();
@@ -42,6 +54,10 @@ describe('AISessionService', () => {
         sessionService.stopCleanupInterval();
       }
     }
+    
+    // Wait for pending operations and cleanup
+    await testUtils.waitForPendingOperations();
+    testUtils.cleanup();
   });
 
   describe('createSession', () => {
@@ -358,18 +374,18 @@ describe('AISessionService', () => {
       expect(session.preferences.includeHistory).toBe(true); // Should remain unchanged
     });
 
-    it('should update lastAccessed timestamp', () => {
+    it('should update lastAccessed timestamp', async () => {
       // Arrange
       const originalLastAccessed = session.lastAccessed;
 
       // Wait a bit to ensure time difference
-      setTimeout(() => {
-        // Act
-        sessionService.updatePreferences(session.id, { analysisType: 'quality' });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Act
+      sessionService.updatePreferences(session.id, { analysisType: 'quality' });
 
-        // Assert
-        expect(session.lastAccessed.getTime()).toBeGreaterThanOrEqual(originalLastAccessed.getTime());
-      }, 10);
+      // Assert
+      expect(session.lastAccessed.getTime()).toBeGreaterThanOrEqual(originalLastAccessed.getTime());
     });
 
     it('should throw error for non-existent session', () => {
@@ -434,18 +450,18 @@ describe('AISessionService', () => {
       expect(session.messages).toHaveLength(0);
     });
 
-    it('should update lastAccessed timestamp', () => {
+    it('should update lastAccessed timestamp', async () => {
       // Arrange
       const originalLastAccessed = session.lastAccessed;
 
       // Wait a bit to ensure time difference
-      setTimeout(() => {
-        // Act
-        sessionService.clearHistory(session.id);
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Act
+      sessionService.clearHistory(session.id);
 
-        // Assert
-        expect(session.lastAccessed.getTime()).toBeGreaterThanOrEqual(originalLastAccessed.getTime());
-      }, 10);
+      // Assert
+      expect(session.lastAccessed.getTime()).toBeGreaterThanOrEqual(originalLastAccessed.getTime());
     });
 
     it('should throw error for non-existent session', () => {

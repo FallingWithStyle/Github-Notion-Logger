@@ -1,10 +1,12 @@
 /**
  * Test AI Metrics and Performance Monitoring
  * Tests for the /api/v2/ai/metrics endpoint and performance tracking
+ * Updated to use new test utilities for better stability and consistency
  */
 
 const request = require('supertest');
 const express = require('express');
+const testUtils = require('./test-utilities');
 
 // Mock the AI services
 jest.mock('./services/ai-context-service');
@@ -19,30 +21,24 @@ const AIResponseValidator = require('./services/ai-response-validator');
 const LlamaHubService = require('./services/llama-hub-service');
 const { circuitBreakerManager } = require('./services/ai-circuit-breaker');
 
-// Mock implementations
-const mockAIContextService = {
+// Mock implementations using test utilities
+const mockAIContextService = testUtils.createMockService('AIContextService', {
   getProjectContext: jest.fn(),
   getPortfolioContext: jest.fn(),
   getQuickWinsContext: jest.fn(),
   getFocusAreasContext: jest.fn()
-};
+});
 
-const mockAISessionService = {
-  createSession: jest.fn(),
-  getSession: jest.fn(),
-  addMessage: jest.fn(),
-  getHistory: jest.fn(),
-  getSessionSummary: jest.fn()
-};
+const mockAISessionService = testUtils.createMockSessionService();
 
-const mockAIResponseValidator = {
+const mockAIResponseValidator = testUtils.createMockService('AIResponseValidator', {
   validateResponse: jest.fn()
-};
+});
 
-const mockLlamaHubService = {
+const mockLlamaHubService = testUtils.createMockService('LlamaHubService', {
   chatCompletion: jest.fn(),
   getHealth: jest.fn()
-};
+});
 
 const mockCircuitBreakerManager = {
   execute: jest.fn(),
@@ -70,12 +66,23 @@ const aiChatRoutes = require('./routes/ai-chat');
 app.use('/api/v2/ai', aiChatRoutes);
 
 describe('AI Metrics and Performance Monitoring', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  beforeEach(async () => {
+    // Use test utilities for consistent setup
+    testUtils.cleanup();
     
     // Reset performance metrics by requiring the module fresh
     jest.resetModules();
     
+    await testUtils.waitForPendingOperations();
+  });
+
+  afterEach(async () => {
+    // Use test utilities for proper cleanup
+    await testUtils.waitForPendingOperations();
+    testUtils.cleanup();
+  });
+
+  beforeEach(() => {
     // Mock circuit breaker responses
     mockCircuitBreakerManager.getSystemHealth.mockReturnValue('healthy');
     mockCircuitBreakerManager.getAllHealth.mockReturnValue({

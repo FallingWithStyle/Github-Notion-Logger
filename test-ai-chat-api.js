@@ -1,6 +1,7 @@
 /**
  * Integration Tests for AI Chat API - Epic 10 TDD Implementation
  * Tests cover enhanced chat endpoints with project context integration
+ * Updated to use new test utilities for better stability and consistency
  */
 
 const request = require('supertest');
@@ -9,6 +10,7 @@ const AIContextService = require('./services/ai-context-service');
 const AISessionService = require('./services/ai-session-service');
 const AIResponseValidator = require('./services/ai-response-validator');
 const LlamaHubService = require('./services/llama-hub-service');
+const testUtils = require('./test-utilities');
 
 // Mock dependencies
 jest.mock('./services/ai-context-service');
@@ -20,29 +22,23 @@ jest.mock('./services/llama-hub-service');
 const app = express();
 app.use(express.json());
 
-// Mock AI services
-const mockAIContextService = {
+// Mock AI services using test utilities
+const mockAIContextService = testUtils.createMockService('AIContextService', {
   getProjectContext: jest.fn(),
   getPortfolioContext: jest.fn(),
   getQuickWinsContext: jest.fn(),
   getFocusAreasContext: jest.fn()
-};
+});
 
-const mockAISessionService = {
-  createSession: jest.fn(),
-  getSession: jest.fn(),
-  addMessage: jest.fn(),
-  getHistory: jest.fn(),
-  getSessionSummary: jest.fn()
-};
+const mockAISessionService = testUtils.createMockSessionService();
 
-const mockAIResponseValidator = {
+const mockAIResponseValidator = testUtils.createMockService('AIResponseValidator', {
   validateResponse: jest.fn()
-};
+});
 
-const mockLlamaHubService = {
+const mockLlamaHubService = testUtils.createMockService('LlamaHubService', {
   chatCompletion: jest.fn()
-};
+});
 
 // Set up mocks
 AIContextService.mockImplementation(() => mockAIContextService);
@@ -247,8 +243,18 @@ app.post('/api/v2/ai/analyze', async (req, res) => {
 });
 
 describe('AI Chat API Integration Tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  beforeEach(async () => {
+    // Use test utilities for consistent setup
+    testUtils.cleanup();
+    
+    // Wait for any pending operations
+    await testUtils.waitForPendingOperations();
+  });
+
+  afterEach(async () => {
+    // Use test utilities for proper cleanup
+    await testUtils.waitForPendingOperations();
+    testUtils.cleanup();
   });
 
   describe('POST /api/v2/ai/chat', () => {

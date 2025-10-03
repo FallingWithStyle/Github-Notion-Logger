@@ -1,6 +1,7 @@
 /**
  * Unit Tests for AIContextService - Epic 10 TDD Implementation
  * Tests cover all methods and edge cases for AI context aggregation
+ * Updated to use new test utilities for better stability and consistency
  */
 
 const AIContextService = require('./services/ai-context-service');
@@ -9,6 +10,7 @@ const ProgressTrackingService = require('./services/progress-tracking-service');
 const DataConsistencyService = require('./services/data-consistency-service');
 const PerformanceOptimizationService = require('./services/performance-optimization-service');
 const ErrorHandlingService = require('./services/error-handling-service');
+const testUtils = require('./test-utilities');
 
 // Mock dependencies
 jest.mock('./services/project-management-service');
@@ -25,23 +27,23 @@ describe('AIContextService', () => {
   let mockPerformanceOptimizer;
   let mockErrorHandler;
 
-  beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
+  beforeEach(async () => {
+    // Use test utilities for consistent setup
+    testUtils.cleanup();
     
-    // Create mock instances
-    mockProjectService = {
+    // Create mock instances using test utilities
+    mockProjectService = testUtils.createMockService('ProjectManagementService', {
       getProjectOverview: jest.fn(),
       getProjectHealth: jest.fn()
-    };
+    });
     
-    mockProgressService = {
+    mockProgressService = testUtils.createMockService('ProgressTrackingService', {
       getProgressAnalytics: jest.fn()
-    };
+    });
     
-    mockConsistencyService = {};
-    mockPerformanceOptimizer = {};
-    mockErrorHandler = {};
+    mockConsistencyService = testUtils.createMockService('DataConsistencyService', {});
+    mockPerformanceOptimizer = testUtils.createMockService('PerformanceOptimizationService', {});
+    mockErrorHandler = testUtils.createMockService('ErrorHandlingService', {});
 
     // Mock constructors
     ProjectManagementService.mockImplementation(() => mockProjectService);
@@ -52,6 +54,15 @@ describe('AIContextService', () => {
 
     // Create service instance
     aiContextService = new AIContextService();
+    
+    // Wait for any pending operations
+    await testUtils.waitForPendingOperations();
+  });
+
+  afterEach(async () => {
+    // Use test utilities for proper cleanup
+    await testUtils.waitForPendingOperations();
+    testUtils.cleanup();
   });
 
   describe('getProjectContext', () => {

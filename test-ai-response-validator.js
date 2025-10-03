@@ -1,15 +1,26 @@
 /**
  * Unit Tests for AIResponseValidator - Epic 10 TDD Implementation
  * Tests cover response validation, quality scoring, and content analysis
+ * Updated to use new test utilities for better stability and consistency
  */
 
 const AIResponseValidator = require('./services/ai-response-validator');
+const testUtils = require('./test-utilities');
 
 describe('AIResponseValidator', () => {
   let validator;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Use test utilities for consistent setup
+    testUtils.cleanup();
     validator = new AIResponseValidator();
+    await testUtils.waitForPendingOperations();
+  });
+
+  afterEach(async () => {
+    // Use test utilities for proper cleanup
+    await testUtils.waitForPendingOperations();
+    testUtils.cleanup();
   });
 
   describe('validateResponse', () => {
