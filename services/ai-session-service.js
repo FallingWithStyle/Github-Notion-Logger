@@ -13,8 +13,10 @@ class AISessionService {
     this.maxSessions = 1000; // maximum concurrent sessions
     this.cleanupInterval = 5 * 60 * 1000; // 5 minutes
     
-    // Start cleanup interval
-    this.startCleanupInterval();
+    // Start cleanup interval only if not in test environment
+    if (process.env.NODE_ENV !== 'test') {
+      this.startCleanupInterval();
+    }
   }
 
   /**
@@ -80,6 +82,11 @@ class AISessionService {
       // Add message to session
       session.addMessage(role, content, metadata);
       
+      // Maintain history limit
+      if (session.messages.length > this.maxHistoryLength) {
+        session.messages = session.messages.slice(-this.maxHistoryLength);
+      }
+      
       console.log(`💬 Added ${role} message to session ${sessionId}`);
       return session;
 
@@ -103,8 +110,12 @@ class AISessionService {
       }
 
       let messages = session.messages;
-      if (limit && limit > 0) {
-        messages = messages.slice(-limit);
+      if (limit !== null && limit >= 0) {
+        if (limit === 0) {
+          messages = [];
+        } else {
+          messages = messages.slice(-limit);
+        }
       }
 
       return messages;
@@ -331,15 +342,31 @@ class AISessionService {
     if (cleanedCount > 0) {
       console.log(`🧹 Cleaned up ${cleanedCount} expired sessions`);
     }
+
+    return cleanedCount;
   }
 
   /**
    * Start cleanup interval
    */
   startCleanupInterval() {
-    setInterval(() => {
-      this.cleanupExpiredSessions();
+    this.cleanupTimer = setInterval(() => {
+      try {
+        this.cleanupExpiredSessions();
+      } catch (error) {
+        console.error('❌ Error during session cleanup:', error);
+      }
     }, this.cleanupInterval);
+  }
+
+  /**
+   * Stop cleanup interval
+   */
+  stopCleanupInterval() {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
   }
 
   /**
@@ -463,10 +490,8 @@ class Session {
     this.messages.push(message);
     this.lastAccessed = new Date();
 
-    // Maintain history limit
-    if (this.messages.length > 50) { // maxHistoryLength from service
-      this.messages = this.messages.slice(-50);
-    }
+    // Maintain history limit - this will be handled by the service
+    // The service will call this method and manage the limit
   }
 
   /**

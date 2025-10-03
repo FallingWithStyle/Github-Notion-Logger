@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - GitHub Notion Logger</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+    <link rel="stylesheet" href="/css/ai-chat.css">
+    <link rel="icon" type="image/png" href="/commit-logger-favicon_1.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav">
+            <div class="nav-brand">
+                <h1>🤖 AI Assistant</h1>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏃 Activity View</a>
+                <a href="/week" class="nav-link">📅 Weekly Planning</a>
+                <a href="/projects-v2.html" class="nav-link">📁 Projects</a>
+                <a href="/progress-v2.html" class="nav-link">📊 Progress</a>
+                <a href="/ai-chat.html" class="nav-link active">🤖 AI Assistant</a>
+            </div>
+        </nav>
+
+        <!-- AI Chat Interface -->
+        <div class="ai-chat-container">
+            <div class="chat-header">
+                <h2>🤖 AI Project Assistant</h2>
+                <div class="context-selector">
+                    <label for="contextType">Context:</label>
+                    <select id="contextType">
+                        <option value="general">General</option>
+                        <option value="project">Project Specific</option>
+                        <option value="portfolio">Portfolio Overview</option>
+                        <option value="quickWins">Quick Wins</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai-message">
+                    <div class="message-content">
+                        <p>Hello! I'm your AI Project Assistant. I can help you with:</p>
+                        <ul>
+                            <li>Project analysis and recommendations</li>
+                            <li>Quick wins identification</li>
+                            <li>Focus area suggestions</li>
+                            <li>Progress insights and trends</li>
+                        </ul>
+                        <p>What would you like to know about your projects?</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Ask about your projects..." maxlength="1000">
+                <button id="sendButton">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/ai-chat.js"></script>
+</body>
+</html>

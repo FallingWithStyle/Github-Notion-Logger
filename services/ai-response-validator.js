@@ -127,6 +127,10 @@ class AIResponseValidator {
    * @param {Object} validation - Validation result object
    */
   validateContent(response, validation) {
+    if (!response) {
+      return;
+    }
+    
     const content = response.content || response.response || response.text || '';
     
     if (typeof content !== 'string') {

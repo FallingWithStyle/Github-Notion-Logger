@@ -66,6 +66,9 @@ export class ProjectCard {
         </div>
         <div class="project-actions">
           <button class="btn btn--sm" onclick="this.viewDetails('${this.project.name}')">View Details</button>
+          <button class="btn btn--sm btn--help help-button" onclick="this.showHelp('${this.project.name}')">
+            <span class="help-icon">❓</span> Get Help
+          </button>
         </div>
       </div>
     `;
@@ -96,6 +99,208 @@ export class ProjectCard {
   viewDetails(projectName) {
     console.log('Viewing details for project:', projectName);
     // This would typically navigate to a project details page
+  }
+
+  /**
+   * Show contextual help for the project
+   * @param {string} projectName - Name of the project
+   */
+  showHelp(projectName) {
+    const helpContent = this.getContextualHelp(projectName);
+    this.showHelpModal(helpContent);
+  }
+
+  /**
+   * Get contextual help content for the project
+   * @param {string} projectName - Name of the project
+   * @returns {Object} Help content object
+   */
+  getContextualHelp(projectName) {
+    const project = this.project;
+    const healthScore = project.healthScore || 0;
+    const progress = project.progress || 0;
+    const status = project.status || 'unknown';
+    
+    let suggestions = [];
+    let tips = [];
+
+    // Health-based suggestions
+    if (healthScore < 30) {
+      suggestions.push('Consider reviewing project scope and breaking down large tasks');
+      suggestions.push('Check for any blockers or dependencies that need attention');
+    } else if (healthScore < 60) {
+      suggestions.push('Focus on completing in-progress tasks to improve momentum');
+      suggestions.push('Review and update project timeline if needed');
+    } else if (healthScore >= 80) {
+      suggestions.push('Great progress! Consider documenting lessons learned');
+      suggestions.push('Plan for project completion and handover activities');
+    }
+
+    // Progress-based tips
+    if (progress < 25) {
+      tips.push('Start with quick wins to build momentum');
+      tips.push('Break down large stories into smaller, manageable tasks');
+    } else if (progress > 75) {
+      tips.push('Focus on testing and quality assurance');
+      tips.push('Prepare for project delivery and documentation');
+    }
+
+    // Status-based advice
+    if (status === 'paused') {
+      tips.push('Review why the project was paused and plan for resumption');
+      tips.push('Consider if scope or timeline adjustments are needed');
+    } else if (status === 'active') {
+      tips.push('Maintain regular check-ins and progress updates');
+      tips.push('Keep stakeholders informed of any changes or blockers');
+    }
+
+    return {
+      title: `Help for ${projectName}`,
+      project: {
+        name: projectName,
+        healthScore: healthScore,
+        progress: progress,
+        status: status,
+        lastActivity: project.lastActivity,
+        storyCount: project.storyCount || 0,
+        taskCount: project.taskCount || 0
+      },
+      suggestions: suggestions,
+      tips: tips,
+      resources: [
+        'Project Management Best Practices',
+        'Agile Development Guidelines',
+        'Team Communication Tips'
+      ]
+    };
+  }
+
+  /**
+   * Show help modal with contextual information
+   * @param {Object} helpContent - Help content to display
+   */
+  showHelpModal(helpContent) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('help-modal');
+    if (!modal) {
+      modal = this.createHelpModal();
+      document.body.appendChild(modal);
+    }
+
+    // Update modal content
+    this.updateHelpModalContent(modal, helpContent);
+
+    // Show modal
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  /**
+   * Create help modal element
+   * @returns {HTMLElement} Modal element
+   */
+  createHelpModal() {
+    const modal = document.createElement('div');
+    modal.id = 'help-modal';
+    modal.className = 'help-modal';
+    modal.innerHTML = `
+      <div class="help-modal-content">
+        <div class="help-modal-header">
+          <h3 class="help-modal-title"></h3>
+          <button class="help-modal-close">&times;</button>
+        </div>
+        <div class="help-modal-body"></div>
+      </div>
+    `;
+
+    // Add event listeners
+    modal.querySelector('.help-modal-close').addEventListener('click', () => {
+      this.hideHelpModal();
+    });
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        this.hideHelpModal();
+      }
+    });
+
+    return modal;
+  }
+
+  /**
+   * Update help modal content
+   * @param {HTMLElement} modal - Modal element
+   * @param {Object} helpContent - Help content to display
+   */
+  updateHelpModalContent(modal, helpContent) {
+    const title = modal.querySelector('.help-modal-title');
+    const body = modal.querySelector('.help-modal-body');
+
+    title.textContent = helpContent.title;
+
+    body.innerHTML = `
+      <div class="help-project-info">
+        <h4>Project Information</h4>
+        <div class="help-metrics">
+          <div class="help-metric">
+            <span class="label">Health Score:</span>
+            <span class="value">${helpContent.project.healthScore}/100</span>
+          </div>
+          <div class="help-metric">
+            <span class="label">Progress:</span>
+            <span class="value">${Utils.formatPercentage(helpContent.project.progress)}</span>
+          </div>
+          <div class="help-metric">
+            <span class="label">Status:</span>
+            <span class="value">${helpContent.project.status}</span>
+          </div>
+          <div class="help-metric">
+            <span class="label">Stories:</span>
+            <span class="value">${helpContent.project.storyCount}</span>
+          </div>
+          <div class="help-metric">
+            <span class="label">Tasks:</span>
+            <span class="value">${helpContent.project.taskCount}</span>
+          </div>
+        </div>
+      </div>
+
+      ${helpContent.suggestions.length > 0 ? `
+        <div class="help-suggestions">
+          <h4>Suggestions</h4>
+          <ul>
+            ${helpContent.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+
+      ${helpContent.tips.length > 0 ? `
+        <div class="help-tips">
+          <h4>Tips</h4>
+          <ul>
+            ${helpContent.tips.map(tip => `<li>${tip}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+
+      <div class="help-resources">
+        <h4>Resources</h4>
+        <ul>
+          ${helpContent.resources.map(resource => `<li>${resource}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
+  /**
+   * Hide help modal
+   */
+  hideHelpModal() {
+    const modal = document.getElementById('help-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
   }
 }
 

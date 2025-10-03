@@ -1,6 +1,6 @@
 /**
- * AI Service Circuit Breaker for Epic 10
- * Resilience pattern for AI service failures
+ * AI Service Circuit Breaker - Epic 10 Implementation
+ * Provides resilience patterns for AI service calls
  */
 
 class AIServiceCircuitBreaker {
@@ -13,121 +13,108 @@ class AIServiceCircuitBreaker {
     this.lastFailureTime = null;
     this.successCount = 0;
     this.requestCount = 0;
-    this.stats = {
+    this.monitoring = {
       totalRequests: 0,
-      successfulRequests: 0,
-      failedRequests: 0,
-      circuitOpens: 0,
-      circuitCloses: 0
+      totalFailures: 0,
+      totalSuccesses: 0,
+      averageResponseTime: 0,
+      lastResetTime: Date.now()
     };
   }
 
   /**
    * Execute operation with circuit breaker protection
-   * @param {Function} operation - Operation to execute
-   * @param {Object} options - Execution options
+   * @param {Function} operation - The operation to execute
+   * @param {Object} context - Additional context for logging
    * @returns {Promise} Operation result
    */
-  async execute(operation, options = {}) {
-    this.stats.totalRequests++;
+  async execute(operation, context = {}) {
     this.requestCount++;
+    this.monitoring.totalRequests++;
 
-    // Check circuit state
+    // Check if circuit is open
     if (this.state === 'OPEN') {
-      if (this.shouldAttemptReset()) {
+      if (Date.now() - this.lastFailureTime > this.timeout) {
         this.state = 'HALF_OPEN';
-        console.log('🔄 Circuit breaker moving to HALF_OPEN state');
+        console.log('🔄 Circuit breaker transitioning to HALF_OPEN state');
       } else {
-        throw new Error('Circuit breaker is OPEN - service unavailable');
+        const error = new Error('Circuit breaker is OPEN - service unavailable');
+        error.code = 'CIRCUIT_BREAKER_OPEN';
+        error.retryAfter = Math.ceil((this.timeout - (Date.now() - this.lastFailureTime)) / 1000);
+        throw error;
       }
     }
 
+    const startTime = Date.now();
+    
     try {
-      // Execute operation with timeout
-      const result = await this.executeWithTimeout(operation, options.timeout);
-      
-      // Handle success
-      this.onSuccess();
+      const result = await operation();
+      this.onSuccess(startTime);
       return result;
-
     } catch (error) {
-      // Handle failure
-      this.onFailure(error);
+      this.onFailure(error, startTime, context);
       throw error;
     }
   }
 
   /**
-   * Execute operation with timeout
-   * @param {Function} operation - Operation to execute
-   * @param {number} timeout - Timeout in milliseconds
-   * @returns {Promise} Operation result
-   */
-  async executeWithTimeout(operation, timeout = 30000) {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error('Operation timeout'));
-      }, timeout);
-
-      operation()
-        .then(result => {
-          clearTimeout(timer);
-          resolve(result);
-        })
-        .catch(error => {
-          clearTimeout(timer);
-          reject(error);
-        });
-    });
-  }
-
-  /**
    * Handle successful operation
+   * @param {number} startTime - Operation start time
    */
-  onSuccess() {
-    this.stats.successfulRequests++;
+  onSuccess(startTime) {
+    const responseTime = Date.now() - startTime;
     this.successCount++;
-    this.failureCount = 0;
+    this.monitoring.totalSuccesses++;
+    
+    // Update average response time
+    this.updateAverageResponseTime(responseTime);
 
+    // Reset failure count on success
     if (this.state === 'HALF_OPEN') {
-      // If we've had enough successes in HALF_OPEN, close the circuit
-      if (this.successCount >= 3) {
-        this.state = 'CLOSED';
-        this.successCount = 0;
-        this.stats.circuitCloses++;
-        console.log('✅ Circuit breaker closed - service recovered');
-      }
+      this.failureCount = 0;
+      this.state = 'CLOSED';
+      console.log('✅ Circuit breaker reset to CLOSED state');
     }
+
+    console.log(`✅ AI service call succeeded (${responseTime}ms)`);
   }
 
   /**
    * Handle failed operation
-   * @param {Error} error - Error that occurred
+   * @param {Error} error - The error that occurred
+   * @param {number} startTime - Operation start time
+   * @param {Object} context - Additional context
    */
-  onFailure(error) {
-    this.stats.failedRequests++;
+  onFailure(error, startTime, context) {
+    const responseTime = Date.now() - startTime;
     this.failureCount++;
-    this.lastFailureTime = new Date();
+    this.monitoring.totalFailures++;
+    this.lastFailureTime = Date.now();
+    
+    // Update average response time
+    this.updateAverageResponseTime(responseTime);
 
-    console.warn(`⚠️ Circuit breaker failure (${this.failureCount}/${this.failureThreshold}):`, error.message);
+    console.error(`❌ AI service call failed (${responseTime}ms):`, {
+      error: error.message,
+      context: context,
+      failureCount: this.failureCount,
+      state: this.state
+    });
 
     // Check if we should open the circuit
     if (this.failureCount >= this.failureThreshold) {
       this.state = 'OPEN';
-      this.stats.circuitOpens++;
-      console.error('🚨 Circuit breaker OPEN - service marked as unavailable');
+      console.warn(`🚨 Circuit breaker opened after ${this.failureCount} failures`);
     }
   }
 
   /**
-   * Check if we should attempt to reset the circuit
-   * @returns {boolean} True if should attempt reset
+   * Update average response time
+   * @param {number} responseTime - Current response time
    */
-  shouldAttemptReset() {
-    if (!this.lastFailureTime) return false;
-    
-    const timeSinceLastFailure = Date.now() - this.lastFailureTime.getTime();
-    return timeSinceLastFailure >= this.resetTimeout;
+  updateAverageResponseTime(responseTime) {
+    const totalTime = this.monitoring.averageResponseTime * (this.monitoring.totalRequests - 1) + responseTime;
+    this.monitoring.averageResponseTime = totalTime / this.monitoring.totalRequests;
   }
 
   /**
@@ -139,266 +126,216 @@ class AIServiceCircuitBreaker {
       state: this.state,
       failureCount: this.failureCount,
       successCount: this.successCount,
+      requestCount: this.requestCount,
       lastFailureTime: this.lastFailureTime,
-      stats: { ...this.stats },
-      isHealthy: this.state === 'CLOSED',
-      timeUntilReset: this.getTimeUntilReset()
+      isOpen: this.state === 'OPEN',
+      isHalfOpen: this.state === 'HALF_OPEN',
+      isClosed: this.state === 'CLOSED',
+      monitoring: { ...this.monitoring }
     };
   }
 
   /**
-   * Get time until circuit can be reset
-   * @returns {number} Milliseconds until reset
-   */
-  getTimeUntilReset() {
-    if (this.state !== 'OPEN' || !this.lastFailureTime) return 0;
-    
-    const timeSinceLastFailure = Date.now() - this.lastFailureTime.getTime();
-    return Math.max(0, this.resetTimeout - timeSinceLastFailure);
-  }
-
-  /**
-   * Manually reset the circuit breaker
+   * Reset circuit breaker to closed state
    */
   reset() {
     this.state = 'CLOSED';
     this.failureCount = 0;
     this.successCount = 0;
+    this.requestCount = 0;
     this.lastFailureTime = null;
+    this.monitoring.lastResetTime = Date.now();
     console.log('🔄 Circuit breaker manually reset');
   }
 
   /**
-   * Force open the circuit breaker
+   * Get health status
+   * @returns {Object} Health status
    */
-  forceOpen() {
-    this.state = 'OPEN';
-    this.lastFailureTime = new Date();
-    this.stats.circuitOpens++;
-    console.log('🔒 Circuit breaker manually opened');
-  }
-
-  /**
-   * Get circuit breaker statistics
-   * @returns {Object} Statistics
-   */
-  getStats() {
-    const successRate = this.stats.totalRequests > 0 
-      ? (this.stats.successfulRequests / this.stats.totalRequests) * 100 
+  getHealth() {
+    const now = Date.now();
+    const timeSinceLastFailure = this.lastFailureTime ? now - this.lastFailureTime : null;
+    const failureRate = this.monitoring.totalRequests > 0 
+      ? this.monitoring.totalFailures / this.monitoring.totalRequests 
       : 0;
 
     return {
-      ...this.stats,
-      successRate: Math.round(successRate * 100) / 100,
-      failureRate: Math.round((100 - successRate) * 100) / 100,
-      currentState: this.state,
-      isHealthy: this.state === 'CLOSED',
-      timeUntilReset: this.getTimeUntilReset()
+      status: this.state === 'CLOSED' ? 'healthy' : this.state === 'HALF_OPEN' ? 'degraded' : 'unhealthy',
+      state: this.state,
+      failureRate: Math.round(failureRate * 100) / 100,
+      averageResponseTime: Math.round(this.monitoring.averageResponseTime),
+      totalRequests: this.monitoring.totalRequests,
+      totalFailures: this.monitoring.totalFailures,
+      totalSuccesses: this.monitoring.totalSuccesses,
+      timeSinceLastFailure: timeSinceLastFailure,
+      canRetry: this.state !== 'OPEN' || (timeSinceLastFailure && timeSinceLastFailure > this.timeout)
     };
   }
 
   /**
-   * Check if circuit breaker is healthy
-   * @returns {boolean} True if healthy
+   * Check if operation can be executed
+   * @returns {boolean} True if operation can be executed
    */
-  isHealthy() {
-    return this.state === 'CLOSED';
+  canExecute() {
+    if (this.state === 'CLOSED') {
+      return true;
+    }
+    
+    if (this.state === 'HALF_OPEN') {
+      return true;
+    }
+    
+    if (this.state === 'OPEN') {
+      return Date.now() - this.lastFailureTime > this.timeout;
+    }
+    
+    return false;
   }
 
   /**
-   * Check if circuit breaker is available for requests
-   * @returns {boolean} True if available
+   * Get retry delay for failed operations
+   * @returns {number} Retry delay in milliseconds
    */
-  isAvailable() {
-    return this.state === 'CLOSED' || this.state === 'HALF_OPEN';
+  getRetryDelay() {
+    if (this.state === 'OPEN') {
+      return this.timeout - (Date.now() - this.lastFailureTime);
+    }
+    
+    return 0;
+  }
+
+  /**
+   * Create a fallback response for when circuit is open
+   * @param {string} operation - Operation name
+   * @returns {Object} Fallback response
+   */
+  createFallbackResponse(operation) {
+    return {
+      success: false,
+      error: 'AI service temporarily unavailable',
+      fallback: {
+        type: 'circuit_breaker_open',
+        data: 'The AI service is currently unavailable due to repeated failures. Please try again later.',
+        timestamp: new Date().toISOString(),
+        retryAfter: this.getRetryDelay()
+      },
+      details: {
+        errorCode: 'CIRCUIT_BREAKER_OPEN',
+        operation: operation,
+        state: this.state,
+        failureCount: this.failureCount
+      }
+    };
   }
 }
 
 /**
- * AI Service Manager with Circuit Breaker
- * Manages multiple AI services with circuit breaker protection
+ * Circuit Breaker Manager for multiple services
  */
-class AIServiceManager {
-  constructor(options = {}) {
-    this.services = new Map();
+class AICircuitBreakerManager {
+  constructor() {
+    this.breakers = new Map();
     this.defaultOptions = {
       failureThreshold: 5,
       timeout: 60000,
       resetTimeout: 30000
     };
-    this.globalStats = {
-      totalRequests: 0,
-      successfulRequests: 0,
-      failedRequests: 0,
-      circuitOpens: 0,
-      circuitCloses: 0
-    };
   }
 
   /**
-   * Register an AI service with circuit breaker
+   * Get or create circuit breaker for a service
    * @param {string} serviceName - Name of the service
-   * @param {Function} serviceFunction - Service function
    * @param {Object} options - Circuit breaker options
+   * @returns {AIServiceCircuitBreaker} Circuit breaker instance
    */
-  registerService(serviceName, serviceFunction, options = {}) {
-    const circuitBreaker = new AIServiceCircuitBreaker({
-      ...this.defaultOptions,
-      ...options
-    });
-
-    this.services.set(serviceName, {
-      function: serviceFunction,
-      circuitBreaker: circuitBreaker,
-      name: serviceName
-    });
-
-    console.log(`🔧 Registered AI service: ${serviceName}`);
+  getBreaker(serviceName, options = {}) {
+    if (!this.breakers.has(serviceName)) {
+      const breakerOptions = { ...this.defaultOptions, ...options };
+      this.breakers.set(serviceName, new AIServiceCircuitBreaker(breakerOptions));
+    }
+    
+    return this.breakers.get(serviceName);
   }
 
   /**
-   * Execute service with circuit breaker protection
+   * Execute operation with circuit breaker for specific service
    * @param {string} serviceName - Name of the service
-   * @param {Array} args - Arguments to pass to service
-   * @param {Object} options - Execution options
-   * @returns {Promise} Service result
+   * @param {Function} operation - Operation to execute
+   * @param {Object} context - Additional context
+   * @returns {Promise} Operation result
    */
-  async executeService(serviceName, args = [], options = {}) {
-    const service = this.services.get(serviceName);
-    if (!service) {
-      throw new Error(`Service ${serviceName} not found`);
-    }
-
-    this.globalStats.totalRequests++;
-
-    try {
-      const result = await service.circuitBreaker.execute(
-        () => service.function(...args),
-        options
-      );
-      
-      this.globalStats.successfulRequests++;
-      return result;
-
-    } catch (error) {
-      this.globalStats.failedRequests++;
-      throw error;
-    }
+  async execute(serviceName, operation, context = {}) {
+    const breaker = this.getBreaker(serviceName);
+    return await breaker.execute(operation, context);
   }
 
   /**
-   * Get service state
-   * @param {string} serviceName - Name of the service
-   * @returns {Object} Service state
+   * Get health status for all circuit breakers
+   * @returns {Object} Health status for all services
    */
-  getServiceState(serviceName) {
-    const service = this.services.get(serviceName);
-    if (!service) {
-      throw new Error(`Service ${serviceName} not found`);
+  getAllHealth() {
+    const health = {};
+    
+    for (const [serviceName, breaker] of this.breakers.entries()) {
+      health[serviceName] = breaker.getHealth();
     }
-
-    return service.circuitBreaker.getState();
-  }
-
-  /**
-   * Get all services state
-   * @returns {Object} All services state
-   */
-  getAllServicesState() {
-    const states = {};
-    for (const [name, service] of this.services) {
-      states[name] = service.circuitBreaker.getState();
-    }
-    return states;
-  }
-
-  /**
-   * Get global statistics
-   * @returns {Object} Global statistics
-   */
-  getGlobalStats() {
-    const successRate = this.globalStats.totalRequests > 0 
-      ? (this.globalStats.successfulRequests / this.globalStats.totalRequests) * 100 
-      : 0;
-
-    return {
-      ...this.globalStats,
-      successRate: Math.round(successRate * 100) / 100,
-      failureRate: Math.round((100 - successRate) * 100) / 100,
-      totalServices: this.services.size,
-      healthyServices: Array.from(this.services.values())
-        .filter(service => service.circuitBreaker.isHealthy()).length
-    };
+    
+    return health;
   }
 
   /**
    * Reset all circuit breakers
    */
   resetAll() {
-    for (const [name, service] of this.services) {
-      service.circuitBreaker.reset();
+    for (const breaker of this.breakers.values()) {
+      breaker.reset();
     }
     console.log('🔄 All circuit breakers reset');
   }
 
   /**
-   * Get health status of all services
-   * @returns {Object} Health status
+   * Get overall system health
+   * @returns {Object} Overall system health
    */
-  getHealthStatus() {
-    const health = {
-      overall: 'healthy',
-      services: {},
-      issues: []
-    };
-
-    let unhealthyCount = 0;
-
-    for (const [name, service] of this.services) {
-      const state = service.circuitBreaker.getState();
-      health.services[name] = {
-        state: state.state,
-        isHealthy: state.isHealthy,
-        failureCount: state.failureCount,
-        timeUntilReset: state.timeUntilReset
+  getSystemHealth() {
+    const allHealth = this.getAllHealth();
+    const services = Object.keys(allHealth);
+    
+    if (services.length === 0) {
+      return {
+        status: 'unknown',
+        services: 0,
+        healthy: 0,
+        degraded: 0,
+        unhealthy: 0
       };
-
-      if (!state.isHealthy) {
-        unhealthyCount++;
-        health.issues.push(`${name} is ${state.state}`);
-      }
     }
 
-    if (unhealthyCount > 0) {
-      health.overall = unhealthyCount === this.services.size ? 'unhealthy' : 'degraded';
-    }
+    const statusCounts = services.reduce((counts, service) => {
+      const status = allHealth[service].status;
+      counts[status] = (counts[status] || 0) + 1;
+      return counts;
+    }, {});
 
-    return health;
-  }
+    const overallStatus = statusCounts.unhealthy > 0 ? 'unhealthy' :
+                         statusCounts.degraded > 0 ? 'degraded' : 'healthy';
 
-  /**
-   * Check if any service is available
-   * @returns {boolean} True if any service is available
-   */
-  hasAvailableService() {
-    return Array.from(this.services.values())
-      .some(service => service.circuitBreaker.isAvailable());
-  }
-
-  /**
-   * Get the best available service
-   * @returns {string|null} Name of best available service
-   */
-  getBestAvailableService() {
-    const availableServices = Array.from(this.services.entries())
-      .filter(([name, service]) => service.circuitBreaker.isAvailable())
-      .sort((a, b) => {
-        // Prefer services with fewer failures
-        return a[1].circuitBreaker.failureCount - b[1].circuitBreaker.failureCount;
-      });
-
-    return availableServices.length > 0 ? availableServices[0][0] : null;
+    return {
+      status: overallStatus,
+      services: services.length,
+      healthy: statusCounts.healthy || 0,
+      degraded: statusCounts.degraded || 0,
+      unhealthy: statusCounts.unhealthy || 0,
+      details: allHealth
+    };
   }
 }
 
-module.exports = { AIServiceCircuitBreaker, AIServiceManager };
+// Create global circuit breaker manager
+const circuitBreakerManager = new AICircuitBreakerManager();
+
+module.exports = {
+  AIServiceCircuitBreaker,
+  AICircuitBreakerManager,
+  circuitBreakerManager
+};

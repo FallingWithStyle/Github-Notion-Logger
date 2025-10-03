@@ -1,4 +1,18 @@
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+// Use built-in fetch for Node.js 18+ or fallback to node-fetch
+let fetch;
+try {
+  // Try to use built-in fetch (Node.js 18+)
+  fetch = globalThis.fetch;
+  if (!fetch) {
+    // Fallback to node-fetch for older Node.js versions
+    fetch = require('node-fetch');
+  }
+} catch (error) {
+  // If node-fetch is not available, use a mock for testing
+  fetch = global.fetch || (() => {
+    throw new Error('Fetch is not available. Please install node-fetch or use Node.js 18+');
+  });
+}
 
 class LlamaHubService {
   constructor() {
@@ -114,6 +128,20 @@ class LlamaHubService {
       console.error('Error checking Llama-hub health:', error);
       throw error;
     }
+  }
+
+  /**
+   * Health check method (alias for getHealth)
+   * @returns {Promise<Object>} Health status response
+   */
+  async healthCheck() {
+    const health = await this.getHealth();
+    return {
+      status: health.status || 'unknown',
+      timestamp: new Date().toISOString(),
+      service: 'llama-hub',
+      url: this.baseUrl
+    };
   }
 
   /**
