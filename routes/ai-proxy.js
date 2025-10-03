@@ -1,11 +1,122 @@
 const express = require('express');
 const { asyncHandler } = require('../services/server');
+const AIContextService = require('../services/ai-context-service');
+const AISessionService = require('../services/ai-session-service');
+const AIResponseValidator = require('../services/ai-response-validator');
+const LlamaHubService = require('../services/llama-hub-service');
+const { circuitBreakerManager } = require('../services/ai-circuit-breaker');
 
 const router = express.Router();
 
 // GNL Assistant configuration
 const GNL_ASSISTANT_URL = process.env.GNL_ASSISTANT_URL || 'http://localhost:4250';
 const LOCAL_ASSISTANT_TIMEOUT = 30000; // 30 seconds
+
+// Initialize services for fallback
+const aiContextService = new AIContextService();
+const aiSessionService = new AISessionService();
+const aiResponseValidator = new AIResponseValidator();
+const llamaHubService = new LlamaHubService();
+
+/**
+ * Fallback AI service when GNL Assistant is not available
+ */
+async function fallbackAIService(req, res) {
+  try {
+    const { message, sessionId, contextType, options = {} } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required'
+      });
+    }
+
+    // Get context based on type
+    let context = {};
+    const contextStart = Date.now();
+    
+    try {
+      switch (contextType) {
+        case 'project':
+          context = await aiContextService.getProjectContext({ projectFilter: options.projectFilter });
+          break;
+        case 'quickWins':
+          context = await aiContextService.getQuickWinsContext({});
+          break;
+        case 'focusAreas':
+          context = await aiContextService.getFocusAreasContext({});
+          break;
+        case 'portfolio':
+        default:
+          context = await aiContextService.getPortfolioContext({});
+          break;
+      }
+    } catch (contextError) {
+      console.error('Context retrieval failed:', contextError);
+      context = { error: 'Context unavailable' };
+    }
+    
+    const contextTime = Date.now() - contextStart;
+
+    // Get session
+    let session = aiSessionService.getSession(sessionId);
+    if (!session) {
+      session = aiSessionService.createSession(sessionId);
+    }
+
+    // Add user message
+    aiSessionService.addMessage(sessionId, 'user', message);
+
+    // Prepare messages for AI
+    const messages = [
+      {
+        role: 'system',
+        content: `You are a helpful AI assistant for project management. Context: ${JSON.stringify(context)}`
+      },
+      ...session.messages.slice(-10) // Last 10 messages for context
+    ];
+
+    // Generate AI response
+    const aiResponse = await llamaHubService.chatCompletion({
+      messages,
+      maxTokens: options.maxTokens || 1000,
+      temperature: options.temperature || 0.7,
+      stream: false
+    });
+
+    const responseContent = aiResponse.choices?.[0]?.message?.content || 'No response generated';
+
+    // Validate response
+    const validation = aiResponseValidator.validateResponse({
+      content: responseContent,
+      response: responseContent,
+      text: responseContent
+    }, context, contextType);
+
+    // Add AI response to session
+    aiSessionService.addMessage(sessionId, 'assistant', responseContent);
+
+    return res.json({
+      success: true,
+      response: responseContent,
+      sessionId,
+      context: {
+        type: contextType,
+        dataSize: JSON.stringify(context).length
+      },
+      validation: validation
+    });
+
+  } catch (error) {
+    console.error('Fallback AI service error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'AI service temporarily unavailable',
+      details: error.message
+    });
+  }
+}
 
 /**
  * Proxy AI chat requests to GNL Assistant
@@ -33,14 +144,10 @@ router.post('/chat', asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error proxying to GNL Assistant:', error);
+    console.log('🔄 Falling back to local AI service...');
     
-    // Fallback response when GNL Assistant is unavailable
-    res.status(503).json({
-      success: false,
-      error: 'AI Assistant temporarily unavailable',
-      details: 'GNL Assistant is not running. Please start the GNL Assistant server.',
-      fallback: true
-    });
+    // Fallback to local AI service when GNL Assistant is unavailable
+    return fallbackAIService(req, res);
   }
 }));
 
@@ -73,14 +180,10 @@ router.post('/recommendations', asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error proxying recommendations to GNL Assistant:', error);
+    console.log('🔄 Falling back to local AI service...');
     
-    // Fallback response when GNL Assistant is unavailable
-    res.status(503).json({
-      success: false,
-      error: 'AI Recommendations temporarily unavailable',
-      details: 'GNL Assistant is not running. Please start the GNL Assistant server.',
-      fallback: true
-    });
+    // Fallback to local AI service when GNL Assistant is unavailable
+    return fallbackAIService(req, res);
   }
 }));
 
@@ -110,14 +213,10 @@ router.post('/analyze', asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error proxying analyze to GNL Assistant:', error);
+    console.log('🔄 Falling back to local AI service...');
     
-    // Fallback response when GNL Assistant is unavailable
-    res.status(503).json({
-      success: false,
-      error: 'AI Analysis temporarily unavailable',
-      details: 'GNL Assistant is not running. Please start the GNL Assistant server.',
-      fallback: true
-    });
+    // Fallback to local AI service when GNL Assistant is unavailable
+    return fallbackAIService(req, res);
   }
 }));
 
