@@ -19,6 +19,85 @@ const aiResponseValidator = new AIResponseValidator();
 const llamaHubService = new LlamaHubService();
 
 /**
+ * Generate contextual response when AI service is unavailable
+ */
+function generateContextualResponse(message, contextType, context) {
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('focus') || lowerMessage.includes('priority') || lowerMessage.includes('urgent')) {
+    return `Based on your project data, here are some focus areas to consider:
+
+📊 **Project Status Overview:**
+- Active projects: ${context.projects?.length || 0}
+- Recent activity: ${context.recentActivity || 'No recent activity'}
+- Pending tasks: ${context.pendingTasks || 'No pending tasks'}
+
+🎯 **Suggested Focus Areas:**
+1. Review and prioritize pending tasks
+2. Check for any overdue items
+3. Plan upcoming milestones
+4. Address any blockers or issues
+
+💡 **Quick Actions:**
+- Check your project dashboard for updates
+- Review recent commits and pull requests
+- Update project status and timelines
+
+*Note: AI analysis is temporarily unavailable, but you can still access your project data through the dashboard.*`;
+  }
+  
+  if (lowerMessage.includes('quick') || lowerMessage.includes('easy') || lowerMessage.includes('win')) {
+    return `Here are some quick wins you can tackle:
+
+⚡ **Quick Wins Available:**
+- Review and merge pending pull requests
+- Update project documentation
+- Clean up old branches
+- Review and close resolved issues
+
+📈 **Low-effort, High-impact Tasks:**
+- Update project README files
+- Add missing tests
+- Refactor small code sections
+- Update dependencies
+
+*Note: AI analysis is temporarily unavailable, but you can still access your project data through the dashboard.*`;
+  }
+  
+  if (lowerMessage.includes('project') || lowerMessage.includes('repository')) {
+    return `Here's your project overview:
+
+📁 **Project Portfolio:**
+- Total projects: ${context.projects?.length || 0}
+- Active projects: ${context.activeProjects || 'Unknown'}
+- Recent updates: ${context.recentUpdates || 'No recent updates'}
+
+🔍 **Project Details:**
+- Languages: ${context.languages?.join(', ') || 'Unknown'}
+- Last activity: ${context.lastActivity || 'Unknown'}
+- Contributors: ${context.contributors || 'Unknown'}
+
+*Note: AI analysis is temporarily unavailable, but you can still access your project data through the dashboard.*`;
+  }
+  
+  // Default response
+  return `I can help you with project management and analysis. Here's what I can see:
+
+📊 **Available Data:**
+- Projects: ${context.projects?.length || 0}
+- Context type: ${contextType}
+- Data freshness: ${context.dataFreshness || 'Unknown'}
+
+💡 **What I can help with:**
+- Project analysis and recommendations
+- Quick wins identification
+- Focus area suggestions
+- Progress tracking and insights
+
+*Note: AI analysis is temporarily unavailable, but you can still access your project data through the dashboard.*`;
+}
+
+/**
  * Fallback AI service when GNL Assistant is not available
  */
 async function fallbackAIService(req, res) {
@@ -78,14 +157,22 @@ async function fallbackAIService(req, res) {
     ];
 
     // Generate AI response
-    const aiResponse = await llamaHubService.chatCompletion({
-      messages,
-      maxTokens: options.maxTokens || 1000,
-      temperature: options.temperature || 0.7,
-      stream: false
-    });
+    let responseContent = 'No response generated';
+    
+    try {
+      const aiResponse = await llamaHubService.chatCompletion({
+        messages,
+        maxTokens: options.maxTokens || 1000,
+        temperature: options.temperature || 0.7,
+        stream: false
+      });
 
-    const responseContent = aiResponse.choices?.[0]?.message?.content || 'No response generated';
+      responseContent = aiResponse.choices?.[0]?.message?.content || 'No response generated';
+    } catch (aiError) {
+      console.error('AI service error:', aiError);
+      // Provide helpful context-based response when AI is unavailable
+      responseContent = generateContextualResponse(message, contextType, context);
+    }
 
     // Validate response
     const validation = aiResponseValidator.validateResponse({
