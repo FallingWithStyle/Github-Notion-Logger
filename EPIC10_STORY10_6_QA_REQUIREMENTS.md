@@ -246,6 +246,83 @@ This document outlines the QA requirements for Story 10.6: Test Suite Fixes and 
 - Add visual indicators and notifications
 - Integrate with main dashboard
 
+**Test Cases**:
+1. Verify proactive insights load on dashboard
+2. Test recommendation refresh functionality
+3. Verify visual indicators display correctly
+4. Test integration with existing dashboard components
+5. Verify mobile responsiveness of insights dashboard
+
+---
+
+### Gap 4: Contextual Help Integration in Projects View
+
+**Problem Statement**:
+- No "Ask AI" buttons on project cards in Projects view
+- Users cannot access AI assistance directly from project management interface
+- Missing context-specific AI assistance for individual projects
+
+**Expected Behavior**:
+- "Ask AI" buttons on all project cards
+- Context-specific AI assistance with project data
+- Seamless integration with existing project card design
+
+**Acceptance Criteria**:
+- [ ] "Ask AI" buttons added to all project cards in `public/projects-v2.html`
+- [ ] Click handlers open AI chat with project context
+- [ ] Project context passed to AI chat interface
+- [ ] Consistent styling with existing project card design
+- [ ] Mobile-responsive button placement
+
+**Implementation Requirements**:
+- Add "Ask AI" buttons to project card template
+- Implement `openAIChat(projectName)` function
+- Pass project context to AI chat interface
+- Add hover effects and loading states
+- Ensure accessibility compliance (ARIA labels, keyboard navigation)
+
+**Test Cases**:
+1. Verify "Ask AI" buttons appear on all project cards
+2. Test click handlers open AI chat with correct context
+3. Verify project context is passed to AI interface
+4. Test mobile responsiveness of buttons
+5. Verify accessibility compliance
+
+---
+
+### Gap 5: Contextual Help Integration in Progress View
+
+**Problem Statement**:
+- No contextual help buttons in Progress view
+- Users cannot access AI assistance for progress analysis
+- Missing AI-powered insights for completion tracking
+
+**Expected Behavior**:
+- Contextual help buttons in Progress view
+- AI assistance for progress analysis and recommendations
+- Integration with existing progress tracking interface
+
+**Acceptance Criteria**:
+- [ ] Contextual help buttons added to `public/progress-v2.html`
+- [ ] AI assistance available for progress analysis
+- [ ] Progress context passed to AI chat interface
+- [ ] Consistent styling with existing progress view design
+- [ ] Mobile-responsive button placement
+
+**Implementation Requirements**:
+- Add contextual help buttons to progress view
+- Implement progress-specific AI context passing
+- Create progress analysis AI prompts
+- Add visual indicators for AI suggestions
+- Ensure responsive design for mobile devices
+
+**Test Cases**:
+1. Verify contextual help buttons appear in Progress view
+2. Test AI assistance for progress analysis
+3. Verify progress context is passed to AI interface
+4. Test mobile responsiveness of help buttons
+5. Verify AI suggestions are relevant to progress data
+
 ---
 
 ## Technical Implementation Guidelines
@@ -326,12 +403,13 @@ This document outlines the QA requirements for Story 10.6: Test Suite Fixes and 
 - [ ] Test environment properly configured
 
 ### Story 10.4 Success Criteria
-- [ ] Contextual help buttons implemented
-- [ ] "Ask AI" buttons on project cards
+- [ ] Contextual help buttons implemented in Projects view
+- [ ] Contextual help buttons implemented in Progress view
+- [ ] "Ask AI" buttons on all project cards
 - [ ] Proactive insights dashboard created
-- [ ] Seamless UI integration
-- [ ] Mobile-responsive design
-- [ ] Accessibility compliance
+- [ ] Seamless UI integration across all views
+- [ ] Mobile-responsive design for all AI integrations
+- [ ] Accessibility compliance for all AI buttons and interfaces
 
 ---
 
@@ -362,14 +440,14 @@ This document outlines the QA requirements for Story 10.6: Test Suite Fixes and 
 - **Dependencies**: None
 
 ### Story 10.4: UI Integration
-- **Effort**: 1-2 days
+- **Effort**: 2-3 days
 - **Priority**: Medium
 - **Dependencies**: Epic 10 core functionality
 
 ### Total Effort
-- **Estimated**: 2-4 days
+- **Estimated**: 3-5 days
 - **Team Size**: 1-2 developers
-- **Testing**: 1 day
+- **Testing**: 1-2 days
 
 ---
 

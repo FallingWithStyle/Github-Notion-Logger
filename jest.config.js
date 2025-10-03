@@ -10,5 +10,21 @@ module.exports = {
   ],
   setupFilesAfterEnv: ['<rootDir>/test-setup.js'],
   testTimeout: 30000,
-  verbose: true
+  verbose: true,
+  // Fix worker exceptions
+  maxWorkers: 1,
+  forceExit: true,
+  detectOpenHandles: true,
+  // Improve test isolation
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+  // Better error reporting
+  errorOnDeprecated: true,
+  // Performance improvements
+  cache: false,
+  // Better async handling
+  testEnvironmentOptions: {
+    url: 'http://localhost'
+  }
 };
