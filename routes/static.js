@@ -4,6 +4,13 @@ const fs = require('fs');
 
 const router = express.Router();
 
+// Define data directory and commit log path
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
+const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
+
+// Server-Sent Events clients set
+const sseClients = new Set();
+
 // Server-Sent Events endpoint for real-time updates
 router.get('/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
