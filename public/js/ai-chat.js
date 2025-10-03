@@ -11,6 +11,7 @@ class AIChatInterface {
         this.assistantStatus = document.getElementById('assistantStatus');
         this.sessionId = this.generateSessionId();
         this.isLoading = false;
+        this.useLocalAssistant = false; // Will be set by checkAssistantStatus
         
         this.initializeEventListeners();
         this.checkAssistantStatus();
@@ -198,7 +199,12 @@ class AIChatInterface {
         // Detect the best context for this message
         const detectedContext = this.detectContext(message);
         
-        const response = await fetch('/api/v2/ai/chat', {
+        // Choose endpoint based on whether we're using local or deployed assistant
+        const endpoint = this.useLocalAssistant 
+            ? 'http://localhost:4250/api/gnl/chat'
+            : '/api/v2/ai/chat';
+        
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -236,6 +242,30 @@ class AIChatInterface {
         try {
             this.updateStatus('checking', '🔍 Checking status...');
             
+            // First try to connect to local GNL assistant (if running locally)
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                try {
+                    const localResponse = await fetch('http://localhost:4250/health', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (localResponse.ok) {
+                        const localData = await localResponse.json();
+                        if (localData.status === 'healthy') {
+                            this.updateStatus('online', '🟢 Local GNL Assistant Online');
+                            this.useLocalAssistant = true;
+                            return;
+                        }
+                    }
+                } catch (localError) {
+                    console.log('Local GNL assistant not available, falling back to deployed proxy');
+                }
+            }
+            
+            // Fallback to deployed proxy
             const response = await fetch('/api/v2/ai/health', {
                 method: 'GET',
                 headers: {
@@ -246,7 +276,8 @@ class AIChatInterface {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    this.updateStatus('online', '🟢 GNL Assistant Online');
+                    this.updateStatus('online', '🟢 GNL Assistant Online (Deployed)');
+                    this.useLocalAssistant = false;
                 } else {
                     this.updateStatus('offline', '🔴 Assistant Error');
                 }
