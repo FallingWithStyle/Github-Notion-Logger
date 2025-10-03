@@ -38,13 +38,16 @@ router.get('/weekly-data', asyncHandler(async (req, res) => {
     
     // Get color palette data
     const colorStats = getColorStats();
+    const { getAllProjectColors } = require('../color-palette');
+    const projectColors = getAllProjectColors();
     
     res.json({
       success: true,
       data: {
         notion: notionData,
         commitLog: commitLog,
-        colorStats: colorStats
+        colorStats: colorStats,
+        projectColors: projectColors
       },
       count: notionData.length
     });

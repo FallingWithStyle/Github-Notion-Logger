@@ -283,21 +283,60 @@ function clearColorData() {
 /**
  * Migrate existing projects to use color system
  */
-function migrateExistingProjects(projects) {
+function migrateExistingProjects(projects = null) {
   console.log('🔄 Migrating existing projects to color system...');
   
   let migratedCount = 0;
+  let skippedCount = 0;
+  
+  // If no projects provided, load from commit log
+  if (!projects) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+      const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
+      
+      if (fs.existsSync(COMMIT_LOG_PATH)) {
+        const data = fs.readFileSync(COMMIT_LOG_PATH, 'utf8');
+        const commitLog = JSON.parse(data);
+        
+        // Extract unique projects from commit log
+        const projectSet = new Set();
+        commitLog.forEach(day => {
+          Object.keys(day.projects).forEach(projectName => {
+            projectSet.add(projectName);
+          });
+        });
+        
+        projects = Array.from(projectSet).map(name => ({
+          name: name,
+          category: 'Miscellaneous / Standalone' // Default category
+        }));
+        
+        console.log(`📖 Loaded ${projects.length} projects from commit log`);
+      } else {
+        console.log('❌ No commit log found, no projects to migrate');
+        return { migrated: 0, skipped: 0 };
+      }
+    } catch (error) {
+      console.error('❌ Error loading projects from commit log:', error);
+      return { migrated: 0, skipped: 0 };
+    }
+  }
   
   projects.forEach(project => {
     if (project.name && project.category && !projectColors[project.name]) {
       const color = assignColor(project.category, project.name);
       project.color = color;
       migratedCount++;
+    } else if (projectColors[project.name]) {
+      skippedCount++;
     }
   });
   
-  console.log(`✅ Migrated ${migratedCount} projects to color system`);
-  return projects;
+  console.log(`✅ Migrated ${migratedCount} projects to color system, ${skippedCount} skipped`);
+  return { migrated: migratedCount, skipped: skippedCount };
 }
 
 /**
