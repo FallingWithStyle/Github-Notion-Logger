@@ -61,8 +61,7 @@ class LlamaHubService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'x-api-key': this.apiKey
+          'Authorization': `Bearer ${this.apiKey}`
         },
         body: JSON.stringify(requestBody)
       });
@@ -92,8 +91,7 @@ class LlamaHubService {
     try {
       const response = await fetch(`${this.baseUrl}/v1/models`, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'x-api-key': this.apiKey
+          'Authorization': `Bearer ${this.apiKey}`
         }
       });
 

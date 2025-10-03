@@ -29,35 +29,33 @@
         <!-- AI Chat Interface -->
         <div class="ai-chat-container">
             <div class="chat-header">
-                <h2>🤖 AI Project Assistant</h2>
-                <div class="context-selector">
-                    <label for="contextType">Context:</label>
-                    <select id="contextType">
-                        <option value="general">General</option>
-                        <option value="project">Project Specific</option>
-                        <option value="portfolio">Portfolio Overview</option>
-                        <option value="quickWins">Quick Wins</option>
-                    </select>
+                <h2>🤖 GNL AI Assistant</h2>
+                <div class="assistant-info">
+                    <span class="assistant-status" id="assistantStatus">🔍 Checking status...</span>
+                    <span class="context-status">✨ Smart Context Detection</span>
                 </div>
             </div>
             
             <div class="chat-messages" id="chatMessages">
                 <div class="message ai-message">
                     <div class="message-content">
-                        <p>Hello! I'm your AI Project Assistant. I can help you with:</p>
+                        <p>Hello! I'm your GNL AI Assistant with smart context detection. I automatically understand what you need help with:</p>
                         <ul>
-                            <li>Project analysis and recommendations</li>
-                            <li>Quick wins identification</li>
-                            <li>Focus area suggestions</li>
-                            <li>Progress insights and trends</li>
+                            <li><strong>Project Analysis:</strong> Ask about specific projects or repositories</li>
+                            <li><strong>Quick Wins:</strong> Find easy, high-impact tasks</li>
+                            <li><strong>Focus Areas:</strong> Identify priorities and urgent items</li>
+                            <li><strong>Planning:</strong> Get help with roadmaps and timelines</li>
+                            <li><strong>Productivity:</strong> Optimize workflows and performance</li>
+                            <li><strong>Quality:</strong> Code reviews and technical debt</li>
+                            <li><strong>Portfolio:</strong> Overview of all your projects</li>
                         </ul>
-                        <p>What would you like to know about your projects?</p>
+                        <p>Just ask naturally - I'll automatically detect the best context for your question!</p>
                     </div>
                 </div>
             </div>
             
             <div class="chat-input">
-                <input type="text" id="messageInput" placeholder="Ask about your projects..." maxlength="1000">
+                <input type="text" id="messageInput" placeholder="Ask about projects, quick wins, focus areas, planning, productivity, quality, or portfolio..." maxlength="1000">
                 <button id="sendButton">Send</button>
             </div>
         </div>

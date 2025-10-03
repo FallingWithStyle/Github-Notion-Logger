@@ -13,7 +13,7 @@ const LlamaHubService = require('./services/llama-hub-service');
 
 // Import route modules
 const apiRoutes = require('./routes');
-const aiChatRoutes = require('./routes/ai-chat');
+const aiProxyRoutes = require('./routes/ai-proxy');
 
 // Import server services
 const serverServices = require('./services/server');
@@ -72,7 +72,7 @@ app.use('/', staticRoutes);
 
 // Mount API routes
 app.use('/api', apiRoutes);
-app.use('/api/v2/ai', aiChatRoutes);
+app.use('/api/v2/ai', aiProxyRoutes);
 
 // Serve static files from public directory
 // Provide dynamic commit log before static so it overrides bundled files
