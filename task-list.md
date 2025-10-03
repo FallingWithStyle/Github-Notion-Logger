@@ -385,6 +385,14 @@
 - [x] Task 7: Implement caching optimization and monitoring
 - [x] Task 8: Create comprehensive documentation and usage guides
 
+### Story 10.6: Test Suite Fixes and Improvements
+- [ ] Task 1: Fix Jest worker exceptions in AI session service tests
+- [ ] Task 2: Resolve async test cleanup issues ("Cannot log after tests are done")
+- [ ] Task 3: Fix missing function errors (getAllCachedRepositories)
+- [ ] Task 4: Improve test isolation to prevent test interference
+- [ ] Task 5: Add proper test teardown and cleanup procedures
+- [ ] Task 6: Fix test environment setup and mocking issues
+
 ---
 
 ## Notes
