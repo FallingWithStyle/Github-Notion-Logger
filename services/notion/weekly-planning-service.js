@@ -70,10 +70,39 @@ async function ensureWeeklyPlanningDatabase() {
     // Create new database
     console.log('📝 Creating Weekly Planning database...');
     
-    const parent = {
-      type: 'page_id',
-      page_id: process.env.NOTION_WEEKLY_PLANNING_PARENT_PAGE_ID || process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID
-    };
+    let parent;
+    const parentId = process.env.NOTION_WEEKLY_PLANNING_PARENT_PAGE_ID || process.env.NOTION_COMMIT_FROM_GITHUB_LOG_ID;
+    
+    // Check if the parent ID is actually a database ID
+    try {
+      const parentCheck = await notion.databases.retrieve({ database_id: parentId });
+      console.log('⚠️ Parent ID is a database ID, not a page ID. Finding a page within this database...');
+      
+      // Query the database to find a page we can use as parent
+      const pagesResponse = await notion.databases.query({
+        database_id: parentId,
+        page_size: 1
+      });
+      
+      if (pagesResponse.results.length > 0) {
+        parent = {
+          type: 'page_id',
+          page_id: pagesResponse.results[0].id
+        };
+        console.log(`✅ Found page within database to use as parent: ${pagesResponse.results[0].id}`);
+      } else {
+        // If no pages exist, we'll need to create a page first
+        console.log('❌ No pages found in the database to use as parent');
+        throw new Error('Cannot create database: No pages found in parent database to use as parent page');
+      }
+    } catch (error) {
+      // If it's not a database, assume it's a page ID
+      console.log('✅ Parent ID appears to be a valid page ID');
+      parent = {
+        type: 'page_id',
+        page_id: parentId
+      };
+    }
 
     const databaseResponse = await notion.databases.create({
       parent,
@@ -248,14 +277,20 @@ async function getWeeklyPlanningData(weekStart = null) {
       };
     }
 
-    const response = await notion.databases.query({
+    const queryOptions = {
       database_id: databaseId,
-      filter,
       sorts: [
         { property: 'Week Start', direction: 'descending' },
         { property: 'Project Name', direction: 'ascending' }
       ]
-    });
+    };
+    
+    // Only add filter if it's not empty
+    if (Object.keys(filter).length > 0) {
+      queryOptions.filter = filter;
+    }
+    
+    const response = await notion.databases.query(queryOptions);
 
     const entries = response.results.map(page => {
       const properties = page.properties;

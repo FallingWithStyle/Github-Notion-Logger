@@ -8,38 +8,6 @@ function asyncHandler(fn) {
   };
 }
 
-// GET /api/weekly-data - Get weekly planning data
-router.get('/weekly-data', asyncHandler(async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    
-    console.log(`📅 Fetching weekly planning data${startDate ? ` from ${startDate}` : ''}${endDate ? ` to ${endDate}` : ''}...`);
-    
-    const { getWeeklyPlanningData } = require('../notion');
-    const data = await getWeeklyPlanningData(startDate, endDate);
-    
-    console.log(`📅 Retrieved ${data.length} weekly planning entries`);
-    
-    res.json({
-      success: true,
-      data: data,
-      count: data.length,
-      filters: {
-        startDate: startDate || null,
-        endDate: endDate || null
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Error fetching weekly planning data:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch weekly planning data',
-      details: error.message
-    });
-  }
-}));
-
 // POST /api/weekly-plan - Create or update weekly plan
 router.post('/weekly-plan', asyncHandler(async (req, res) => {
   try {

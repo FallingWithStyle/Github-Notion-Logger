@@ -62,6 +62,59 @@ router.get('/weekly-data', asyncHandler(async (req, res) => {
   }
 }));
 
+// Fetch Notion data endpoint for Commit Activity Visualizer
+router.get('/fetch-notion-data', asyncHandler(async (req, res) => {
+  try {
+    const { weekStart } = req.query;
+    
+    console.log(`📊 Fetching Notion data for Commit Activity Visualizer${weekStart ? ` for week ${weekStart}` : ''}...`);
+    
+    // Get data from Notion
+    const notionData = await getWeeklyPlanningData(weekStart);
+    
+    // Get commit log data for visualization
+    const fs = require('fs');
+    const path = require('path');
+    const DATA_DIR = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(__dirname, '../data'));
+    const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
+    
+    let commitLog = [];
+    if (fs.existsSync(COMMIT_LOG_PATH)) {
+      try {
+        const data = fs.readFileSync(COMMIT_LOG_PATH, 'utf8');
+        commitLog = JSON.parse(data);
+      } catch (error) {
+        console.error('❌ Error reading commit log:', error.message);
+      }
+    }
+    
+    // Get color palette data
+    const colorStats = getColorStats();
+    const { getAllProjectColors } = require('../color-palette');
+    const projectColors = getAllProjectColors();
+    
+    res.json({
+      success: true,
+      data: {
+        notion: notionData,
+        commitLog: commitLog,
+        colorStats: colorStats,
+        projectColors: projectColors
+      },
+      count: notionData.length,
+      message: `Successfully fetched ${notionData.length} Notion entries and ${commitLog.length} commit log entries`
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching Notion data:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error fetching Notion data',
+      details: error.message 
+    });
+  }
+}));
+
 router.post('/weekly-plan', asyncHandler(async (req, res) => {
   try {
     const { projects } = req.body;
