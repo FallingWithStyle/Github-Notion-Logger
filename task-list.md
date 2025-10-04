@@ -386,12 +386,12 @@
 - [x] Task 8: Create comprehensive documentation and usage guides
 
 ### Story 10.6: Test Suite Fixes and Improvements
-- [ ] Task 1: Fix Jest worker exceptions in AI session service tests
-- [ ] Task 2: Resolve async test cleanup issues ("Cannot log after tests are done")
-- [ ] Task 3: Fix missing function errors (getAllCachedRepositories)
-- [ ] Task 4: Improve test isolation to prevent test interference
-- [ ] Task 5: Add proper test teardown and cleanup procedures
-- [ ] Task 6: Fix test environment setup and mocking issues
+- [x] Task 1: Fix Jest worker exceptions in AI session service tests
+- [x] Task 2: Resolve async test cleanup issues ("Cannot log after tests are done")
+- [x] Task 3: Fix missing function errors (getAllCachedRepositories)
+- [x] Task 4: Improve test isolation to prevent test interference
+- [x] Task 5: Add proper test teardown and cleanup procedures
+- [x] Task 6: Fix test environment setup and mocking issues
 
 ### Story 10.7: GNL Assistant Migration for Cost Optimization
 - [x] Task 1: Extract AI services into standalone GNL Assistant server

@@ -7,7 +7,11 @@ const commitFromGithubLogDatabaseId = process.env.NOTION_COMMIT_FROM_GITHUB_LOG_
 
 // Cache for existing commits to avoid repeated queries
 const existingCommitsCache = new Map();
-const schemaCache = { checked: false, hasShaProperty: false };
+const schemaCache = { 
+  checked: false, 
+  hasShaProperty: false,
+  properties: null
+};
 const SHA_PROPERTY_NAME = 'SHA';
 
 // Enhanced caching with TTL and batch operations
@@ -18,7 +22,7 @@ const CACHE_CONFIG = {
 };
 
 /**
- * Ensure database schema is loaded and check for SHA property
+ * Ensure database schema is loaded and check for available properties
  */
 async function ensureDatabaseSchemaLoaded() {
   if (schemaCache.checked) {
@@ -31,6 +35,7 @@ async function ensureDatabaseSchemaLoaded() {
     });
 
     const properties = response.properties;
+    schemaCache.properties = properties;
     schemaCache.hasShaProperty = properties.hasOwnProperty(SHA_PROPERTY_NAME);
     schemaCache.checked = true;
 
@@ -45,6 +50,7 @@ async function ensureDatabaseSchemaLoaded() {
     console.error('❌ Error checking database schema:', error);
     schemaCache.checked = true;
     schemaCache.hasShaProperty = false;
+    schemaCache.properties = null;
     return false;
   }
 }
@@ -273,35 +279,35 @@ async function createCommitPage(commit, repoName) {
       };
     }
 
-    // Add author if available
-    if (commit.author && commit.author.name) {
+    // Add author if available and property exists in database
+    if (commit.author && commit.author.name && schemaCache.properties && schemaCache.properties["Author"]) {
       properties["Author"] = {
         rich_text: [{ type: 'text', text: { content: commit.author.name } }]
       };
     }
 
-    // Add URL if available
-    if (commit.url) {
+    // Add URL if available and property exists in database
+    if (commit.url && schemaCache.properties && schemaCache.properties["URL"]) {
       properties["URL"] = {
         url: commit.url
       };
     }
 
-    // Add file changes if available
-    if (commit.modified && commit.modified.length > 0) {
+    // Add file changes if available and valid and property exists in database
+    if (commit.modified && Array.isArray(commit.modified) && commit.modified.length > 0 && schemaCache.properties && schemaCache.properties["Files Changed"]) {
       properties["Files Changed"] = {
         rich_text: [{ type: 'text', text: { content: commit.modified.join(', ') } }]
       };
     }
 
-    // Add additions/deletions if available
-    if (commit.added !== undefined) {
+    // Add additions/deletions if available and valid and properties exist in database
+    if (commit.added !== undefined && typeof commit.added === 'number' && commit.added >= 0 && schemaCache.properties && schemaCache.properties["Additions"]) {
       properties["Additions"] = {
         number: commit.added
       };
     }
 
-    if (commit.removed !== undefined) {
+    if (commit.removed !== undefined && typeof commit.removed === 'number' && commit.removed >= 0 && schemaCache.properties && schemaCache.properties["Deletions"]) {
       properties["Deletions"] = {
         number: commit.removed
       };
