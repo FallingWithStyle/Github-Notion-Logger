@@ -259,10 +259,13 @@ async function createCommitPage(commit, repoName) {
     const localDate = new Date(commitDate.toLocaleString('en-US', { timeZone: timezoneInfo.timezone }));
     const formattedDate = localDate.toISOString().split('T')[0];
 
+    // Normalize project name by removing username prefix (e.g., "FallingWithStyle/Audventr" -> "Audventr")
+    const normalizedRepoName = repoName.includes('/') ? repoName.split('/').pop() : repoName;
+    
     // Build properties object
     const properties = {
       "Project Name": {
-        title: [{ type: 'text', text: { content: repoName } }]
+        title: [{ type: 'text', text: { content: normalizedRepoName } }]
       },
       "Commits": {
         rich_text: [{ type: 'text', text: { content: commit.message } }]

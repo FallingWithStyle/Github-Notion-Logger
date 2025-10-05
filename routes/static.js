@@ -5,7 +5,7 @@ const fs = require('fs');
 const router = express.Router();
 
 // Define data directory and commit log path
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
+const DATA_DIR = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(__dirname, '../data'));
 const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
 
 // Server-Sent Events clients set

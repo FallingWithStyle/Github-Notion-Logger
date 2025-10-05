@@ -41,10 +41,13 @@ async function updateCommitLog(newCommits, repoName, broadcastEvent) {
       if (!commitsByDate[dateKey]) {
         commitsByDate[dateKey] = {};
       }
-      if (!commitsByDate[dateKey][repoName]) {
-        commitsByDate[dateKey][repoName] = 0;
+      // Normalize project name by removing username prefix (e.g., "FallingWithStyle/Audventr" -> "Audventr")
+      const normalizedRepoName = repoName.includes('/') ? repoName.split('/').pop() : repoName;
+      
+      if (!commitsByDate[dateKey][normalizedRepoName]) {
+        commitsByDate[dateKey][normalizedRepoName] = 0;
       }
-      commitsByDate[dateKey][repoName]++;
+      commitsByDate[dateKey][normalizedRepoName]++;
     });
     
     // Update commit log with new data

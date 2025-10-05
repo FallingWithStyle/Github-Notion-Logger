@@ -1,6 +1,6 @@
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/test-*.js'],
+  testMatch: ['**/tests/test-*.js'],
   collectCoverageFrom: [
     '**/*.js',
     '!**/node_modules/**',
@@ -8,7 +8,7 @@ module.exports = {
     '!jest.config.js',
     '!coverage/**'
   ],
-  setupFilesAfterEnv: ['<rootDir>/test-setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/test-setup.js'],
   testTimeout: 30000,
   verbose: true,
   // Fix worker exceptions

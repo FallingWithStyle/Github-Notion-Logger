@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "start:gnl-assistant": "node gnl-assistant.js",
-    "start:gnl-assistant:script": "./start-gnl-assistant.sh",
+    "start:gnl-assistant:script": "./config/start-gnl-assistant.sh",
     "build": "echo 'No build step required'",
     "test": "jest",
     "test:watch": "jest --watch",

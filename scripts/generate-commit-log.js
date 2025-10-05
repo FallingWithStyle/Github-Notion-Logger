@@ -201,6 +201,9 @@ async function fetchFromNotion(since = '2025-01-01') {
                 const date = page.properties["Date"]?.date?.start;
                 
                 if (projectName && date) {
+                    // Normalize project name by removing username prefix (e.g., "FallingWithStyle/Audventr" -> "Audventr")
+                    const normalizedProjectName = projectName.includes('/') ? projectName.split('/').pop() : projectName;
+                    
                     // The date from Notion is already processed with timezone logic
                     // Just extract the date portion (YYYY-MM-DD) for grouping
                     const dateObj = new Date(date);
@@ -210,11 +213,11 @@ async function fetchFromNotion(since = '2025-01-01') {
                         commitData[dateKey] = {};
                     }
                     
-                    if (!commitData[dateKey][projectName]) {
-                        commitData[dateKey][projectName] = 0;
+                    if (!commitData[dateKey][normalizedProjectName]) {
+                        commitData[dateKey][normalizedProjectName] = 0;
                     }
                     
-                    commitData[dateKey][projectName]++;
+                    commitData[dateKey][normalizedProjectName]++;
                 }
             });
             
