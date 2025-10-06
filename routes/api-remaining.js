@@ -1,6 +1,6 @@
 const express = require('express');
 const { logCommitsToNotion, addWeeklyPlanningEntry, addOrUpdateWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry, cleanupDuplicateEntries } = require('../notion');
-const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('../color-palette');
+const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('../scripts/color-palette');
 const { scheduleDailyProcessing, runManualProcessing } = require('../wanderlog-processor');
 const LlamaHubService = require('../services/llama-hub-service');
 const { asyncHandler } = require('../services/server');
@@ -38,7 +38,7 @@ router.get('/weekly-data', asyncHandler(async (req, res) => {
     
     // Get color palette data
     const colorStats = getColorStats();
-    const { getAllProjectColors } = require('../color-palette');
+    const { getAllProjectColors } = require('../scripts/color-palette');
     const projectColors = getAllProjectColors();
     
     res.json({
@@ -90,7 +90,7 @@ router.get('/fetch-notion-data', asyncHandler(async (req, res) => {
     
     // Get color palette data
     const colorStats = getColorStats();
-    const { getAllProjectColors } = require('../color-palette');
+    const { getAllProjectColors } = require('../scripts/color-palette');
     const projectColors = getAllProjectColors();
     
     res.json({
