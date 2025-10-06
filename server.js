@@ -8,7 +8,7 @@ const { logCommitsToNotion, addWeeklyPlanningEntry, addOrUpdateWeeklyPlanningEnt
 const timezoneConfig = require('./scripts/timezone-config');
 const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('./scripts/color-palette');
 const { Client } = require('@notionhq/client');
-const { scheduleDailyProcessing, runManualProcessing } = require('./wanderlog-processor');
+const { scheduleDailyProcessing, runManualProcessing } = require('./scripts/wanderlog-processor');
 const LlamaHubService = require('./services/llama-hub-service');
 
 // Import route modules
