@@ -1,6 +1,6 @@
 const fs = require('fs');
 const crypto = require('crypto');
-const timezoneConfig = require('../../timezone-config');
+const timezoneConfig = require('../../scripts/timezone-config');
 
 const COMMIT_LOG_PATH = './data/commit-log.json';
 

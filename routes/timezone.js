@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
   try {
     console.log('🌍 Fetching timezone configuration...');
     
-    const timezoneConfig = require('../timezone-config');
+    const timezoneConfig = require('../scripts/timezone-config');
     const config = timezoneConfig.getConfig();
     
     console.log(`🌍 Retrieved timezone configuration: ${config.timezone}`);
@@ -47,7 +47,7 @@ router.post('/', (req, res) => {
     
     console.log(`🌍 Updating timezone configuration to: ${timezone}`);
     
-    const timezoneConfig = require('../timezone-config');
+    const timezoneConfig = require('../scripts/timezone-config');
     const result = timezoneConfig.updateConfig({
       timezone: timezone,
       offset: offset || 0

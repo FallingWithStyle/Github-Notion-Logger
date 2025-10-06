@@ -284,7 +284,7 @@ router.get('/weekly-plan/notion', asyncHandler(async (req, res) => {
 // Timezone configuration API
 router.get('/timezone-config', (req, res) => {
   try {
-    const timezoneConfig = require('../timezone-config');
+    const timezoneConfig = require('../scripts/timezone-config');
     res.json({
       success: true,
       config: timezoneConfig.getConfig()
@@ -310,7 +310,7 @@ router.post('/timezone-config', (req, res) => {
       });
     }
     
-    const timezoneConfig = require('../timezone-config');
+    const timezoneConfig = require('../scripts/timezone-config');
     timezoneConfig.setConfig({ timezone, cutoffHour });
     
     res.json({

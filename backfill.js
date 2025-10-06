@@ -7,13 +7,13 @@ const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 });
 
-// Rate limiting configuration
+// Rate limiting configuration - Increased delays to prevent Notion API rate limiting
 const RATE_LIMIT_CONFIG = {
-  maxConcurrent: 3, // Process 3 repos concurrently
-  batchSize: 150,    // Increased from 50
-  delayBetweenBatches: 100, // Reduced from 200ms
-  delayBetweenRepos: 300,   // Reduced from 1000ms
-  delayBetweenApiCalls: 50, // Reduced from 100ms
+  maxConcurrent: 2, // Reduced from 3 to 2 repos concurrently
+  batchSize: 50,    // Reduced from 150 to 50 for smaller batches
+  delayBetweenBatches: 500, // Increased from 100ms to 500ms
+  delayBetweenRepos: 1000,   // Increased from 300ms to 1000ms
+  delayBetweenApiCalls: 200, // Increased from 50ms to 200ms
   cacheRefreshInterval: 25 * 60 * 1000, // Refresh cache every 25 minutes (before 30 min TTL expires)
 };
 

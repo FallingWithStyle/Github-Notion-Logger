@@ -1,0 +1,325 @@
+
+> github-notion-logger@1.0.0 start:gnl-assistant
+> node gnl-assistant.js
+
+🚀 GNL Assistant Server started on port 4250
+📡 Connected to Fly.io: https://notion-logger.fly.dev
+🔑 Llama-hub URL: http://localhost:9000
+🤖 Default model: llama3-7b
+📊 Environment: development
+⚡ Max concurrent requests: 10
+🧹 Session cleanup interval: 600s
+📈 Performance monitoring: /metrics
+🔍 Health check: /health
+🎯 GNL-specific optimizations enabled
+🚀 [GNL Assistant] 2025-10-05T15:07:42.364Z - GET /health - [ne8nn89q3] - Started
+✅ [GNL Assistant] 2025-10-05T15:07:42.365Z - GET /health - [ne8nn89q3] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:08:12.362Z - GET /health - [6enexen3i] - Started
+✅ [GNL Assistant] 2025-10-05T15:08:12.363Z - GET /health - [6enexen3i] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:08:26.431Z - POST /api/gnl/chat - [y71ixzlrv] - Started
+🤖 [GNL] AI Chat request: GNLA...
+🔍 [GNL] Checking for GNLA greeting. Message: "GNLA", Lower: "gnla"
+✅ [GNL] GNLA greeting detected!
+✅ [GNL Assistant] 2025-10-05T15:08:26.431Z - POST /api/gnl/chat - [y71ixzlrv] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:08:42.361Z - GET /health - [uc7mivamk] - Started
+✅ [GNL Assistant] 2025-10-05T15:08:42.361Z - GET /health - [uc7mivamk] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:09:12.363Z - GET /health - [wtwqe2y6o] - Started
+✅ [GNL Assistant] 2025-10-05T15:09:12.364Z - GET /health - [wtwqe2y6o] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:09:42.366Z - GET /health - [qkaaj5f5i] - Started
+✅ [GNL Assistant] 2025-10-05T15:09:42.366Z - GET /health - [qkaaj5f5i] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:10:12.363Z - GET /health - [up5uykfkj] - Started
+✅ [GNL Assistant] 2025-10-05T15:10:12.363Z - GET /health - [up5uykfkj] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:10:42.363Z - GET /health - [kyj03s96v] - Started
+✅ [GNL Assistant] 2025-10-05T15:10:42.364Z - GET /health - [kyj03s96v] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:11:12.365Z - GET /health - [yhykr5hxe] - Started
+✅ [GNL Assistant] 2025-10-05T15:11:12.366Z - GET /health - [yhykr5hxe] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:11:42.363Z - GET /health - [dxzgd96vz] - Started
+✅ [GNL Assistant] 2025-10-05T15:11:42.364Z - GET /health - [dxzgd96vz] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:12:12.359Z - GET /health - [6hl6sc2bs] - Started
+✅ [GNL Assistant] 2025-10-05T15:12:12.360Z - GET /health - [6hl6sc2bs] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:12:42.358Z - GET /health - [aj8ljt9t7] - Started
+✅ [GNL Assistant] 2025-10-05T15:12:42.358Z - GET /health - [aj8ljt9t7] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:13:12.358Z - GET /health - [wfvhf0vb3] - Started
+✅ [GNL Assistant] 2025-10-05T15:13:12.359Z - GET /health - [wfvhf0vb3] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:13:42.356Z - GET /health - [dtomu8zi3] - Started
+✅ [GNL Assistant] 2025-10-05T15:13:42.357Z - GET /health - [dtomu8zi3] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:14:12.358Z - GET /health - [sgxvuht74] - Started
+✅ [GNL Assistant] 2025-10-05T15:14:12.358Z - GET /health - [sgxvuht74] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:14:42.357Z - GET /health - [j7t69imdb] - Started
+✅ [GNL Assistant] 2025-10-05T15:14:42.357Z - GET /health - [j7t69imdb] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:15:12.358Z - GET /health - [jw015stxm] - Started
+✅ [GNL Assistant] 2025-10-05T15:15:12.358Z - GET /health - [jw015stxm] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:15:42.359Z - GET /health - [m2azs0tkc] - Started
+✅ [GNL Assistant] 2025-10-05T15:15:42.359Z - GET /health - [m2azs0tkc] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:16:12.358Z - GET /health - [cecybbdtr] - Started
+✅ [GNL Assistant] 2025-10-05T15:16:12.358Z - GET /health - [cecybbdtr] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:16:42.358Z - GET /health - [s4i7th6u8] - Started
+✅ [GNL Assistant] 2025-10-05T15:16:42.359Z - GET /health - [s4i7th6u8] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:17:12.405Z - GET /health - [09s3erlom] - Started
+✅ [GNL Assistant] 2025-10-05T15:17:12.405Z - GET /health - [09s3erlom] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:17:42.404Z - GET /health - [liige21rl] - Started
+✅ [GNL Assistant] 2025-10-05T15:17:42.405Z - GET /health - [liige21rl] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:19:08.412Z - GET /health - [426ez6p2v] - Started
+✅ [GNL Assistant] 2025-10-05T15:19:08.413Z - GET /health - [426ez6p2v] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:20:08.412Z - GET /health - [tkjsjt1vy] - Started
+✅ [GNL Assistant] 2025-10-05T15:20:08.412Z - GET /health - [tkjsjt1vy] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:21:08.411Z - GET /health - [xud45zlir] - Started
+✅ [GNL Assistant] 2025-10-05T15:21:08.412Z - GET /health - [xud45zlir] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:22:08.411Z - GET /health - [ifnkly0qr] - Started
+✅ [GNL Assistant] 2025-10-05T15:22:08.411Z - GET /health - [ifnkly0qr] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:23:08.411Z - GET /health - [1lyn0p4d8] - Started
+✅ [GNL Assistant] 2025-10-05T15:23:08.411Z - GET /health - [1lyn0p4d8] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:24:08.418Z - GET /health - [1g3jge435] - Started
+✅ [GNL Assistant] 2025-10-05T15:24:08.418Z - GET /health - [1g3jge435] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:25:08.414Z - GET /health - [jyegm96j0] - Started
+✅ [GNL Assistant] 2025-10-05T15:25:08.414Z - GET /health - [jyegm96j0] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:26:08.416Z - GET /health - [wcubcxeel] - Started
+✅ [GNL Assistant] 2025-10-05T15:26:08.416Z - GET /health - [wcubcxeel] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:27:08.413Z - GET /health - [pg0gc3bs1] - Started
+✅ [GNL Assistant] 2025-10-05T15:27:08.414Z - GET /health - [pg0gc3bs1] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:28:08.416Z - GET /health - [4m5wrxuxk] - Started
+✅ [GNL Assistant] 2025-10-05T15:28:08.416Z - GET /health - [4m5wrxuxk] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:29:08.412Z - GET /health - [r8ipbitwm] - Started
+✅ [GNL Assistant] 2025-10-05T15:29:08.412Z - GET /health - [r8ipbitwm] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:30:08.412Z - GET /health - [8jfkct8f1] - Started
+✅ [GNL Assistant] 2025-10-05T15:30:08.412Z - GET /health - [8jfkct8f1] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:31:08.413Z - GET /health - [lx4hrli3i] - Started
+✅ [GNL Assistant] 2025-10-05T15:31:08.413Z - GET /health - [lx4hrli3i] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:32:08.414Z - GET /health - [cd7vrza8z] - Started
+✅ [GNL Assistant] 2025-10-05T15:32:08.414Z - GET /health - [cd7vrza8z] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:33:08.412Z - GET /health - [uyn2ij86p] - Started
+✅ [GNL Assistant] 2025-10-05T15:33:08.412Z - GET /health - [uyn2ij86p] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:34:08.412Z - GET /health - [b7xhzmypx] - Started
+✅ [GNL Assistant] 2025-10-05T15:34:08.412Z - GET /health - [b7xhzmypx] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:35:08.409Z - GET /health - [fz0g376w9] - Started
+✅ [GNL Assistant] 2025-10-05T15:35:08.410Z - GET /health - [fz0g376w9] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:36:08.413Z - GET /health - [x5dwruz3e] - Started
+✅ [GNL Assistant] 2025-10-05T15:36:08.414Z - GET /health - [x5dwruz3e] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:37:08.420Z - GET /health - [g8n2d97ll] - Started
+✅ [GNL Assistant] 2025-10-05T15:37:08.420Z - GET /health - [g8n2d97ll] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:38:08.411Z - GET /health - [neetmjfik] - Started
+✅ [GNL Assistant] 2025-10-05T15:38:08.411Z - GET /health - [neetmjfik] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:39:08.409Z - GET /health - [n4vdiqw1k] - Started
+✅ [GNL Assistant] 2025-10-05T15:39:08.410Z - GET /health - [n4vdiqw1k] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T15:40:08.415Z - GET /health - [x45isbwvr] - Started
+✅ [GNL Assistant] 2025-10-05T15:40:08.415Z - GET /health - [x45isbwvr] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:41:08.415Z - GET /health - [1sdmctpwj] - Started
+✅ [GNL Assistant] 2025-10-05T15:41:08.415Z - GET /health - [1sdmctpwj] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:42:08.418Z - GET /health - [b35vlm3ai] - Started
+✅ [GNL Assistant] 2025-10-05T15:42:08.418Z - GET /health - [b35vlm3ai] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T15:46:21.498Z - GET /health - [hrrgt1idp] - Started
+✅ [GNL Assistant] 2025-10-05T15:46:21.498Z - GET /health - [hrrgt1idp] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:03:09.540Z - GET /health - [h2gzukdtk] - Started
+✅ [GNL Assistant] 2025-10-05T16:03:09.540Z - GET /health - [h2gzukdtk] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:10:40.701Z - GET /health - [aym0vgawy] - Started
+✅ [GNL Assistant] 2025-10-05T16:10:40.702Z - GET /health - [aym0vgawy] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:11:40.696Z - GET /health - [lf3c29maw] - Started
+✅ [GNL Assistant] 2025-10-05T16:11:40.697Z - GET /health - [lf3c29maw] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:12:40.694Z - GET /health - [rp1qml2rp] - Started
+✅ [GNL Assistant] 2025-10-05T16:12:40.694Z - GET /health - [rp1qml2rp] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:13:40.697Z - GET /health - [zqoe3lpt6] - Started
+✅ [GNL Assistant] 2025-10-05T16:13:40.697Z - GET /health - [zqoe3lpt6] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:14:40.694Z - GET /health - [g5280dywp] - Started
+✅ [GNL Assistant] 2025-10-05T16:14:40.695Z - GET /health - [g5280dywp] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:15:40.694Z - GET /health - [s7g6d4lf5] - Started
+✅ [GNL Assistant] 2025-10-05T16:15:40.694Z - GET /health - [s7g6d4lf5] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:16:40.694Z - GET /health - [r5ey0f8dc] - Started
+✅ [GNL Assistant] 2025-10-05T16:16:40.694Z - GET /health - [r5ey0f8dc] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:17:40.700Z - GET /health - [wq24dm2o5] - Started
+✅ [GNL Assistant] 2025-10-05T16:17:40.703Z - GET /health - [wq24dm2o5] - 200 - 3ms
+🚀 [GNL Assistant] 2025-10-05T16:18:40.695Z - GET /health - [3yarfzxpn] - Started
+✅ [GNL Assistant] 2025-10-05T16:18:40.695Z - GET /health - [3yarfzxpn] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:19:40.696Z - GET /health - [32mzarycf] - Started
+✅ [GNL Assistant] 2025-10-05T16:19:40.696Z - GET /health - [32mzarycf] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:20:40.693Z - GET /health - [4ab7zaj7o] - Started
+✅ [GNL Assistant] 2025-10-05T16:20:40.693Z - GET /health - [4ab7zaj7o] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:21:40.692Z - GET /health - [dimbl9bn4] - Started
+✅ [GNL Assistant] 2025-10-05T16:21:40.693Z - GET /health - [dimbl9bn4] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:22:40.693Z - GET /health - [q253nwiyc] - Started
+✅ [GNL Assistant] 2025-10-05T16:22:40.693Z - GET /health - [q253nwiyc] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:23:40.693Z - GET /health - [7r6397iyc] - Started
+✅ [GNL Assistant] 2025-10-05T16:23:40.693Z - GET /health - [7r6397iyc] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:24:40.692Z - GET /health - [p10da5dkc] - Started
+✅ [GNL Assistant] 2025-10-05T16:24:40.692Z - GET /health - [p10da5dkc] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:25:40.690Z - GET /health - [9lf59hk6v] - Started
+✅ [GNL Assistant] 2025-10-05T16:25:40.690Z - GET /health - [9lf59hk6v] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:26:40.688Z - GET /health - [dknac0dce] - Started
+✅ [GNL Assistant] 2025-10-05T16:26:40.688Z - GET /health - [dknac0dce] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:27:40.689Z - GET /health - [blvdhl1i3] - Started
+✅ [GNL Assistant] 2025-10-05T16:27:40.690Z - GET /health - [blvdhl1i3] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:28:40.690Z - GET /health - [zum4vzh0j] - Started
+✅ [GNL Assistant] 2025-10-05T16:28:40.690Z - GET /health - [zum4vzh0j] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:29:40.688Z - GET /health - [omn78ht0e] - Started
+✅ [GNL Assistant] 2025-10-05T16:29:40.689Z - GET /health - [omn78ht0e] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:30:40.687Z - GET /health - [g5zfxibx4] - Started
+✅ [GNL Assistant] 2025-10-05T16:30:40.687Z - GET /health - [g5zfxibx4] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:31:40.688Z - GET /health - [pnrxldc3t] - Started
+✅ [GNL Assistant] 2025-10-05T16:31:40.688Z - GET /health - [pnrxldc3t] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:32:15.856Z - GET /health - [tst2yzobz] - Started
+✅ [GNL Assistant] 2025-10-05T16:32:15.857Z - GET /health - [tst2yzobz] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:32:40.689Z - GET /health - [v73h7f7bw] - Started
+✅ [GNL Assistant] 2025-10-05T16:32:40.689Z - GET /health - [v73h7f7bw] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:33:40.687Z - GET /health - [w5ow7p6b3] - Started
+✅ [GNL Assistant] 2025-10-05T16:33:40.687Z - GET /health - [w5ow7p6b3] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:34:40.686Z - GET /health - [rm8uijf0x] - Started
+✅ [GNL Assistant] 2025-10-05T16:34:40.686Z - GET /health - [rm8uijf0x] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:35:40.686Z - GET /health - [y09ap2kie] - Started
+✅ [GNL Assistant] 2025-10-05T16:35:40.686Z - GET /health - [y09ap2kie] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:36:40.687Z - GET /health - [bsr65m7pq] - Started
+✅ [GNL Assistant] 2025-10-05T16:36:40.687Z - GET /health - [bsr65m7pq] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:37:40.686Z - GET /health - [fj7zzns7z] - Started
+✅ [GNL Assistant] 2025-10-05T16:37:40.686Z - GET /health - [fj7zzns7z] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:38:40.686Z - GET /health - [tdee7syp2] - Started
+✅ [GNL Assistant] 2025-10-05T16:38:40.686Z - GET /health - [tdee7syp2] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:39:40.684Z - GET /health - [f7guewe7b] - Started
+✅ [GNL Assistant] 2025-10-05T16:39:40.684Z - GET /health - [f7guewe7b] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:40:40.694Z - GET /health - [6s2ih208r] - Started
+✅ [GNL Assistant] 2025-10-05T16:40:40.694Z - GET /health - [6s2ih208r] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:41:40.683Z - GET /health - [e695p4a6o] - Started
+✅ [GNL Assistant] 2025-10-05T16:41:40.684Z - GET /health - [e695p4a6o] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:42:40.685Z - GET /health - [7vc38jom9] - Started
+✅ [GNL Assistant] 2025-10-05T16:42:40.685Z - GET /health - [7vc38jom9] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:43:40.685Z - GET /health - [yya47675u] - Started
+✅ [GNL Assistant] 2025-10-05T16:43:40.685Z - GET /health - [yya47675u] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:44:40.687Z - GET /health - [bqqo96klz] - Started
+✅ [GNL Assistant] 2025-10-05T16:44:40.687Z - GET /health - [bqqo96klz] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:45:40.696Z - GET /health - [lrk26q21z] - Started
+✅ [GNL Assistant] 2025-10-05T16:45:40.697Z - GET /health - [lrk26q21z] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:46:40.687Z - GET /health - [3qvbibg6w] - Started
+✅ [GNL Assistant] 2025-10-05T16:46:40.687Z - GET /health - [3qvbibg6w] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:47:40.695Z - GET /health - [j3p518bkk] - Started
+✅ [GNL Assistant] 2025-10-05T16:47:40.696Z - GET /health - [j3p518bkk] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:48:40.690Z - GET /health - [qqux2d3o3] - Started
+✅ [GNL Assistant] 2025-10-05T16:48:40.690Z - GET /health - [qqux2d3o3] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:49:40.687Z - GET /health - [kww323488] - Started
+✅ [GNL Assistant] 2025-10-05T16:49:40.688Z - GET /health - [kww323488] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:50:40.689Z - GET /health - [vldrpa1mu] - Started
+✅ [GNL Assistant] 2025-10-05T16:50:40.689Z - GET /health - [vldrpa1mu] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:51:40.689Z - GET /health - [ahtgilo1s] - Started
+✅ [GNL Assistant] 2025-10-05T16:51:40.689Z - GET /health - [ahtgilo1s] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:52:40.679Z - GET /health - [2uf9v54fq] - Started
+✅ [GNL Assistant] 2025-10-05T16:52:40.679Z - GET /health - [2uf9v54fq] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:53:40.690Z - GET /health - [t8f3nxza6] - Started
+✅ [GNL Assistant] 2025-10-05T16:53:40.690Z - GET /health - [t8f3nxza6] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:54:40.685Z - GET /health - [1gg78bv8q] - Started
+✅ [GNL Assistant] 2025-10-05T16:54:40.685Z - GET /health - [1gg78bv8q] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:55:40.681Z - GET /health - [bb4g0r7rr] - Started
+✅ [GNL Assistant] 2025-10-05T16:55:40.682Z - GET /health - [bb4g0r7rr] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T16:56:40.684Z - GET /health - [rx4tyekkp] - Started
+✅ [GNL Assistant] 2025-10-05T16:56:40.684Z - GET /health - [rx4tyekkp] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:57:40.678Z - GET /health - [sszg9doqc] - Started
+✅ [GNL Assistant] 2025-10-05T16:57:40.678Z - GET /health - [sszg9doqc] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:58:40.675Z - GET /health - [qefp0nloj] - Started
+✅ [GNL Assistant] 2025-10-05T16:58:40.675Z - GET /health - [qefp0nloj] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T16:59:40.688Z - GET /health - [3zaxr6g2w] - Started
+✅ [GNL Assistant] 2025-10-05T16:59:40.688Z - GET /health - [3zaxr6g2w] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:00:40.681Z - GET /health - [hfyxw70pq] - Started
+✅ [GNL Assistant] 2025-10-05T17:00:40.682Z - GET /health - [hfyxw70pq] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:01:40.688Z - GET /health - [jba3ajtoy] - Started
+✅ [GNL Assistant] 2025-10-05T17:01:40.688Z - GET /health - [jba3ajtoy] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:02:40.671Z - GET /health - [syawlw51o] - Started
+✅ [GNL Assistant] 2025-10-05T17:02:40.671Z - GET /health - [syawlw51o] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:03:40.679Z - GET /health - [ua057e8l7] - Started
+✅ [GNL Assistant] 2025-10-05T17:03:40.680Z - GET /health - [ua057e8l7] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:04:40.671Z - GET /health - [vnfzjylk0] - Started
+✅ [GNL Assistant] 2025-10-05T17:04:40.671Z - GET /health - [vnfzjylk0] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:05:40.673Z - GET /health - [4tt12n3ma] - Started
+✅ [GNL Assistant] 2025-10-05T17:05:40.673Z - GET /health - [4tt12n3ma] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:06:40.674Z - GET /health - [29yrdk2wt] - Started
+✅ [GNL Assistant] 2025-10-05T17:06:40.674Z - GET /health - [29yrdk2wt] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:07:40.679Z - GET /health - [a8vfvzkip] - Started
+✅ [GNL Assistant] 2025-10-05T17:07:40.679Z - GET /health - [a8vfvzkip] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:08:40.672Z - GET /health - [jldd85si8] - Started
+✅ [GNL Assistant] 2025-10-05T17:08:40.672Z - GET /health - [jldd85si8] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:09:40.682Z - GET /health - [6zazxgqls] - Started
+✅ [GNL Assistant] 2025-10-05T17:09:40.682Z - GET /health - [6zazxgqls] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:10:40.671Z - GET /health - [mewgp7z7c] - Started
+✅ [GNL Assistant] 2025-10-05T17:10:40.671Z - GET /health - [mewgp7z7c] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:11:40.676Z - GET /health - [kmnhlq1ng] - Started
+✅ [GNL Assistant] 2025-10-05T17:11:40.676Z - GET /health - [kmnhlq1ng] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:12:40.669Z - GET /health - [hm3qrxdkl] - Started
+✅ [GNL Assistant] 2025-10-05T17:12:40.669Z - GET /health - [hm3qrxdkl] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:13:40.678Z - GET /health - [48pfsyq9k] - Started
+✅ [GNL Assistant] 2025-10-05T17:13:40.678Z - GET /health - [48pfsyq9k] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:14:40.679Z - GET /health - [orihikhry] - Started
+✅ [GNL Assistant] 2025-10-05T17:14:40.679Z - GET /health - [orihikhry] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:15:40.672Z - GET /health - [q3ieq8ocq] - Started
+✅ [GNL Assistant] 2025-10-05T17:15:40.672Z - GET /health - [q3ieq8ocq] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:16:40.663Z - GET /health - [a4uq61r14] - Started
+✅ [GNL Assistant] 2025-10-05T17:16:40.663Z - GET /health - [a4uq61r14] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:17:40.670Z - GET /health - [4d7fs2jdy] - Started
+✅ [GNL Assistant] 2025-10-05T17:17:40.670Z - GET /health - [4d7fs2jdy] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:18:40.671Z - GET /health - [cgil0r8mx] - Started
+✅ [GNL Assistant] 2025-10-05T17:18:40.671Z - GET /health - [cgil0r8mx] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:19:40.675Z - GET /health - [ack76zjn2] - Started
+✅ [GNL Assistant] 2025-10-05T17:19:40.675Z - GET /health - [ack76zjn2] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:20:40.669Z - GET /health - [r6z3rb42p] - Started
+✅ [GNL Assistant] 2025-10-05T17:20:40.669Z - GET /health - [r6z3rb42p] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:21:40.724Z - GET /health - [gnqe1n6wd] - Started
+✅ [GNL Assistant] 2025-10-05T17:21:40.725Z - GET /health - [gnqe1n6wd] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:22:40.672Z - GET /health - [edxvupgha] - Started
+✅ [GNL Assistant] 2025-10-05T17:22:40.672Z - GET /health - [edxvupgha] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:23:40.666Z - GET /health - [g4dy1nate] - Started
+✅ [GNL Assistant] 2025-10-05T17:23:40.667Z - GET /health - [g4dy1nate] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:24:40.665Z - GET /health - [qkcvnzv5n] - Started
+✅ [GNL Assistant] 2025-10-05T17:24:40.665Z - GET /health - [qkcvnzv5n] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:25:40.699Z - GET /health - [fbczgssad] - Started
+✅ [GNL Assistant] 2025-10-05T17:25:40.700Z - GET /health - [fbczgssad] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:26:40.699Z - GET /health - [o18s1pmiu] - Started
+✅ [GNL Assistant] 2025-10-05T17:26:40.699Z - GET /health - [o18s1pmiu] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:27:40.697Z - GET /health - [cyhmlnotc] - Started
+✅ [GNL Assistant] 2025-10-05T17:27:40.697Z - GET /health - [cyhmlnotc] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:28:40.697Z - GET /health - [fg407deuk] - Started
+✅ [GNL Assistant] 2025-10-05T17:28:40.698Z - GET /health - [fg407deuk] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:29:40.694Z - GET /health - [eh3og8g5n] - Started
+✅ [GNL Assistant] 2025-10-05T17:29:40.695Z - GET /health - [eh3og8g5n] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:30:40.697Z - GET /health - [ujzhkvyh1] - Started
+✅ [GNL Assistant] 2025-10-05T17:30:40.698Z - GET /health - [ujzhkvyh1] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:31:40.694Z - GET /health - [epd6k2s8p] - Started
+✅ [GNL Assistant] 2025-10-05T17:31:40.695Z - GET /health - [epd6k2s8p] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:32:40.700Z - GET /health - [uyu19qz8u] - Started
+✅ [GNL Assistant] 2025-10-05T17:32:40.701Z - GET /health - [uyu19qz8u] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:33:40.707Z - GET /health - [2covq1v9l] - Started
+✅ [GNL Assistant] 2025-10-05T17:33:40.708Z - GET /health - [2covq1v9l] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:34:40.693Z - GET /health - [z7a22770l] - Started
+✅ [GNL Assistant] 2025-10-05T17:34:40.693Z - GET /health - [z7a22770l] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:35:40.696Z - GET /health - [d2efjgiep] - Started
+✅ [GNL Assistant] 2025-10-05T17:35:40.696Z - GET /health - [d2efjgiep] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:36:40.698Z - GET /health - [gta4birmm] - Started
+✅ [GNL Assistant] 2025-10-05T17:36:40.699Z - GET /health - [gta4birmm] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:37:40.695Z - GET /health - [ex34ixyaq] - Started
+✅ [GNL Assistant] 2025-10-05T17:37:40.696Z - GET /health - [ex34ixyaq] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:38:40.704Z - GET /health - [ig9d3b033] - Started
+✅ [GNL Assistant] 2025-10-05T17:38:40.705Z - GET /health - [ig9d3b033] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:39:40.696Z - GET /health - [u7fckl8km] - Started
+✅ [GNL Assistant] 2025-10-05T17:39:40.696Z - GET /health - [u7fckl8km] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:40:40.691Z - GET /health - [vkzxxa9ek] - Started
+✅ [GNL Assistant] 2025-10-05T17:40:40.692Z - GET /health - [vkzxxa9ek] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:41:40.705Z - GET /health - [3mz5aef46] - Started
+✅ [GNL Assistant] 2025-10-05T17:41:40.705Z - GET /health - [3mz5aef46] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:42:40.703Z - GET /health - [oydhmwlu4] - Started
+✅ [GNL Assistant] 2025-10-05T17:42:40.703Z - GET /health - [oydhmwlu4] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:43:40.697Z - GET /health - [ao0sihk8g] - Started
+✅ [GNL Assistant] 2025-10-05T17:43:40.697Z - GET /health - [ao0sihk8g] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:44:40.693Z - GET /health - [9efjftben] - Started
+✅ [GNL Assistant] 2025-10-05T17:44:40.693Z - GET /health - [9efjftben] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:45:40.696Z - GET /health - [m7s4dngld] - Started
+✅ [GNL Assistant] 2025-10-05T17:45:40.696Z - GET /health - [m7s4dngld] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:46:40.697Z - GET /health - [xhz51q1ws] - Started
+✅ [GNL Assistant] 2025-10-05T17:46:40.697Z - GET /health - [xhz51q1ws] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:47:40.699Z - GET /health - [cgno8z83d] - Started
+✅ [GNL Assistant] 2025-10-05T17:47:40.699Z - GET /health - [cgno8z83d] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:48:40.696Z - GET /health - [qti6415rc] - Started
+✅ [GNL Assistant] 2025-10-05T17:48:40.696Z - GET /health - [qti6415rc] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:49:40.693Z - GET /health - [wrzs8qhp5] - Started
+✅ [GNL Assistant] 2025-10-05T17:49:40.693Z - GET /health - [wrzs8qhp5] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:50:40.691Z - GET /health - [4op9aecyf] - Started
+✅ [GNL Assistant] 2025-10-05T17:50:40.691Z - GET /health - [4op9aecyf] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:51:40.690Z - GET /health - [patg9jud9] - Started
+✅ [GNL Assistant] 2025-10-05T17:51:40.691Z - GET /health - [patg9jud9] - 200 - 1ms
+🚀 [GNL Assistant] 2025-10-05T17:52:40.689Z - GET /health - [hbdadmzgy] - Started
+✅ [GNL Assistant] 2025-10-05T17:52:40.689Z - GET /health - [hbdadmzgy] - 200 - 0ms
+🚀 [GNL Assistant] 2025-10-05T17:53:40.692Z - GET /health - [iyyfcvkff] - Started
+✅ [GNL Assistant] 2025-10-05T17:53:40.692Z - GET /health - [iyyfcvkff] - 200 - 0ms
+
+🛑 [GNL] Received SIGTERM, shutting down gracefully...

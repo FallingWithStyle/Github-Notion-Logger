@@ -179,22 +179,53 @@ app.post('/api/gnl/chat', async (req, res) => {
   // Update metrics
   gnlMetrics.requests++;
   
+  // Extract request data first
+  const { 
+    message, 
+    sessionId, 
+    contextType = 'general', 
+    projectFilter, 
+    options = {} 
+  } = req.body;
+
+  // Validate required fields
+  if (!message) {
+    return res.status(400).json({
+      success: false,
+      error: 'Message is required'
+    });
+  }
+
+  console.log(`🤖 [GNL] AI Chat request: ${message.substring(0, 50)}...`);
+
+  // Check for GNLA greeting/address (before processing)
+  const lowerMessage = message.toLowerCase().trim();
+  if (lowerMessage === 'gnla' || lowerMessage === 'hello gnla' || lowerMessage === 'hi gnla') {
+    return res.json({
+      success: true,
+      response: `Hello! I'm GNLA (GitHub Notion Logger Assistant), your specialized AI assistant for managing your project portfolio, tracking progress, and identifying optimization opportunities. How can I help you today?`,
+      sessionId,
+      context: {
+        type: 'greeting',
+        projectFilter: null,
+        dataSize: 0
+      },
+      performance: {
+        totalTime: Date.now() - startTime,
+        contextTime: 0,
+        aiTime: 0,
+        validationTime: 0
+      },
+      validation: { isValid: true, issues: [] },
+      gnl: {
+        requestId: req.requestId,
+        sessionMetrics: null
+      }
+    });
+  }
+
   try {
     const result = await processWithGNLConcurrencyControl(async () => {
-      const { 
-        message, 
-        sessionId, 
-        contextType = 'general', 
-        projectFilter, 
-        options = {} 
-      } = req.body;
-
-      // Validate required fields
-      if (!message) {
-        throw new Error('Message is required');
-      }
-
-      console.log(`🤖 [GNL] AI Chat request: ${message.substring(0, 50)}...`);
 
       // Get or create session with GNL-specific settings
       let session = aiSessionService.getSession(sessionId);
@@ -541,7 +572,7 @@ app.get('/metrics', (req, res) => {
  * Get GNL-specific system prompt
  */
 function getGNLSystemPrompt(contextType, context) {
-  const basePrompt = `You are the GitHub Notion Logger (GNL) AI Assistant, specialized in helping developers manage their project portfolios, track progress, and identify optimization opportunities. You have deep knowledge of software development workflows, project management, and productivity optimization.`;
+  const basePrompt = `You are the GitHub Notion Logger (GNL) AI Assistant, also known as GNLA (GitHub Notion Logger Assistant). You are specialized in helping developers manage their project portfolios, track progress, and identify optimization opportunities. You have deep knowledge of software development workflows, project management, and productivity optimization. When users refer to you as "GNLA", they are using the shorthand for your full name.`;
 
   switch (contextType) {
     case 'project':

@@ -1,5 +1,5 @@
 const { Client } = require('@notionhq/client');
-const timezoneConfig = require('../../timezone-config');
+const timezoneConfig = require('../../scripts/timezone-config');
 require('dotenv').config();
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
@@ -72,11 +72,14 @@ async function getExistingCommitsForRepo(repoName, skipLegacyDedup = false) {
   try {
     const hasShaProperty = await ensureDatabaseSchemaLoaded();
     
+    // Normalize project name by removing username prefix (e.g., "FallingWithStyle/Audventr" -> "Audventr")
+    const normalizedRepoName = repoName.includes('/') ? repoName.split('/').pop() : repoName;
+    
     // Build filter based on available properties
     let filter = {
       property: 'Project Name',
       title: {
-        equals: repoName
+        equals: normalizedRepoName
       }
     };
 
@@ -262,13 +265,18 @@ async function createCommitPage(commit, repoName) {
     // Normalize project name by removing username prefix (e.g., "FallingWithStyle/Audventr" -> "Audventr")
     const normalizedRepoName = repoName.includes('/') ? repoName.split('/').pop() : repoName;
     
+    // Truncate commit message to 1900 characters to avoid Notion validation errors
+    const truncatedMessage = commit.message.length > 1900 
+      ? commit.message.substring(0, 1900) + '...' 
+      : commit.message;
+    
     // Build properties object
     const properties = {
       "Project Name": {
         title: [{ type: 'text', text: { content: normalizedRepoName } }]
       },
       "Commits": {
-        rich_text: [{ type: 'text', text: { content: commit.message } }]
+        rich_text: [{ type: 'text', text: { content: truncatedMessage } }]
       },
       "Date": {
         date: { start: formattedDate }
@@ -333,12 +341,15 @@ async function createCommitPage(commit, repoName) {
  */
 async function getMostRecentCommitDate(repoName) {
   try {
+    // Normalize project name by removing username prefix (e.g., "FallingWithStyle/Audventr" -> "Audventr")
+    const normalizedRepoName = repoName.includes('/') ? repoName.split('/').pop() : repoName;
+    
     const response = await notion.databases.query({
       database_id: commitFromGithubLogDatabaseId,
       filter: {
         property: 'Project Name',
         title: {
-          equals: repoName
+          equals: normalizedRepoName
         }
       },
       sorts: [
@@ -444,6 +455,7 @@ async function addMissingShaValues() {
 module.exports = {
   logCommitsToNotion,
   getMostRecentCommitDate,
+  getExistingCommitsForRepo,
   addMissingShaValues,
   commitFromGithubLogDatabaseId
 };
