@@ -263,14 +263,14 @@ app.post('/api/gnl/chat', async (req, res) => {
           case 'project':
             if (projectFilter) {
               gnlMetrics.projectQueries++;
-              const projectData = await fetchFromFlyIO(`/api/v2/projects/${encodeURIComponent(projectFilter)}/health`);
+              const projectData = await fetchFromFlyIO(`/api/projects/${encodeURIComponent(projectFilter)}/health`);
               context = await aiContextService.getProjectContext(projectFilter, contextType);
             }
             break;
           
           case 'portfolio':
             gnlMetrics.portfolioQueries++;
-            const portfolioData = await fetchFromFlyIO('/api/v2/projects/overview', {
+            const portfolioData = await fetchFromFlyIO('/api/projects', {
               method: 'GET'
             });
             context = await aiContextService.getPortfolioContext({});
@@ -287,7 +287,7 @@ app.post('/api/gnl/chat', async (req, res) => {
             break;
           
           case 'planning':
-            const planningData = await fetchFromFlyIO('/api/v2/progress/analytics');
+            const planningData = await fetchFromFlyIO('/api/progress/analytics');
             context = await aiContextService.getPlanningContext({});
             break;
           

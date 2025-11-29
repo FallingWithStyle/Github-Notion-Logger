@@ -202,7 +202,7 @@ class AIChatInterface {
         // Choose endpoint based on whether we're using local or deployed assistant
         const endpoint = this.useLocalAssistant 
             ? 'http://localhost:4250/api/gnl/chat'
-            : '/api/v2/ai/chat';
+            : '/api/ai/chat';
         
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -266,7 +266,7 @@ class AIChatInterface {
             }
             
             // Fallback to deployed proxy
-            const response = await fetch('/api/v2/ai/health', {
+            const response = await fetch('/api/ai/health', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

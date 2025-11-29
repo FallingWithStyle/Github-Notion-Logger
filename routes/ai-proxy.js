@@ -207,7 +207,7 @@ async function fallbackAIService(req, res) {
 
 /**
  * Proxy AI chat requests to GNL Assistant
- * POST /api/v2/ai/chat
+ * POST /api/ai/chat
  */
 router.post('/chat', asyncHandler(async (req, res) => {
   try {
@@ -240,7 +240,7 @@ router.post('/chat', asyncHandler(async (req, res) => {
 
 /**
  * Proxy AI recommendations requests to GNL Assistant
- * POST /api/v2/ai/recommendations
+ * POST /api/ai/recommendations
  */
 router.post('/recommendations', asyncHandler(async (req, res) => {
   try {
@@ -276,7 +276,7 @@ router.post('/recommendations', asyncHandler(async (req, res) => {
 
 /**
  * Proxy AI analyze requests to GNL Assistant
- * POST /api/v2/ai/analyze
+ * POST /api/ai/analyze
  */
 router.post('/analyze', asyncHandler(async (req, res) => {
   try {
@@ -309,7 +309,7 @@ router.post('/analyze', asyncHandler(async (req, res) => {
 
 /**
  * Health check for GNL Assistant connection
- * GET /api/v2/ai/health
+ * GET /api/ai/health
  */
 router.get('/health', asyncHandler(async (req, res) => {
   try {

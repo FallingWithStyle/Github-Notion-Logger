@@ -45,7 +45,7 @@ class ProjectsV2App {
       Utils.showLoading(true);
       Utils.updateStatus('Loading projects...', '');
       
-      const response = await Utils.api.get('/api/v2/projects/overview');
+      const response = await Utils.api.get('/api/projects');
       
       if (response.success) {
         this.projects = response.data;
@@ -72,7 +72,7 @@ class ProjectsV2App {
    */
   async loadCategories() {
     try {
-      const response = await Utils.api.get('/api/v2/projects/categories');
+      const response = await Utils.api.get('/api/projects/categories');
       if (response.success) {
         this.categories = response.data;
         this.updateCategoryFilter();
@@ -231,7 +231,7 @@ class ProjectsV2App {
       
       Utils.updateStatus('Clearing cache...', '');
       
-      const response = await Utils.api.post('/api/v2/cache/projects/clear');
+      const response = await Utils.api.post('/api/cache/projects/clear');
       
       if (response.success) {
         Utils.updateStatus('Cache cleared successfully', 'success');

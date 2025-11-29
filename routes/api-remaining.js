@@ -10,58 +10,7 @@ const router = express.Router();
 
 // Initialize services
 const llamaHub = new LlamaHubService();
-const projectManagementService = new ProjectManagementService();
-
-// Projects API endpoint for external consumption (e.g., Wanderjob)
-router.get('/projects', asyncHandler(async (req, res) => {
-  const startTime = Date.now();
-  console.log(`📥 GET /api/projects - Query params:`, req.query);
-  
-  try {
-    const { page = 1, limit = 100, category, search, status } = req.query;
-    
-    const filters = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      category,
-      search,
-      status
-    };
-    
-    console.log(`📊 Fetching project overview with filters:`, filters);
-    const result = await projectManagementService.getProjectOverview(filters);
-    
-    const duration = Date.now() - startTime;
-    console.log(`✅ GET /api/projects - Success in ${duration}ms`);
-    
-    // Return simplified format for external consumption
-    if (result.success) {
-      res.json({
-        success: true,
-        projects: result.data || [],
-        pagination: result.pagination || {},
-        metadata: result.metadata || {}
-      });
-    } else {
-      console.error(`❌ GET /api/projects - Service returned error:`, result.error);
-      res.status(500).json({
-        success: false,
-        error: result.error || 'Error getting projects',
-        details: result.details
-      });
-    }
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`❌ GET /api/projects - Error after ${duration}ms:`, error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      success: false,
-      error: 'Error getting projects',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-}));
+// Note: Projects endpoint moved to api-v2.js (now at /api/projects/overview)
 
 // Weekly planning API
 router.get('/weekly-data', asyncHandler(async (req, res) => {

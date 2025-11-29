@@ -20,8 +20,8 @@ router.use('/project-progress', projectProgressRoutes);
 router.use('/commits', commitsRoutes);
 router.use('/timezone-config', timezoneRoutes);
 router.use('/color-palette', colorPaletteRoutes);
-router.use('/v2', apiV2Routes);
-router.use('/v2/ai', aiChatRoutes);
+router.use('/', apiV2Routes); // Projects, progress, cache, performance endpoints
+router.use('/ai', aiChatRoutes); // AI endpoints
 router.use('/', apiRemainingRoutes);
 router.use('/', webhookRoutes);
 

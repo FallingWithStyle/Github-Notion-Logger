@@ -48,7 +48,7 @@ class ProgressV2App {
       Utils.updateStatus('Loading progress data...', '');
       
       // Load analytics data
-      const analyticsResponse = await Utils.api.get('/api/v2/progress/analytics');
+      const analyticsResponse = await Utils.api.get('/api/progress/analytics');
       
       if (analyticsResponse.success) {
         this.analyticsData = analyticsResponse.data;
@@ -60,7 +60,7 @@ class ProgressV2App {
       }
       
       // Load incomplete work data
-      const incompleteResponse = await Utils.api.get('/api/v2/progress/incomplete');
+      const incompleteResponse = await Utils.api.get('/api/progress/incomplete');
       
       if (incompleteResponse.success) {
         this.incompleteData = incompleteResponse.data;
@@ -68,7 +68,7 @@ class ProgressV2App {
       }
       
       // Load blocked items data
-      const blockedResponse = await Utils.api.get('/api/v2/progress/blocked');
+      const blockedResponse = await Utils.api.get('/api/progress/blocked');
       
       if (blockedResponse.success) {
         this.blockedData = blockedResponse.data;
@@ -394,7 +394,7 @@ class ProgressV2App {
       
       Utils.updateStatus('Clearing cache...', '');
       
-      const response = await Utils.api.post('/api/v2/cache/progress/clear');
+      const response = await Utils.api.post('/api/cache/progress/clear');
       
       if (response.success) {
         Utils.updateStatus('Cache cleared successfully', 'success');

@@ -72,7 +72,7 @@ app.use('/', staticRoutes);
 
 // Mount API routes
 app.use('/api', apiRoutes);
-app.use('/api/v2/ai', aiProxyRoutes);
+app.use('/api/ai', aiProxyRoutes);
 
 // Serve static files from public directory
 // Provide dynamic commit log before static so it overrides bundled files

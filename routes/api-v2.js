@@ -9,8 +9,8 @@ const router = express.Router();
 const projectManagementService = new ProjectManagementService();
 const progressTrackingService = new ProgressTrackingService();
 
-// Projects API v2
-router.get('/projects/overview', asyncHandler(async (req, res) => {
+// Projects API
+router.get('/projects', asyncHandler(async (req, res) => {
   try {
     const { page = 1, limit = 20, category, search, status } = req.query;
     
@@ -89,7 +89,7 @@ router.get('/projects/search', asyncHandler(async (req, res) => {
   }
 }));
 
-// Progress API v2
+// Progress API
 router.get('/progress/analytics', asyncHandler(async (req, res) => {
   try {
     const { projectName } = req.query;

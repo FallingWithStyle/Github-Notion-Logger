@@ -70,7 +70,7 @@ const llamaHubService = new LlamaHubService();
 
 /**
  * Enhanced Chat API with Project Context
- * POST /api/v2/ai/chat
+ * POST /api/ai/chat
  */
 router.post('/chat', asyncHandler(async (req, res) => {
   const startTime = Date.now();
@@ -333,7 +333,7 @@ router.post('/chat', asyncHandler(async (req, res) => {
 
 /**
  * Proactive Recommendations API
- * GET /api/v2/ai/recommendations
+ * GET /api/ai/recommendations
  */
 router.get('/recommendations', asyncHandler(async (req, res) => {
   const startTime = Date.now();
@@ -464,7 +464,7 @@ router.get('/recommendations', asyncHandler(async (req, res) => {
 
 /**
  * Context-Specific Analysis API
- * POST /api/v2/ai/analyze
+ * POST /api/ai/analyze
  */
 router.post('/analyze', asyncHandler(async (req, res) => {
   const startTime = Date.now();
@@ -732,7 +732,7 @@ function generatePlanningRecommendations(context) {
 
 /**
  * AI Services Health Check
- * GET /api/v2/ai/health
+ * GET /api/ai/health
  */
 router.get('/health', asyncHandler(async (req, res) => {
   try {
@@ -778,7 +778,7 @@ router.get('/health', asyncHandler(async (req, res) => {
 
 /**
  * Performance Metrics API
- * GET /api/v2/ai/metrics
+ * GET /api/ai/metrics
  */
 router.get('/metrics', asyncHandler(async (req, res) => {
   try {

@@ -56,7 +56,7 @@ class ProjectsApp {
       
       // Load both API data and weekly planning data in parallel
       const [apiResponse, weeklyResponse] = await Promise.allSettled([
-        Utils.api.get('/api/v2/projects/overview'),
+        Utils.api.get('/api/projects'),
         Utils.api.get('/api/weekly-plans')
       ]);
       
@@ -131,7 +131,7 @@ class ProjectsApp {
    */
   async loadCategories() {
     try {
-      const response = await Utils.api.get('/api/v2/projects/categories');
+      const response = await Utils.api.get('/api/projects/categories');
       if (response.success) {
         this.categories = response.data;
         this.updateCategoryFilter();
@@ -377,7 +377,7 @@ class ProjectsApp {
       
       Utils.updateStatus('Clearing cache...', '');
       
-      const response = await Utils.api.post('/api/v2/cache/projects/clear');
+      const response = await Utils.api.post('/api/cache/projects/clear');
       
       if (response.success) {
         Utils.updateStatus('Cache cleared successfully', 'success');
