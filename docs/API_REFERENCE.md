@@ -71,6 +71,56 @@ This API does not use versioning. All endpoints are under the base `/api` path.
 
 ## Endpoints
 
+### API Documentation
+
+#### Get API Documentation
+
+Get comprehensive API documentation in JSON format for programmatic access.
+
+**Endpoint:** `GET /api/docs`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "baseUrl": "http://localhost:8080/api",
+    "documentation": {
+      "markdown": "# GitHub Notion Logger (GNL) API Reference...",
+      "url": "http://localhost:8080/docs/API_REFERENCE.md"
+    },
+    "endpoints": {
+      "commits": { /* endpoint definitions */ },
+      "projects": { /* endpoint definitions */ },
+      "progress": { /* endpoint definitions */ },
+      "ai": { /* endpoint definitions */ }
+    },
+    "authentication": {
+      "apiKey": {
+        "description": "Some endpoints require API key authentication",
+        "header": "X-API-Key: your-api-key"
+      }
+    },
+    "rateLimiting": {
+      "backfill": {
+        "perHour": 5,
+        "perDay": 20,
+        "cooldown": "5 minutes"
+      }
+    },
+    "version": "1.0.0",
+    "lastUpdated": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+This endpoint provides:
+- Complete endpoint list with methods, paths, and descriptions
+- Authentication requirements for each endpoint
+- Query parameters and request body schemas
+- Rate limiting information
+- Link to full markdown documentation
+
 ### Commits
 
 #### Log Commits
