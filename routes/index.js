@@ -23,7 +23,7 @@ router.use('/timezone-config', timezoneRoutes);
 router.use('/color-palette', colorPaletteRoutes);
 router.use('/', apiV2Routes); // Projects, progress, cache, performance endpoints
 router.use('/ai', aiChatRoutes); // AI endpoints
-router.use('/', apiDocsRoutes); // API documentation endpoint
+router.use('/', apiDocsRoutes); // API documentation endpoint (before apiRemainingRoutes to avoid conflicts)
 router.use('/', apiRemainingRoutes);
 router.use('/', webhookRoutes);
 
