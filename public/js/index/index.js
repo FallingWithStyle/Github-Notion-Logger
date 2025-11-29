@@ -318,10 +318,25 @@ async function loadCommitData() {
         const gridContainer = document.getElementById('grid-container');
         gridContainer.innerHTML = '';
         
+        // Filter to only days with commits (where projects object has entries)
+        const daysWithCommits = commitData.filter(dayData => {
+            const projects = dayData.projects || {};
+            const hasCommits = Object.keys(projects).length > 0 && 
+                              Object.values(projects).some(count => count > 0);
+            return hasCommits;
+        });
+        
+        // Get the last 7 days with active commits (most recent first)
+        const last7ActiveDays = daysWithCommits
+            .slice()
+            .reverse() // Most recent first
+            .slice(0, 7) // Take last 7
+            .reverse(); // Reverse back to chronological order for display
+        
+        console.log(`Showing last 7 days with commits out of ${daysWithCommits.length} total days with activity`);
+        
         // Create rows for each day (most recent first)
-        console.log('Raw commit data:', commitData);
-        const reversedData = commitData.slice().reverse();
-        console.log('Reversed data:', reversedData);
+        const reversedData = last7ActiveDays.slice().reverse();
         reversedData.forEach(dayData => {
             console.log('Processing day:', dayData.date, 'with projects:', dayData.projects);
             const row = createDayRow(dayData);
@@ -331,7 +346,9 @@ async function loadCommitData() {
         // Create legend
         createLegend();
         
-        updateStatus(`Loaded ${commitData.length} days of commit data`);
+        const totalDaysWithCommits = daysWithCommits.length;
+        const displayedDays = last7ActiveDays.length;
+        updateStatus(`Showing last ${displayedDays} days with commits (${totalDaysWithCommits} total days with activity)`);
         updateCacheInfo();
         
     } catch (error) {
