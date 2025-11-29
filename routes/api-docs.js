@@ -18,12 +18,19 @@ router.get('/docs', asyncHandler(async (req, res) => {
     // Read the markdown documentation
     const markdown = fs.readFileSync(docsPath, 'utf8');
     
+    // Determine base URL - use request host or environment variable
+    const protocol = req.protocol || 'https';
+    const host = req.get('host') || process.env.FLY_APP_NAME 
+      ? `${process.env.FLY_APP_NAME}.fly.dev` 
+      : 'localhost:8080';
+    const baseUrl = process.env.API_BASE_URL || `${protocol}://${host}/api`;
+    
     // Return both markdown and a structured endpoint list
     const endpoints = {
-      baseUrl: process.env.API_BASE_URL || 'http://localhost:8080/api',
+      baseUrl: baseUrl,
       documentation: {
         markdown: markdown,
-        url: `${process.env.API_BASE_URL || 'http://localhost:8080'}/docs/API_REFERENCE.md`
+        url: `${baseUrl.replace('/api', '')}/docs/API_REFERENCE.md`
       },
       endpoints: {
         commits: {
