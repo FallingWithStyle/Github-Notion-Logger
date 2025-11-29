@@ -1,10 +1,11 @@
 const express = require('express');
 const { logCommitsToNotion, addWeeklyPlanningEntry, addOrUpdateWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry, cleanupDuplicateEntries } = require('../notion');
 const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('../scripts/color-palette');
-const { scheduleDailyProcessing, runManualProcessing } = require('../scripts/wanderlog-processor');
+const { scheduleDailyProcessing, runManualProcessing, ensureWanderlogDatabase } = require('../scripts/wanderlog-processor');
 const LlamaHubService = require('../services/llama-hub-service');
 const ProjectManagementService = require('../services/project-management-service');
 const { asyncHandler } = require('../services/server');
+const { Client } = require('@notionhq/client');
 
 const router = express.Router();
 
@@ -549,17 +550,81 @@ router.post('/wanderlog/process', asyncHandler(async (req, res) => {
   }
 }));
 
+/**
+ * Get wanderlog entries from Notion
+ */
+async function getWanderlogEntries(filters = {}) {
+  const notion = new Client({ auth: process.env.NOTION_API_KEY });
+  const databaseId = await ensureWanderlogDatabase();
+  
+  if (!databaseId) {
+    throw new Error('Wanderlog database not found');
+  }
+  
+  let queryOptions = {
+    database_id: databaseId,
+    sorts: [
+      { property: 'Created', direction: 'descending' }
+    ]
+  };
+  
+  // Add filters if provided
+  if (filters.date) {
+    queryOptions.filter = {
+      property: 'Created',
+      date: {
+        equals: filters.date
+      }
+    };
+  } else if (filters.startDate && filters.endDate) {
+    queryOptions.filter = {
+      and: [
+        {
+          property: 'Created',
+          date: {
+            on_or_after: filters.startDate
+          }
+        },
+        {
+          property: 'Created',
+          date: {
+            on_or_before: filters.endDate
+          }
+        }
+      ]
+    };
+  }
+  
+  const response = await notion.databases.query(queryOptions);
+  
+  return response.results.map(page => {
+    const props = page.properties;
+    return {
+      id: page.id,
+      title: props['Title']?.title?.[0]?.text?.content || '',
+      created: props['Created']?.date?.start || '',
+      firstCommitDate: props['First Commit Date']?.date?.start || '',
+      commitCount: props['Commit Count']?.number || 0,
+      projects: props['Projects']?.rich_text?.[0]?.text?.content || '',
+      summary: props['Summary']?.rich_text?.[0]?.text?.content || '',
+      insights: props['Insights']?.rich_text?.[0]?.text?.content || '',
+      focusAreas: props['Focus Areas']?.rich_text?.[0]?.text?.content || '',
+      lastUpdated: page.last_edited_time
+    };
+  });
+}
+
 router.get('/wanderlog', asyncHandler(async (req, res) => {
   try {
     const { date } = req.query;
     
-    // Get wanderlog data logic would go here
-    // This is a placeholder for the actual implementation
+    const entries = await getWanderlogEntries({ date });
     
     res.json({
       success: true,
-      data: [],
-      message: 'Wanderlog data retrieved successfully'
+      data: entries,
+      count: entries.length,
+      message: `Retrieved ${entries.length} wanderlog entries`
     });
   } catch (error) {
     console.error('❌ Error getting wanderlog data:', error);
@@ -582,13 +647,15 @@ router.get('/wanderlog/range', asyncHandler(async (req, res) => {
       });
     }
     
-    // Get wanderlog range data logic would go here
-    // This is a placeholder for the actual implementation
+    const entries = await getWanderlogEntries({ startDate, endDate });
     
     res.json({
       success: true,
-      data: [],
-      message: 'Wanderlog range data retrieved successfully'
+      data: entries,
+      count: entries.length,
+      startDate,
+      endDate,
+      message: `Retrieved ${entries.length} wanderlog entries for date range`
     });
   } catch (error) {
     console.error('❌ Error getting wanderlog range data:', error);
@@ -604,14 +671,22 @@ router.get('/wanderlog/date/:date', asyncHandler(async (req, res) => {
   try {
     const { date } = req.params;
     
-    // Get wanderlog data for specific date logic would go here
-    // This is a placeholder for the actual implementation
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid date format. Use YYYY-MM-DD' 
+      });
+    }
+    
+    const entries = await getWanderlogEntries({ date });
     
     res.json({
       success: true,
       date: date,
-      data: [],
-      message: 'Wanderlog data for date retrieved successfully'
+      data: entries,
+      count: entries.length,
+      message: `Retrieved ${entries.length} wanderlog entries for ${date}`
     });
   } catch (error) {
     console.error('❌ Error getting wanderlog data for date:', error);
@@ -625,12 +700,51 @@ router.get('/wanderlog/date/:date', asyncHandler(async (req, res) => {
 
 router.get('/wanderlog/stats', asyncHandler(async (req, res) => {
   try {
-    // Get wanderlog stats logic would go here
-    // This is a placeholder for the actual implementation
+    const allEntries = await getWanderlogEntries();
+    
+    const totalCommits = allEntries.reduce((sum, entry) => sum + (entry.commitCount || 0), 0);
+    const uniqueProjects = new Set();
+    allEntries.forEach(entry => {
+      if (entry.projects) {
+        entry.projects.split(',').forEach(p => uniqueProjects.add(p.trim()));
+      }
+    });
+    
+    // Get focus areas frequency
+    const focusAreasMap = new Map();
+    allEntries.forEach(entry => {
+      if (entry.focusAreas) {
+        entry.focusAreas.split(',').forEach(area => {
+          const trimmed = area.trim().toLowerCase();
+          focusAreasMap.set(trimmed, (focusAreasMap.get(trimmed) || 0) + 1);
+        });
+      }
+    });
+    const topFocusAreas = Array.from(focusAreasMap.entries())
+      .map(([area, count]) => ({ area, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    // Get date range
+    const dates = allEntries.map(e => e.created).filter(Boolean).sort();
+    const dateRange = dates.length > 0 ? {
+      earliest: dates[0],
+      latest: dates[dates.length - 1]
+    } : null;
+    
+    const stats = {
+      totalEntries: allEntries.length,
+      totalCommits: totalCommits,
+      avgCommitsPerDay: allEntries.length > 0 ? Math.round(totalCommits / allEntries.length) : 0,
+      uniqueProjects: Array.from(uniqueProjects),
+      uniqueProjectsCount: uniqueProjects.size,
+      topFocusAreas: topFocusAreas,
+      dateRange: dateRange
+    };
     
     res.json({
       success: true,
-      stats: {},
+      stats: stats,
       message: 'Wanderlog stats retrieved successfully'
     });
   } catch (error) {
