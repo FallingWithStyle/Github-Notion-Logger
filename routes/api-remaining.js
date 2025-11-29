@@ -3,12 +3,54 @@ const { logCommitsToNotion, addWeeklyPlanningEntry, addOrUpdateWeeklyPlanningEnt
 const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('../scripts/color-palette');
 const { scheduleDailyProcessing, runManualProcessing } = require('../scripts/wanderlog-processor');
 const LlamaHubService = require('../services/llama-hub-service');
+const ProjectManagementService = require('../services/project-management-service');
 const { asyncHandler } = require('../services/server');
 
 const router = express.Router();
 
-// Initialize Llama-hub service
+// Initialize services
 const llamaHub = new LlamaHubService();
+const projectManagementService = new ProjectManagementService();
+
+// Projects API endpoint for external consumption (e.g., Wanderjob)
+router.get('/projects', asyncHandler(async (req, res) => {
+  try {
+    const { page = 1, limit = 100, category, search, status } = req.query;
+    
+    const filters = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      category,
+      search,
+      status
+    };
+    
+    const result = await projectManagementService.getProjectOverview(filters);
+    
+    // Return simplified format for external consumption
+    if (result.success) {
+      res.json({
+        success: true,
+        projects: result.data || [],
+        pagination: result.pagination || {},
+        metadata: result.metadata || {}
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.error || 'Error getting projects',
+        details: result.details
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error getting projects:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error getting projects',
+      details: error.message 
+    });
+  }
+}));
 
 // Weekly planning API
 router.get('/weekly-data', asyncHandler(async (req, res) => {
