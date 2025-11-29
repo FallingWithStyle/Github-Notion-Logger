@@ -1,7 +1,7 @@
 const express = require('express');
 const { logCommitsToNotion, addWeeklyPlanningEntry, addOrUpdateWeeklyPlanningEntry, getWeeklyPlanningData, updateWeeklyPlanningEntry, cleanupDuplicateEntries } = require('../notion');
 const { assignColor, getProjectColor, updateProjectColor, migrateExistingProjects, getColorStats, hexToHsl, generatePaletteFromHue } = require('../scripts/color-palette');
-const { scheduleDailyProcessing, runManualProcessing } = require('../wanderlog-processor');
+const { scheduleDailyProcessing, runManualProcessing } = require('../scripts/wanderlog-processor');
 const LlamaHubService = require('../services/llama-hub-service');
 const { asyncHandler } = require('../services/server');
 
