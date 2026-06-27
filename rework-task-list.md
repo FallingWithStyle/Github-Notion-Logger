@@ -41,7 +41,7 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 ### Story R0.3: User-facing strings and integrations
 
 - [x] Replace “GitHub Notion Logger” / “GNL” product labels in remaining hot-path code and HTML titles (keep `gnl-assistant` name only inside archived tree until removed)
-- [>] Update Switchboard service label to `github-activity-logger` when registering port 3040 (G3)
+- [x] Update Switchboard service label to `github-activity-logger` when registering port 3040 (G3)
 - [>] Optional later: rename git repo / folder `github-notion-logger` → `github-activity-logger`
 
 ---
@@ -181,10 +181,11 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 
 ### Story G3.3: Switchboard and pm2
 
-- [ ] Register `3040 | github-activity-logger` in `../Switchboard/LOCALHOSTS_LIST.md` (block 3040–3049)
-- [ ] Add pm2 entry to `../Switchboard/ecosystem-all.config.js`
-- [ ] Add service to `../Switchboard/config.json`
-- [ ] Add `3040` to Switchboard port validation script
+- [x] Register `3040 | github-activity-logger` in `../Switchboard/LOCALHOSTS_LIST.md` (block 3040–3049)
+- [x] Add pm2 entry to `../Switchboard/ecosystem-all.config.js`
+- [x] Add service to `../Switchboard/config.json`
+- [x] Add `3040` to Switchboard port validation script
+- [x] Add `../Switchboard/ecosystems/github-activity-logger.config.js`
 - [ ] `pm2 start` / Switchboard batch: logger healthy at `curl http://127.0.0.1:3040/health`
 
 ---
