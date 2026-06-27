@@ -1,262 +1,102 @@
-# GitHub Notion Logger
+# GitHub Activity Logger
 
-A webhook-based service that logs GitHub commits to Notion database with a visual commit activity tracker.
+**Formerly GitHub Notion Logger.** A local service that ingests GitHub commits and exposes a small read API. Primary consumer: [Devra](../Devra) (`devra report`, `devra ask`, `devra focus`).
+
+> **v2 rework in progress.** See [`REWORK_PLAN.md`](REWORK_PLAN.md) and [`rework-task-list.md`](rework-task-list.md). Legacy v1 (Notion sync, Epic 9/10 UI, AI assistant) is being archived.
 
 ## Overview
 
-GitHub Notion Logger is an automated system that monitors GitHub repositories, extracts commit information, and creates/updates Notion pages with structured data. It provides real-time synchronization, visual commit tracking, and weekly project planning features.
+| v2 (target) | v1 (legacy, being archived) |
+|-------------|----------------------------|
+| SQLite commit store | Notion as primary store |
+| Devra read API on port **3040** | Fly.io + multi-page dashboard |
+| Devra as visual layer | In-app AI, project health, weekly planning |
 
-## Features
+**Frozen during rework:** root commit heatmap (`/` + `commit-log.json`) — unchanged until backlog G8.
 
-- **Real-time Webhook Integration**: Receive GitHub commit events in real-time
-- **Automatic Notion Logging**: Log commits to Notion database automatically
-- **Visual Commit Tracker**: View coding activity across projects over time
-- **Weekly Project Planning**: Review 28-day activity and create actionable plans
-- **Historical Data Import**: Backfill script for last 6 months of commits
-- **Duplicate Prevention**: Smart duplicate detection and cleanup
-- **Performance Optimization**: Configurable batch processing and caching
-- **Multi-Repository Support**: Monitor multiple repositories simultaneously
-- **Wanderlog Daily Summaries**: AI-powered daily commit summaries with GPT-4o-mini
-- **Intelligent Commit Filtering**: Automatically filters out insignificant commits (typos, etc.)
-- **Automated Scheduling**: Daily processing at 6am EST with cron scheduling
+## Features (v2 target)
 
-## Getting Started
+- GitHub webhook ingest with signature verification
+- Per-commit SQLite storage (G1+)
+- Devra contract API: `/health`, `/api/projects`, `/api/activity`, `/api/projects/:id/commits`
+- GitHub API backfill for history
+- Optional legacy heatmap at `/` (daily aggregates)
 
-### Prerequisites
+## Prerequisites
 
 - Node.js 18+
-- npm or yarn
-- GitHub Personal Access Token
-- Notion API Key
-- Notion database for commit tracking
-- OpenAI API Key (for Wanderlog summaries)
+- GitHub Personal Access Token (backfill)
+- GitHub webhook secret (real-time ingest)
+- pm2 (recommended, via [Switchboard](../Switchboard))
 
-### Installation
+## Quick start
 
 ```bash
-git clone https://github.com/your-org/github-notion-logger.git
-cd github-notion-logger
 npm install
-```
-
-### Configuration
-
-Create an `.env` file with your configuration:
-
-```bash
-NOTION_API_KEY=your_notion_api_key
-NOTION_COMMIT_FROM_GITHUB_LOG_ID=your_notion_commit_database_id
-NOTION_WEEKLY_PROJECT_PLAN_PARENT_PAGE_ID=your_notion_weekly_planning_parent_page_id
-GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
-GITHUB_TOKEN=your_github_personal_access_token
-GITHUB_OWNER=your_github_username_or_org
-GITHUB_REPO=your_repository_name
-OPENAI_API_KEY=your_openai_api_key
-```
-
-### Development
-
-```bash
+cp .env.template .env   # edit secrets
 npm start
 ```
 
-The application will be available at [http://localhost:8080](http://localhost:8080)
+Default URL: **http://127.0.0.1:3040**
 
-## Usage
-
-### Real-time Webhook Mode
-
-Start the server to receive webhook events:
-```bash
-npm start
-```
-
-### Historical Data Import
-
-Import commits from the last 6 months:
-```bash
-node backfill.js
-```
-
-### Weekly Project Planning
-
-Navigate to `/week` to access the weekly planning feature:
-- Review 28-day project activity
-- Categorize and rate projects
-- Generate actionable weekly plans
-- Sync plans to Notion database
-
-### Visual Commit Tracker
-
-View your commit activity at the root URL (`/`):
-- Daily commit grid visualization
-- Color-coded project representation
-- Interactive hover effects
-- Responsive design for all devices
-
-### Wanderlog Daily Summaries
-
-The Wanderlog feature provides AI-powered daily summaries of your development work:
-
-- **Automatic Processing**: Runs daily at 6am EST via cron scheduling
-- **Smart Filtering**: Automatically filters out insignificant commits (typos, formatting, etc.)
-- **AI Summaries**: Uses GPT-4o-mini to create engaging, story-like summaries
-- **Notion Integration**: Creates entries in a dedicated Wanderlog database
-- **Manual Trigger**: Test the feature with `POST /api/wanderlog/process`
-
-#### Testing Wanderlog
+Health check:
 
 ```bash
-# Test commit filtering logic (no API keys required)
-node test-wanderlog-simple.js
-
-# Test with specific date (requires API keys)
-node test-wanderlog-specific-date.js --date 2024-01-15
-node test-wanderlog-specific-date.js --date yesterday --create
-
-# Full integration test (requires API keys)
-node test-wanderlog.js
-
-# Or trigger manually via API
-curl -X POST http://localhost:3000/api/wanderlog/process
+curl http://127.0.0.1:3040/health
+# {"status":"ok","version":"2.0.0"}
 ```
 
-#### Wanderlog API Endpoints
-
-The Wanderlog system provides several API endpoints for accessing daily summaries:
+### pm2 (recommended)
 
 ```bash
-# Get all Wanderlog entries
-GET /api/wanderlog
-
-# Get Wanderlog entries for a date range
-GET /api/wanderlog/range?startDate=2024-01-01&endDate=2024-01-31
-
-# Get Wanderlog entry for a specific date
-GET /api/wanderlog/date/2024-01-15
-
-# Get Wanderlog statistics
-GET /api/wanderlog/stats
-
-# Trigger manual processing
-POST /api/wanderlog/process
+pm2 start ecosystem.config.js --only github-activity-logger
+pm2 logs github-activity-logger
 ```
 
-**Example API Responses:**
+Register with Switchboard port **3040** (see G3 in `rework-task-list.md`).
 
-```json
-// GET /api/wanderlog
-{
-  "success": true,
-  "count": 5,
-  "entries": [
-    {
-      "id": "page-id",
-      "title": "Adaptive Concurrency and HiFi-GAN Enhancements Drive Development Forward",
-      "created": "2025-09-09T10:30:00.000Z",
-      "firstCommitDate": "2025-08-29T14:30:00.000Z",
-      "commitCount": 19,
-      "projects": "Audventr, VoiceHub",
-      "summary": "Developers tackled concurrency challenges in Audventr...",
-      "insights": "The commit patterns reveal a strong emphasis on...",
-      "focusAreas": "adaptive concurrency, HiFi-GAN integration, story package export"
-    }
-  ]
-}
+## Configuration
 
-// GET /api/wanderlog/stats
-{
-  "success": true,
-  "stats": {
-    "totalEntries": 5,
-    "totalCommits": 87,
-    "avgCommitsPerDay": 17,
-    "uniqueProjects": 3,
-    "projects": ["Audventr", "VoiceHub", "Glyph"],
-    "topFocusAreas": [
-      {"area": "adaptive concurrency", "count": 3},
-      {"area": "HiFi-GAN integration", "count": 2}
-    ],
-    "dateRange": {
-      "earliest": "2025-08-25",
-      "latest": "2025-08-29"
-    }
-  }
-}
+| Variable | Purpose |
+|----------|---------|
+| `HOST` | Bind address (default `127.0.0.1`) |
+| `PORT` | HTTP port (default `3040`) |
+| `GITHUB_WEBHOOK_SECRET` | Webhook HMAC verification |
+| `GITHUB_TOKEN` | Backfill / GitHub API |
+| `DATA_DIR` | Data directory (`./data`) |
+| `GITHUB_LOGGER_TOKEN` | Optional bearer auth for read API |
+| `NOTION_SYNC` | `false` during rework |
+
+Devra connects with `GITHUB_LOGGER_URL=http://127.0.0.1:3040` — see [`../Devra/Docs/github-logger-connection.md`](../Devra/Docs/github-logger-connection.md).
+
+## Project structure (target)
+
+```
+server.js              # HTTP server
+db/                    # SQLite schema + store (G1)
+ingest/                # webhook, backfill, commit-parser (G1–G2)
+routes/api-devra.js    # Devra contract endpoints (G3)
+config/projects.json   # repo ↔ workspacePath mapping (G1)
+archive/legacy-notion-era/  # v1 code (Epic A)
 ```
 
-#### Specific Date Testing
-
-The `test-wanderlog-specific-date.js` script allows you to test the Wanderlog system with commits from any specific date:
+## Development
 
 ```bash
-# Test with a specific date (dry run)
-node test-wanderlog-specific-date.js --date 2024-01-15
-
-# Test with a specific date and create Notion entry
-node test-wanderlog-specific-date.js --date 2024-01-15 --create
-
-# Test with yesterday's commits
-node test-wanderlog-specific-date.js --date yesterday
-
-# Test with today's commits
-node test-wanderlog-specific-date.js --date today
+npm test
 ```
 
-This is particularly useful for:
-- Testing the system with historical data
-- Creating Wanderlog entries for missed days
-- Debugging specific commit processing issues
+Legacy v1 task list: [`task-list.md`](task-list.md) (historical). Active rework tasks: [`rework-task-list.md`](rework-task-list.md).
 
-#### Wanderlog Database Schema
+## Legacy v1 documentation
 
-The system automatically creates a "Wanderlog" database with:
-- **Title**: Engaging daily summary title
-- **Created**: When the Wanderlog entry was created
-- **First Commit Date**: Date of the earliest commit being summarized
-- **Commit Count**: Number of significant commits
-- **Projects**: List of projects worked on
-- **Summary**: AI-generated story of the day's work
-- **Insights**: Key insights about focus and patterns
-- **Focus Areas**: Main themes and areas of focus
-
-## Project Structure
-
-```
-/github-notion-logger
-  ├── src/                    # Source code
-  │   ├── server.js          # Webhook server
-  │   ├── backfill.js        # Historical data import
-  │   ├── deduplicate.js     # Database cleanup
-  │   └── notion.js          # Notion API integration
-  ├── data/                  # Data files
-  │   ├── commit-log.json    # Commit activity data
-  │   ├── color-palettes.json # Color assignment data
-  │   └── weekly-plans.json  # Weekly planning data
-  ├── public/                # Static files
-  │   ├── index.html         # Main activity visualizer
-  │   ├── prd.html           # PRD viewer
-  │   └── week.html          # Weekly planning interface
-  ├── README.md              # Project overview (this file)
-  ├── prd.md                 # Product Requirements Document
-  └── task-list.md           # Task list and progress tracking
-```
-
-## Contributing
-
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/new-feature`)
-3. Commit changes (`git commit -m 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Open a Pull Request
+- [`docs/API_V2_DOCS.md`](docs/API_V2_DOCS.md) — Epic 9 API (do not extend for Devra)
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full v1 API reference
 
 ## License
 
-MIT License
+See repository license. Personal utility project.
 
 ## Acknowledgements
 
-- GitHub API for commit data access
-- Notion API for database integration
-- Fly.io for deployment platform
-- Node.js and Express communities for excellent tooling
+Built for personal commit tracking across repos under `~/Documents/Projects/Dev`, integrated with Devra v3.1+.

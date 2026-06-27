@@ -1,5 +1,7 @@
 # GitHub Notion Logger API v2 Documentation
 
+> **Legacy v1.** This API is not extended for Devra. v2 rework uses the contract in [`../Devra/Docs/github-logger-connection.md`](../../Devra/Docs/github-logger-connection.md). See [`REWORK_PLAN.md`](../REWORK_PLAN.md).
+
 ## Overview
 
 API v2 provides enhanced project management and progress tracking capabilities for Epic 9. This version introduces new data models, improved error handling, performance optimizations, and comprehensive analytics.

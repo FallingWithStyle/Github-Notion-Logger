@@ -19,6 +19,10 @@ const aiProxyRoutes = require('./routes/ai-proxy');
 const serverServices = require('./services/server');
 
 dotenv.config();
+
+const SERVICE_NAME = 'GitHub Activity Logger';
+const SERVICE_VERSION = '2.0.0';
+
 const app = express();
 
 // Add request timeout middleware
@@ -64,6 +68,11 @@ app.use((req, res, next) => {
   });
   
   next();
+});
+
+// Devra contract health (no Notion/DB dependency; extended in G3)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', version: SERVICE_VERSION });
 });
 
 // Mount static routes first (for root path and static files)
@@ -447,10 +456,11 @@ const progressTrackingService = new ProgressTrackingService();
 // SERVER STARTUP
 // ============================================================================
 
-const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || '127.0.0.1';
+const PORT = parseInt(process.env.PORT, 10) || 3040;
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server started on port ${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 ${SERVICE_NAME} v${SERVICE_VERSION} listening on http://${HOST}:${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔑 Webhook secret configured: ${process.env.GITHUB_WEBHOOK_SECRET ? 'Yes' : 'No'}`);
   console.log(`📝 Notion API key configured: ${process.env.NOTION_API_KEY ? 'Yes' : 'No'}`);

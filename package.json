@@ -1,7 +1,7 @@
 {
-  "name": "github-notion-logger",
-  "version": "1.0.0",
-  "description": "Logs GitHub commits to Notion using webhook events",
+  "name": "github-activity-logger",
+  "version": "2.0.0",
+  "description": "Local GitHub commit ingest and read API for Devra (formerly GitHub Notion Logger)",
   "main": "server.js",
   "engines": {
     "node": ">=18.0.0"

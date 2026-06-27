@@ -26,24 +26,23 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 
 ### Story R0.1: Package and runtime identity
 
-- [ ] Update `package.json` `name`, `description`, and `version` (e.g. `2.0.0`) to GitHub Activity Logger
-- [ ] Add pm2 app `github-activity-logger` in repo `ecosystem.config.js` (`PORT=3040`, `HOST=127.0.0.1`)
-- [ ] Default `PORT` to `3040` and `HOST` to `127.0.0.1` in `server.js` and `.env.template`
-- [ ] Set service display name in startup logs and `GET /health` version to `2.0.0`
+- [x] Update `package.json` `name`, `description`, and `version` (e.g. `2.0.0`) to GitHub Activity Logger
+- [x] Add pm2 app `github-activity-logger` in repo `ecosystem.config.js` (`PORT=3040`, `HOST=127.0.0.1`)
+- [x] Default `PORT` to `3040` and `HOST` to `127.0.0.1` in `server.js` and `.env.template`
+- [x] Set service display name in startup logs and `GET /health` version to `2.0.0`
 
 ### Story R0.2: Documentation and references
 
-- [ ] Rewrite `README.md` for v2 purpose (local ingest, SQLite, Devra API, pm2 on 3040)
-- [ ] Add “formerly GitHub Notion Logger” note in README for search/bookmarks
-- [ ] Point README to `REWORK_PLAN.md`, `rework-task-list.md`, and Devra connection doc
-- [ ] Archive or supersede v1-centric docs (`docs/API_V2_DOCS.md`, Epic 9/10 docs) — move to archive with v1 code or add top banner “legacy v1”
+- [x] Rewrite `README.md` for v2 purpose (local ingest, SQLite, Devra API, pm2 on 3040)
+- [x] Add “formerly GitHub Notion Logger” note in README for search/bookmarks
+- [x] Point README to `REWORK_PLAN.md`, `rework-task-list.md`, and Devra connection doc
+- [x] Archive or supersede v1-centric docs (`docs/API_V2_DOCS.md`, Epic 9/10 docs) — move to archive with v1 code or add top banner “legacy v1”
 
 ### Story R0.3: User-facing strings and integrations
 
-- [ ] Replace “GitHub Notion Logger” / “GNL” product labels in remaining hot-path code and HTML titles (keep `gnl-assistant` name only inside archived tree until removed)
-- [ ] Update Switchboard service label to `github-activity-logger` when registering port 3040
-- [ ] Update Devra-facing env var docs if any copy still says “Notion Logger” (contract doc already says GNL — optional alias note)
-- [ ] `- [>]` Optional later: rename git repo / folder `github-notion-logger` → `github-activity-logger` (update Switchboard paths, pm2 `cwd`, Devra doc paths)
+- [x] Replace “GitHub Notion Logger” / “GNL” product labels in remaining hot-path code and HTML titles (keep `gnl-assistant` name only inside archived tree until removed)
+- [>] Update Switchboard service label to `github-activity-logger` when registering port 3040 (G3)
+- [>] Optional later: rename git repo / folder `github-notion-logger` → `github-activity-logger`
 
 ---
 
