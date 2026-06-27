@@ -1,3 +1,5 @@
+> **Archived v1 API docs.** Product is now **GitHub Activity Logger (GAL)**. Active contract: `../../docs/API_V2_DOCS.md` and Devra `Docs/github-logger-connection.md`.
+
 # GitHub Notion Logger (GNL) API Reference
 
 Complete API documentation for the GitHub Notion Logger service. This document provides comprehensive information about all available endpoints, request/response formats, authentication, and usage examples.

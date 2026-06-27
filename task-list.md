@@ -1,3 +1,5 @@
+> **Historical v1.** Product was **GitHub Notion Logger (GNL)**. Superseded by **GitHub Activity Logger (GAL)** — see `REWORK_PLAN.md` and `rework-task-list.md`. Do not extend this list for v2 work.
+
 # GitHub Notion Logger - Product Task List
 
 ## Project Metadata

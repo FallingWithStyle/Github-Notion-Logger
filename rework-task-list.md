@@ -1,6 +1,6 @@
 # GitHub Activity Logger — Rework Task List
 
-Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product direction with a local commit-ingest service and Devra read API.
+Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger / GNL) product direction with **GitHub Activity Logger (GAL)**.
 
 ## Project Metadata
 
@@ -20,7 +20,7 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 
 ---
 
-## Epic R0: Identity — GitHub Notion Logger → GitHub Activity Logger
+## Epic R0: Identity — GitHub Notion Logger / GNL → GitHub Activity Logger (GAL)
 
 **Goal**: Rename the product everywhere that matters; repo folder `github-notion-logger` may stay for now to avoid path churn.
 
@@ -40,8 +40,9 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 
 ### Story R0.3: User-facing strings and integrations
 
-- [x] Replace “GitHub Notion Logger” / “GNL” product labels in remaining hot-path code and HTML titles (keep `gnl-assistant` name only inside archived tree until removed)
-- [x] Update Switchboard service label to `github-activity-logger` when registering port 3040 (G3)
+- [x] Replace “GitHub Notion Logger” / “GNL” product labels in remaining hot-path code and HTML titles
+- [x] GNL → GAL in `REWORK_PLAN.md`, Devra connection docs, Switchboard (`github-activity-logger` on 3040)
+- [x] Remove archived `gnl-assistant` from Switchboard pm2 configs
 - [>] Optional later: rename git repo / folder `github-notion-logger` → `github-activity-logger`
 
 ---
@@ -71,7 +72,8 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 - [x] Move `services/llama-hub-service.js`, `services/ai-*` (cache, context, session, circuit-breaker, etc.) → archive
 - [x] Move `models/ai-models.js` → archive
 - [x] Move `config/start-gnl-assistant.sh` → archive
-- [x] Remove `gnl-assistant` from repo `ecosystem.config.js` hot path (Switchboard archive in Story A.6)
+- [x] Remove `gnl-assistant` from repo `ecosystem.config.js` hot path
+- [x] Remove `gnl-assistant` from Switchboard pm2 configs (archived to `archived-configs/`)
 
 ### Story A.4: Epic 9/10 API and services
 
@@ -112,7 +114,7 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 
 ### Story A.9: Switchboard cleanup for archived v1
 
-- [>] Remove `gnl-assistant` from `../Switchboard/ecosystem-all.config.js` (optional — record keeping)
+- [x] Remove `gnl-assistant` from `../Switchboard/ecosystem-all.config.js` and `config.json`
 - [x] Mark port `4250` gnl-assistant archived in Switchboard `LOCALHOSTS_LIST.md`
 
 ---

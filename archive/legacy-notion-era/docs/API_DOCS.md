@@ -1,3 +1,5 @@
+> **Archived v1 API docs.** Product is now **GitHub Activity Logger (GAL)**. Active contract: `../../docs/API_V2_DOCS.md`.
+
 # GitHub Notion Logger API Documentation
 
 ## Overview

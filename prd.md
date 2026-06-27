@@ -1,3 +1,5 @@
+> **Historical v1.** Product was **GitHub Notion Logger (GNL)**. Superseded by **GitHub Activity Logger (GAL)** — see `REWORK_PLAN.md`.
+
 # GitHub Notion Logger - PRD
 
 ## Project Metadata

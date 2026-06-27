@@ -1,3 +1,5 @@
+> **Archived v1 Epic 9 reference.** Product is now **GitHub Activity Logger (GAL)**.
+
 # Epic 9 Quick Reference Card
 
 ## 🚀 **Essential API Endpoints**

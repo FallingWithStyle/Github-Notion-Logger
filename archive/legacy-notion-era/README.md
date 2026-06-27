@@ -17,7 +17,7 @@ This tree is **not mounted** by `server.js`. Kept for reference, occasional read
 | **Scripts** | `wanderlog-processor.js`, Notion maintenance, backfill (`backfill.js`), dedupe, PRD processors |
 | **Deploy** | `deploy/fly.toml`, `deploy/Dockerfile`, `test-deploy.js` |
 | **Tests** | v1 Jest suite (Epic 9/10, AI, Notion, Wanderlog) |
-| **Docs** | Epic 9/10 architecture, GNL assistant, Llama hub docs |
+| **Docs** | Epic 9/10 architecture, GNL assistant, Llama hub; v1 API reference (`API_REFERENCE.md`, `API_DOCS.md`, `QUICK_REFERENCE.md` moved from `docs/`) |
 
 ## v1 entry points removed from hot path
 

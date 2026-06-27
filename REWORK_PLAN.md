@@ -1,7 +1,9 @@
-# GNL Rework Plan
+# GAL Rework Plan
 
 **Created:** 2026-06-27  
-**Purpose:** Handoff document for reworking github-notion-logger into a stable, focused commit-activity service that Devra v3.1 can consume read-only.
+**Purpose:** Handoff document for reworking **GitHub Activity Logger (GAL)** in `../github-notion-logger` into a stable, focused commit-activity service that Devra v3.1 can consume read-only.
+
+**Abbreviation:** **GAL** = GitHub Activity Logger (formerly GNL / GitHub Notion Logger).
 
 **Devra connection contract (consumer side):** `../Devra/Docs/github-logger-connection.md`
 
@@ -13,16 +15,16 @@
 
 **Target:** **GitHub Activity Logger** — a local service that records commits per repo/project and exposes a small read API. Personal utility; **Devra is the primary consumer** for cross-project reports, Q&A, and prioritization.
 
-| GNL owns | Devra owns |
+| GAL owns | Devra owns |
 |---|---|
 | GitHub webhook + backfill | Cross-project Q&A, prioritization, reports |
 | Local DB (commits, projects) | Task lists, PRDs, git on disk, CCLIVE sessions |
 | `workspacePath` → folder mapping | Joining logger data with project scanner |
 | Read API (JSON) | **Visual layer** — `devra report`, `devra ask`, `devra focus` |
 
-**Rule:** If Devra can answer it with Cursor Auto + richer context, remove it from GNL (AI chat, Llama assistant, project-health scoring that duplicates Devra).
+**Rule:** If Devra can answer it with Cursor Auto + richer context, remove it from GAL (AI chat, Llama assistant, project-health scoring that duplicates Devra).
 
-**Visual layer:** Treat **Devra as the dashboard** for cross-project work history. GNL is data tracking + API, not a product UI. A dedicated “what did I ship?” view belongs in Devra, not a revived GNL multi-page app.
+**Visual layer:** Treat **Devra as the dashboard** for cross-project work history. GAL is data tracking + API, not a product UI. A dedicated “what did I ship?” view belongs in Devra, not a revived v1 multi-page app.
 
 ---
 
@@ -69,7 +71,7 @@ Existing heatmap stack — **leave as-is during rework**; do not rebuild, remove
 
 - **Deprioritized** — no new heatmap UI, no G5 rebuild, no `GET /api/activity/daily` unless needed later.
 - **Frozen** — keep writing `commit-log.json` from webhook alongside SQLite ingest if the legacy page should keep working; do not refactor the heatmap to call contract endpoints.
-- **Revivable** — SQLite + per-commit rows make a future heatmap (GNL or Devra) easier; optional `/api/activity/daily` remains documented in the Devra contract as nice-to-have, not a rework deliverable.
+- **Revivable** — SQLite + per-commit rows make a future heatmap (GAL or Devra) easier; optional `/api/activity/daily` remains documented in the Devra contract as nice-to-have, not a rework deliverable.
 
 ---
 
@@ -302,8 +304,8 @@ GitHub must reach the webhook URL. Options while Fly is retired:
 | Port `3040` in reserved range `3040-3049` | **Available** (DevSquire retired 2026-06-25) |
 | Devra contract `GITHUB_LOGGER_URL` | `http://127.0.0.1:3040` — **matches** |
 | Conflicts with Switchboard dashboard | **None** (Switchboard uses `8080`) |
-| Legacy GNL main server | Was `8080` in code (conflicts with Switchboard) and `8100` in archived Switchboard doc — **both wrong for rework** |
-| `gnl-assistant` on `4250` | Stays in Switchboard until archived; **not** the reworked logger |
+| Legacy v1 main server | Was `8080` in code (conflicts with Switchboard) and `8100` in archived Switchboard doc — **both wrong for rework** |
+| `gnl-assistant` on `4250` | Archived with v1; **not** the reworked GAL service |
 
 **Register on G3:**
 
@@ -346,7 +348,7 @@ Placing `3040` adjacent to Devra (`3030-3039`) is intentional — same machine, 
 | **Legacy heatmap** | Frozen on existing stack; revivable later from SQLite if wanted |
 | **Fly.io (`notion-logger`)** | **Retire after webhook ingress is replaced** — do not rebuild the reworked service on Fly by default |
 
-**Do not host a reworked GNL dashboard on Fly.** Steady-state UI is Devra; the legacy heatmap may keep working locally until you retire or rebuild it.
+**Do not host a reworked v1 dashboard on Fly.** Steady-state UI is Devra; the legacy heatmap may keep working locally until you retire or rebuild it.
 
 **Transitional plan for Fly:**
 
@@ -364,7 +366,7 @@ Placing `3040` adjacent to Devra (`3030-3039`) is intentional — same machine, 
 
 ## Phased rework
 
-| Phase | GNL work | Devra |
+| Phase | GAL work | Devra |
 |---|---|---|
 | **G1** | SQLite schema + webhook → DB only; stop Notion on ingest; archive legacy routes from hot path; **keep** `commit-log.json` aggregation for frozen heatmap | Parallel (v3.0, no logger dependency) |
 | **G2** | **GitHub API backfill** → per-commit rows in SQLite; optional Notion one-time export for gap-fill; use `commit-log.json` only to validate aggregate counts | — |
@@ -374,7 +376,7 @@ Placing `3040` adjacent to Devra (`3030-3039`) is intentional — same machine, 
 | **G7** | Webhook ingress cutover; decommission Fly `notion-logger` | — |
 | **G8** *(backlog)* | Heatmap revival — new UI on contract API or Devra; only if wanted | — |
 
-**Ship G1–G3 before Notion export or Fly retirement.** No new GNL UI work before G8 backlog.
+**Ship G1–G3 before Notion export or Fly retirement.** No new GAL UI work before G8 backlog.
 
 ---
 
@@ -393,7 +395,7 @@ Cross-project “what did I ship?” views: use **Devra** or `curl` the contract
 
 ## Overlap with Devra (avoid duplication)
 
-| Capability | GNL | Devra |
+| Capability | GAL | Devra |
 |---|---|---|
 | Commit history / shipped work | **Store + API** | Read via client |
 | Cross-project visual / reports | No (legacy heatmap frozen) | **`devra report`**, ask, focus |
@@ -403,7 +405,7 @@ Cross-project “what did I ship?” views: use **Devra** or `curl` the contract
 | AI Q&A | No | Cursor Auto |
 | Project health from PRD analysis | No | Scanner + ask |
 
-GNL = **dumb storage, stable API**. Devra = **smart synthesis**.
+GAL = **dumb storage, stable API**. Devra = **smart synthesis**.
 
 ---
 
@@ -444,3 +446,4 @@ When **G3** is complete, Devra Phase 3 (`github-logger-client.js`) can integrate
 | 2026-06-27 | Refinements: G2 backfill reality, route clean-cut, port 3040 Switchboard verification, ingest edge cases, G3 acceptance curls, Fly.io hosting decision, webhook ingress options |
 | 2026-06-27 | Devra as visual layer; heatmap deprioritized (legacy stack frozen, G8 backlog) |
 | 2026-06-27 | Added `rework-task-list.md` walkthrough (R0 rename, Epic A v1 archive, G1–G8) |
+| 2026-06-27 | GNL → GAL naming pass in plan and cross-repo docs |

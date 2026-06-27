@@ -1,4 +1,4 @@
-# GitHub Notion Logger API v2 Documentation
+# GitHub Activity Logger (GAL) — API v2 Documentation (archived Epic 9)
 
 > **Legacy v1.** This API is not extended for Devra. v2 rework uses the contract in [`../Devra/Docs/github-logger-connection.md`](../../Devra/Docs/github-logger-connection.md). See [`REWORK_PLAN.md`](../REWORK_PLAN.md).
 

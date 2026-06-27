@@ -1,5 +1,5 @@
 /**
- * Color Palette System for GitHub Notion Logger
+ * Color Palette System for GitHub Activity Logger (heatmap)
  * 
  * Generates category-based color bands and assigns colors to projects.
  * Each project category gets its own "color band" with distinct base hues.
