@@ -52,68 +52,68 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 
 ### Story A.1: Archive layout and inventory
 
-- [ ] Create `archive/legacy-notion-era/README.md` — what moved, why, date, how to run read-only if needed
-- [ ] Snapshot v1 behavior note: last known Fly URL, Notion DB IDs (references only, no secrets in git)
-- [ ] List v1 entry points removed from hot path in archive README
+- [x] Create `archive/legacy-notion-era/README.md` — what moved, why, date, how to run read-only if needed
+- [x] Snapshot v1 behavior note: last known Fly URL, Notion DB IDs (references only, no secrets in git)
+- [x] List v1 entry points removed from hot path in archive README
 
 ### Story A.2: Notion and sync stack
 
-- [ ] Move `notion.js` → `archive/legacy-notion-era/`
-- [ ] Move `services/notion/` → `archive/legacy-notion-era/services/notion/`
-- [ ] Move `services/data-consistency-service.js` → archive
-- [ ] Move `scripts/wanderlog-processor.js` and wanderlog one-off scripts → archive (or `archive/legacy-notion-era/scripts/`)
-- [ ] Move Notion-only maintenance scripts (`notion-audit.js`, `clear-recent-notion.js`, etc.) → archive
+- [x] Move `notion.js` → `archive/legacy-notion-era/`
+- [x] Move `services/notion/` → `archive/legacy-notion-era/services/notion/`
+- [x] Move `services/data-consistency-service.js` → archive
+- [x] Move `scripts/wanderlog-processor.js` and wanderlog one-off scripts → archive (or `archive/legacy-notion-era/scripts/`)
+- [x] Move Notion-only maintenance scripts (`notion-audit.js`, `clear-recent-notion.js`, etc.) → archive
 
 ### Story A.3: AI assistant and proxy
 
-- [ ] Move `gnl-assistant.js` → archive
-- [ ] Move `routes/ai-chat.js`, `routes/ai-proxy.js` → archive
-- [ ] Move `services/llama-hub-service.js`, `services/ai-*` (cache, context, session, circuit-breaker, etc.) → archive
-- [ ] Move `models/ai-models.js` → archive
-- [ ] Move `config/start-gnl-assistant.sh` → archive
-- [ ] Remove `gnl-assistant` from repo `ecosystem.config.js` hot path (Switchboard archive in Story A.6)
+- [x] Move `gnl-assistant.js` → archive
+- [x] Move `routes/ai-chat.js`, `routes/ai-proxy.js` → archive
+- [x] Move `services/llama-hub-service.js`, `services/ai-*` (cache, context, session, circuit-breaker, etc.) → archive
+- [x] Move `models/ai-models.js` → archive
+- [x] Move `config/start-gnl-assistant.sh` → archive
+- [x] Remove `gnl-assistant` from repo `ecosystem.config.js` hot path (Switchboard archive in Story A.6)
 
 ### Story A.4: Epic 9/10 API and services
 
-- [ ] Move `routes/api-v2.js` → archive
-- [ ] Move `routes/api-remaining.js` (legacy portions) → archive or split; keep only what v2 still needs until replaced
-- [ ] Move `routes/prd-stories.js`, `routes/weekly-planning.js`, `routes/project-progress.js` → archive
-- [ ] Move `services/project-management-service.js`, `services/progress-tracking-service.js` → archive
-- [ ] Move `routes/api-docs.js` (v1 API catalog) → archive; replace with short v2 note in README if needed
+- [x] Move `routes/api-v2.js` → archive
+- [x] Move `routes/api-remaining.js` (legacy portions) → archive or split; keep only what v2 still needs until replaced
+- [x] Move `routes/prd-stories.js`, `routes/weekly-planning.js`, `routes/project-progress.js` → archive
+- [x] Move `services/project-management-service.js`, `services/progress-tracking-service.js` → archive
+- [x] Move `routes/api-docs.js` (v1 API catalog) → archive; replace with short v2 note in README if needed
 
 ### Story A.5: Epic 9/10 UI (multi-page)
 
-- [ ] Move `public/progress-v2.html`, `public/js/progress-v2/` → archive
-- [ ] Move `public/projects-v2.html`, `public/js/projects-v2/` → archive
-- [ ] Move `public/ai-chat.html`, `public/js/ai-chat.js` → archive
-- [ ] Move `public/projects.html`, `public/js/projects/` → archive if superseded (keep root heatmap — Story A.7)
-- [ ] Move `public/week.html`, `public/js/week/` → archive
-- [ ] Move associated CSS-only pages tied to archived UIs → archive
+- [x] Move `public/progress-v2.html`, `public/js/progress-v2/` → archive
+- [x] Move `public/projects-v2.html`, `public/js/projects-v2/` → archive
+- [x] Move `public/ai-chat.html`, `public/js/ai-chat.js` → archive
+- [x] Move `public/projects.html`, `public/js/projects/` → archive if superseded (keep root heatmap — Story A.7)
+- [x] Move `public/week.html`, `public/js/week/` → archive
+- [x] Move associated CSS-only pages tied to archived UIs → archive
 
 ### Story A.6: Fly.io and deploy artifacts
 
-- [ ] Move `fly.toml`, `config/fly.toml`, `Dockerfile`, `test-deploy.js` → `archive/legacy-notion-era/deploy/`
-- [ ] Document Fly app `notion-logger` decommission in archive README (actual destroy in Epic G7)
+- [x] Move `fly.toml`, `config/fly.toml`, `Dockerfile`, `test-deploy.js` → `archive/legacy-notion-era/deploy/`
+- [x] Document Fly app `notion-logger` decommission in archive README (actual destroy in Epic G7)
 
 ### Story A.7: Keep on hot path (do not archive)
 
-- [ ] **Keep** root heatmap: `public/index.html` (or equivalent), `public/js/index/`, `routes/static.js` `/commit-log.json`
-- [ ] **Keep** `services/server/commit-processing-service.js` for frozen `commit-log.json` aggregation
-- [ ] **Keep** `scripts/timezone-config.js` for heatmap daily buckets
-- [ ] **Keep** `routes/webhook.js` (rewire to SQLite in G1, retain JSON side-write if desired)
+- [x] **Keep** root heatmap: `public/index.html` (or equivalent), `public/js/index/`, `routes/static.js` `/commit-log.json`
+- [x] **Keep** `services/server/commit-processing-service.js` for frozen `commit-log.json` aggregation
+- [x] **Keep** `scripts/timezone-config.js` for heatmap daily buckets
+- [x] **Keep** `routes/webhook.js` (rewire to SQLite in G1, retain JSON side-write if desired)
 
 ### Story A.8: Wire hot path after archive
 
-- [ ] Slim `server.js` — remove imports for archived modules
-- [ ] Slim `routes/index.js` — mount only webhook, `api-devra`, static/heatmap
-- [ ] Quarantine v1 tests: move `tests/test-epic9-*`, `tests/test-ai-*`, `tests/test-notion-*`, etc. → `archive/legacy-notion-era/tests/` or exclude in `jest.config.js`
-- [ ] Verify `npm test` runs only v2-relevant tests (or minimal smoke) after quarantine
-- [ ] Smoke: server starts on 3040, `GET /health`, webhook route exists, heatmap page loads locally
+- [x] Slim `server.js` — remove imports for archived modules
+- [x] Slim `routes/index.js` — mount webhook, heatmap API, timezone, color-palette, static
+- [x] Quarantine v1 tests: move `tests/test-epic9-*`, `tests/test-ai-*`, `tests/test-notion-*`, etc. → `archive/legacy-notion-era/tests/` or exclude in `jest.config.js`
+- [x] Verify `npm test` runs only v2-relevant tests (or minimal smoke) after quarantine
+- [x] Smoke: server starts on 3040, `GET /health`, webhook route exists, heatmap page loads locally
 
 ### Story A.9: Switchboard cleanup for archived v1
 
-- [ ] Remove or archive `gnl-assistant` entry from `../Switchboard/ecosystem-all.config.js` and `ecosystems/gnl-assistant.config.js` when assistant is archived
-- [ ] Remove port `4250` gnl-assistant from active Switchboard docs when retired (or mark archived)
+- [>] Remove `gnl-assistant` from `../Switchboard/ecosystem-all.config.js` (optional — record keeping)
+- [x] Mark port `4250` gnl-assistant archived in Switchboard `LOCALHOSTS_LIST.md`
 
 ---
 
@@ -132,8 +132,8 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 
 - [ ] Add `ingest/commit-parser.js` — normalize webhook commit shape, insignificant-commit filter
 - [ ] Refactor webhook handler to insert into SQLite via `db/store.js`
-- [ ] Set `NOTION_SYNC=false` in `.env.template`; gate any remaining Notion calls behind env flag during transition
-- [ ] Remove `logCommitsToNotion` from webhook hot path
+- [x] Set `NOTION_SYNC=false` in `.env.template`; gate any remaining Notion calls behind env flag during transition
+- [x] Remove `logCommitsToNotion` from webhook hot path (gated behind `NOTION_SYNC=true`)
 - [ ] Keep `updateCommitLog()` call after SQLite insert if frozen heatmap should update (document in README)
 
 ### Story G1.3: Project config
@@ -254,8 +254,8 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger) product
 
 ## Completion checklist (v2 shippable)
 
-- [ ] Epic R0: Product renamed to **GitHub Activity Logger** in package, README, logs, Switchboard
-- [ ] Epic A: v1 archived under `archive/legacy-notion-era/`; hot path starts clean
+- [x] Epic R0: Product renamed to **GitHub Activity Logger** in package, README, logs, Switchboard
+- [x] Epic A: v1 archived under `archive/legacy-notion-era/`; hot path starts clean
 - [ ] Epic G1–G3: SQLite ingest, backfill, four Devra endpoints on **3040**
 - [ ] Epic G4: Contract tests green; webhook idempotent
 - [ ] Epic G7: Fly retired; webhooks hit local service

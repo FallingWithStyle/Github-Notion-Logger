@@ -13,7 +13,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
   try {
     console.log('🎨 Fetching color palette statistics...');
     
-    const { getColorStats } = require('../color-palette');
+    const { getColorStats } = require('../scripts/color-palette');
     const stats = await getColorStats();
     
     console.log(`🎨 Retrieved color palette statistics: ${stats.totalProjects} projects`);
@@ -40,7 +40,7 @@ router.get('/project/:projectName', asyncHandler(async (req, res) => {
     
     console.log(`🎨 Fetching color for project: ${projectName}`);
     
-    const { getProjectColor } = require('../color-palette');
+    const { getProjectColor } = require('../scripts/color-palette');
     const color = await getProjectColor(projectName);
     
     console.log(`🎨 Retrieved color for ${projectName}: ${color}`);
@@ -78,7 +78,7 @@ router.put('/project/:projectName', asyncHandler(async (req, res) => {
     
     console.log(`🎨 Updating color for project: ${projectName} to ${color}`);
     
-    const { updateProjectColor } = require('../color-palette');
+    const { updateProjectColor } = require('../scripts/color-palette');
     const result = await updateProjectColor(projectName, color);
     
     console.log(`✅ Updated color for ${projectName}: ${result.color}`);
@@ -105,7 +105,7 @@ router.post('/generate', asyncHandler(async (req, res) => {
     
     console.log(`🎨 Generating color palette${category ? ` for category: ${category}` : ''}${hue ? ` with hue: ${hue}` : ''}...`);
     
-    const { generatePaletteFromHue } = require('../color-palette');
+    const { generatePaletteFromHue } = require('../scripts/color-palette');
     const palette = await generatePaletteFromHue(category, hue);
     
     console.log(`✅ Generated color palette with ${palette.length} colors`);
@@ -134,7 +134,7 @@ router.post('/migrate', asyncHandler(async (req, res) => {
   try {
     console.log('🎨 Migrating existing projects to new color system...');
     
-    const { migrateExistingProjects } = require('../color-palette');
+    const { migrateExistingProjects } = require('../scripts/color-palette');
     const result = await migrateExistingProjects();
     
     console.log(`✅ Migrated ${result.migrated} projects, ${result.skipped} skipped`);
@@ -161,7 +161,7 @@ router.get('/category/:category', asyncHandler(async (req, res) => {
     
     console.log(`🎨 Fetching colors for category: ${category}`);
     
-    const { getCategoryColors } = require('../color-palette');
+    const { getCategoryColors } = require('../scripts/color-palette');
     const colors = await getCategoryColors(category);
     
     console.log(`🎨 Retrieved ${colors.length} colors for category: ${category}`);
@@ -198,7 +198,7 @@ router.post('/update-category-colors', asyncHandler(async (req, res) => {
     
     console.log(`🎨 Updating colors for category: ${category}`);
     
-    const { updateCategoryColors } = require('../color-palette');
+    const { updateCategoryColors } = require('../scripts/color-palette');
     const result = await updateCategoryColors(category, colors);
     
     console.log(`✅ Updated colors for category: ${category}`);
@@ -223,7 +223,7 @@ router.post('/reset-colors', asyncHandler(async (req, res) => {
   try {
     console.log('🎨 Resetting all colors...');
     
-    const { resetAllColors } = require('../color-palette');
+    const { resetAllColors } = require('../scripts/color-palette');
     const result = await resetAllColors();
     
     console.log(`✅ Reset ${result.reset} colors`);

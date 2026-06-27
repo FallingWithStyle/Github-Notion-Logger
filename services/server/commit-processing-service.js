@@ -1,8 +1,10 @@
 const fs = require('fs');
 const crypto = require('crypto');
+const path = require('path');
 const timezoneConfig = require('../../scripts/timezone-config');
 
-const COMMIT_LOG_PATH = './data/commit-log.json';
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../../data');
+const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
 
 // Function to update commit log with new data
 async function updateCommitLog(newCommits, repoName, broadcastEvent) {
