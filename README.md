@@ -63,11 +63,26 @@ Register with Switchboard port **3040** (see G3 in `rework-task-list.md`).
 | `PORT` | HTTP port (default `3040`) |
 | `GITHUB_WEBHOOK_SECRET` | Webhook HMAC verification |
 | `GITHUB_TOKEN` | Backfill / GitHub API |
-| `DATA_DIR` | Data directory (`./data`) |
+| `DATA_DIR` | Data directory (`./data`; SQLite at `activity.db`) |
 | `GITHUB_LOGGER_TOKEN` | Optional bearer auth for read API |
 | `NOTION_SYNC` | `false` during rework |
 
 Devra connects with `GITHUB_LOGGER_URL=http://127.0.0.1:3040` — see [`../Devra/Docs/github-logger-connection.md`](../Devra/Docs/github-logger-connection.md).
+
+### Project mapping (`config/projects.json`)
+
+Monitored repos are defined in `config/projects.json`. Each entry needs:
+
+| Field | Purpose |
+|-------|---------|
+| `id` | Stable slug used in SQLite and the Devra API |
+| `name` | Display name |
+| `repo` | GitHub `owner/repo` — must match webhook `repository.full_name` |
+| `workspacePath` | Folder name under `~/Documents/Projects/Dev` — **Devra join key** |
+
+Projects are upserted into SQLite on every startup. Webhooks for repos **not** in this file are accepted (202) but commits are logged and skipped until the repo is added.
+
+The frozen heatmap (`commit-log.json`) still updates alongside SQLite ingest for configured repos.
 
 ## Project structure (target)
 

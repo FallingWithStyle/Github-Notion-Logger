@@ -1,8 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
-const path = require('path');
-const fs = require('fs');
 const timeout = require('connect-timeout');
 
 dotenv.config();
@@ -45,10 +43,9 @@ app.use((req, res, next) => {
   next();
 });
 
-const DATA_DIR = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data'));
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+const { initDb, seedProjectsFromConfig, closeDb, getDbPath } = require('./db/store');
+initDb();
+seedProjectsFromConfig();
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: SERVICE_VERSION });
@@ -78,10 +75,14 @@ const PORT = parseInt(process.env.PORT, 10) || 3040;
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`🚀 ${SERVICE_NAME} v${SERVICE_VERSION} listening on http://${HOST}:${PORT}`);
+  if (PORT === 8080) {
+    console.warn('⚠️  PORT=8080 is legacy v1 — v2 default is 3040 (pm2 ecosystem sets this automatically)');
+  }
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔑 Webhook secret configured: ${process.env.GITHUB_WEBHOOK_SECRET ? 'Yes' : 'No'}`);
   console.log(`🐙 GitHub token configured: ${process.env.GITHUB_TOKEN ? 'Yes' : 'No'}`);
   console.log(`📝 Notion sync: ${process.env.NOTION_SYNC === 'true' ? 'enabled (legacy)' : 'disabled'}`);
+  console.log(`🗄️  SQLite: ${getDbPath()}`);
 });
 
 server.timeout = 30000;
@@ -90,7 +91,10 @@ server.headersTimeout = 66000;
 
 function shutdown(signal) {
   console.log(`🛑 Received ${signal}, shutting down gracefully...`);
-  server.close(() => process.exit(0));
+  server.close(() => {
+    closeDb();
+    process.exit(0);
+  });
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));

@@ -1,5 +1,7 @@
 const express = require('express');
 const { updateCommitLog, verifySignature, asyncHandler } = require('../services/server');
+const { getProjectByRepo, insertCommits } = require('../db/store');
+const { parseWebhookCommits } = require('../ingest/commit-parser');
 
 const router = express.Router();
 const NOTION_SYNC = process.env.NOTION_SYNC === 'true';
@@ -19,17 +21,33 @@ router.post('/webhook', asyncHandler(async (req, res) => {
 
   try {
     const payload = req.body;
-    const commits = payload.commits || [];
+    const rawCommits = payload.commits || [];
     const repo = payload.repository.full_name;
 
-    res.status(202).json({ accepted: true, commits: commits.length, repo });
+    res.status(202).json({ accepted: true, commits: rawCommits.length, repo });
 
     setImmediate(async () => {
-      console.log(`📦 Background processing ${commits.length} commits from ${repo}`);
+      console.log(`📦 Background processing ${rawCommits.length} commits from ${repo}`);
       try {
+        const project = getProjectByRepo(repo);
+        if (!project) {
+          console.warn(`⚠️ Unknown repo "${repo}" — add to config/projects.json to ingest commits`);
+          return;
+        }
+
+        const { commits, allCommits, filtered, total } = parseWebhookCommits(rawCommits);
+        if (filtered > 0) {
+          console.log(`🔍 Filtered ${filtered} insignificant commit(s) from ${total} normalized (SQLite only)`);
+        }
+
+        if (commits.length > 0) {
+          const { inserted, skipped } = insertCommits(commits, project.id);
+          console.log(`💾 SQLite: ${inserted} inserted, ${skipped} duplicate(s) skipped for ${project.id}`);
+        }
+
         if (NOTION_SYNC) {
           const notion = getNotionLogger();
-          const notionPromise = notion.logCommitsToNotion(commits, repo);
+          const notionPromise = notion.logCommitsToNotion(rawCommits, repo);
           const notionTimeout = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Notion API timeout')), 25000)
           );
@@ -37,9 +55,15 @@ router.post('/webhook', asyncHandler(async (req, res) => {
           console.log(`✅ Notion logging completed: ${result.processed} processed, ${result.skipped} skipped`);
         }
 
-        if (commits.length > 0) {
-          const repoName = repo.split('/').pop();
-          const updatePromise = updateCommitLog(commits, repoName);
+        // Legacy frozen heatmap — all valid commits, unfiltered (pre-G1 behavior)
+        if (allCommits.length > 0) {
+          const heatmapCommits = allCommits.map((c) => ({
+            id: c.sha,
+            message: c.message,
+            timestamp: c.committedAt,
+            url: c.url
+          }));
+          const updatePromise = updateCommitLog(heatmapCommits, project.name);
           const updateTimeout = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Commit log update timeout')), 10000)
           );

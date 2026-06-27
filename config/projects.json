@@ -1,0 +1,86 @@
+[
+  {
+    "id": "dcc-population-tracker",
+    "name": "DCC-Population-Tracker",
+    "repo": "FallingWithStyle/dcc-population-tracker",
+    "workspacePath": "DCC-Population-Tracker"
+  },
+  {
+    "id": "github-notion-logger",
+    "name": "Github-Notion-Logger",
+    "repo": "FallingWithStyle/Github-Notion-Logger",
+    "workspacePath": "github-notion-logger"
+  },
+  {
+    "id": "devra",
+    "name": "Devra",
+    "repo": "FallingWithStyle/Devra",
+    "workspacePath": "Devra"
+  },
+  {
+    "id": "magic-quill",
+    "name": "Magic-Quill",
+    "repo": "FallingWithStyle/Magic-Quill",
+    "workspacePath": "Magic Quill"
+  },
+  {
+    "id": "cclive",
+    "name": "CCLIVE",
+    "repo": "FallingWithStyle/CCLIVE",
+    "workspacePath": "CCLIVE"
+  },
+  {
+    "id": "signet",
+    "name": "Signet",
+    "repo": "FallingWithStyle/Signet",
+    "workspacePath": "Signet"
+  },
+  {
+    "id": "residual",
+    "name": "Residual",
+    "repo": "FallingWithStyle/Residual",
+    "workspacePath": "Residual"
+  },
+  {
+    "id": "devsquire",
+    "name": "DevSquire",
+    "repo": "FallingWithStyle/DevSquire",
+    "workspacePath": "DevSquire"
+  },
+  {
+    "id": "find-my-domain",
+    "name": "Find-My-Domain",
+    "repo": "FallingWithStyle/Find-My-Domain",
+    "workspacePath": "Find My Domain"
+  },
+  {
+    "id": "kitch",
+    "name": "Kitch",
+    "repo": "FallingWithStyle/Kitch",
+    "workspacePath": "Kitch"
+  },
+  {
+    "id": "audventr",
+    "name": "Audventr",
+    "repo": "FallingWithStyle/Audventr",
+    "workspacePath": "Audventr"
+  },
+  {
+    "id": "remoodle",
+    "name": "Remoodle",
+    "repo": "FallingWithStyle/remoodle",
+    "workspacePath": "Remoodle"
+  },
+  {
+    "id": "dice-joust",
+    "name": "Dice-Joust",
+    "repo": "FallingWithStyle/Dice-Joust",
+    "workspacePath": "Dice Joust"
+  },
+  {
+    "id": "ideatr",
+    "name": "Ideatr",
+    "repo": "FallingWithStyle/Ideatr",
+    "workspacePath": "Ideatr"
+  }
+]

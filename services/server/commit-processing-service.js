@@ -2,9 +2,9 @@ const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
 const timezoneConfig = require('../../scripts/timezone-config');
+const { getDataDir } = require('../../db/store');
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../../data');
-const COMMIT_LOG_PATH = path.join(DATA_DIR, 'commit-log.json');
+const COMMIT_LOG_PATH = path.join(getDataDir(), 'commit-log.json');
 
 // Function to update commit log with new data
 async function updateCommitLog(newCommits, repoName, broadcastEvent) {
@@ -82,8 +82,13 @@ async function updateCommitLog(newCommits, repoName, broadcastEvent) {
   }
 }
 
-function verifySignature(req, secret) {
+function verifySignature(req, secret = process.env.GITHUB_WEBHOOK_SECRET) {
   try {
+    if (!secret) {
+      console.log('❌ No webhook secret configured (GITHUB_WEBHOOK_SECRET)');
+      return false;
+    }
+
     const signatureHeader = req.headers['x-hub-signature-256'];
     
     if (!signatureHeader) {
