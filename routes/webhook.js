@@ -21,6 +21,11 @@ router.post('/webhook', asyncHandler(async (req, res) => {
 
   try {
     const payload = req.body;
+    if (!payload?.repository?.full_name) {
+      console.warn('⚠️ Webhook missing repository.full_name — ignoring');
+      return res.status(400).json({ error: 'Missing repository in payload' });
+    }
+
     const rawCommits = payload.commits || [];
     const repo = payload.repository.full_name;
 

@@ -33,4 +33,9 @@ describe('commit-parser', () => {
     expect(isSignificantCommit('fix typo')).toBe(false);
     expect(isSignificantCommit('feat: meaningful change here')).toBe(true);
   });
+
+  it('accepts short conventional commits', () => {
+    expect(isSignificantCommit('fix: auth')).toBe(true);
+    expect(isSignificantCommit('Merge pull request #1 from org/branch')).toBe(true);
+  });
 });

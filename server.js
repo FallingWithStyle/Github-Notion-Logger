@@ -51,6 +51,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: SERVICE_VERSION });
 });
 
+const webhookRoutes = require('./routes/webhook');
+app.use('/', webhookRoutes);
+
 const staticRoutes = require('./routes/static');
 app.use('/', staticRoutes);
 

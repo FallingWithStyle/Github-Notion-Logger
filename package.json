@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node server.js",
+    "backfill": "node ingest/backfill.js",
     "build": "echo 'No build step required'",
     "test": "jest",
     "test:watch": "jest --watch",

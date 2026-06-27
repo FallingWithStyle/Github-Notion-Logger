@@ -81,6 +81,92 @@ function getProjectByRepo(repo) {
   return initDb().prepare('SELECT * FROM projects WHERE repo = ? COLLATE NOCASE').get(repo);
 }
 
+function getProjectById(id) {
+  return initDb().prepare('SELECT * FROM projects WHERE id = ?').get(id);
+}
+
+function getMostRecentCommitAt(projectId) {
+  const row = initDb().prepare(
+    'SELECT MAX(committed_at) AS committed_at FROM commits WHERE project_id = ?'
+  ).get(projectId);
+  return row?.committed_at ? new Date(row.committed_at) : null;
+}
+
+function countCommitsInRange(projectId, since, until) {
+  const row = initDb().prepare(`
+    SELECT COUNT(*) AS count FROM commits
+    WHERE project_id = ? AND committed_at >= ? AND committed_at <= ?
+  `).get(projectId, since, until);
+  return row?.count || 0;
+}
+
+function listProjectsWithLastCommit() {
+  return initDb().prepare(`
+    SELECT p.id, p.name, p.repo, p.workspace_path,
+           MAX(c.committed_at) AS last_commit_at
+    FROM projects p
+    LEFT JOIN commits c ON c.project_id = p.id
+    GROUP BY p.id
+    ORDER BY p.name COLLATE NOCASE
+  `).all().map((row) => ({
+    id: row.id,
+    name: row.name,
+    repo: row.repo,
+    workspacePath: row.workspace_path,
+    lastCommitAt: row.last_commit_at || null
+  }));
+}
+
+function getActivityInRange(since, until) {
+  return initDb().prepare(`
+    SELECT p.id, p.name,
+           COUNT(c.sha) AS commit_count,
+           MAX(c.committed_at) AS last_commit_at,
+           (
+             SELECT c2.message FROM commits c2
+             WHERE c2.project_id = p.id
+               AND c2.committed_at >= @since AND c2.committed_at <= @until
+             ORDER BY c2.committed_at DESC
+             LIMIT 1
+           ) AS last_commit_message
+    FROM projects p
+    INNER JOIN commits c ON c.project_id = p.id
+      AND c.committed_at >= @since AND c.committed_at <= @until
+    GROUP BY p.id
+    ORDER BY last_commit_at DESC
+  `).all({ since, until }).map((row) => ({
+    id: row.id,
+    name: row.name,
+    commitCount: row.commit_count,
+    lastCommitAt: row.last_commit_at,
+    lastCommitMessage: row.last_commit_message || null
+  }));
+}
+
+function getProjectCommits(projectId, since, limit) {
+  let sql = `
+    SELECT sha, message, author, committed_at, url
+    FROM commits
+    WHERE project_id = @projectId
+  `;
+  const params = { projectId, limit };
+
+  if (since) {
+    sql += ' AND committed_at >= @since';
+    params.since = since;
+  }
+
+  sql += ' ORDER BY committed_at DESC LIMIT @limit';
+
+  return initDb().prepare(sql).all(params).map((row) => ({
+    sha: row.sha,
+    message: row.message,
+    author: row.author,
+    committedAt: row.committed_at,
+    url: row.url
+  }));
+}
+
 function insertCommit({ sha, projectId, message, author, committedAt, url }) {
   const ingestedAt = new Date().toISOString();
   const result = initDb().prepare(`
@@ -121,6 +207,12 @@ module.exports = {
   initDb,
   seedProjectsFromConfig,
   getProjectByRepo,
+  getProjectById,
+  getMostRecentCommitAt,
+  countCommitsInRange,
+  listProjectsWithLastCommit,
+  getActivityInRange,
+  getProjectCommits,
   insertCommit,
   insertCommits,
   closeDb,

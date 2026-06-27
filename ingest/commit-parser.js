@@ -30,13 +30,15 @@ const INSIGNIFICANT_PATTERNS = [
   /^prettier$/i
 ];
 
+const CONVENTIONAL_PREFIX = /^(feat|fix|docs|chore|refactor|test|style|perf|build|ci)(\([^)]+\))?: .+/i;
+
 function isSignificantCommit(message) {
   if (!message || typeof message !== 'string') {
     return false;
   }
 
-  const trimmed = message.trim();
-  const lower = trimmed.toLowerCase();
+  const firstLine = message.trim().split('\n')[0].trim();
+  const lower = firstLine.toLowerCase();
 
   for (const pattern of INSIGNIFICANT_PATTERNS) {
     if (pattern.test(lower)) {
@@ -44,11 +46,11 @@ function isSignificantCommit(message) {
     }
   }
 
-  if (lower.length < 10) {
-    return false;
+  if (CONVENTIONAL_PREFIX.test(firstLine) && firstLine.length >= 8) {
+    return true;
   }
 
-  if (lower.includes('merge') && lower.length < 50) {
+  if (firstLine.length < 10) {
     return false;
   }
 

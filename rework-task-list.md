@@ -125,24 +125,24 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger / GNL) p
 
 ### Story G1.1: Database layer
 
-- [ ] Add `db/schema.sql` (projects + commits tables per `REWORK_PLAN.md`)
-- [ ] Add `db/store.js` — init, migrations, insert commit (idempotent on sha), project seed from config
-- [ ] Add `better-sqlite3` dependency; DB file at `DATA_DIR/activity.db`
-- [ ] Implement unknown-repo policy: log + skip commits until repo in `config/projects.json`
+- [x] Add `db/schema.sql` (projects + commits tables per `REWORK_PLAN.md`)
+- [x] Add `db/store.js` — init, migrations, insert commit (idempotent on sha), project seed from config
+- [x] Add `better-sqlite3` dependency; DB file at `DATA_DIR/activity.db`
+- [x] Implement unknown-repo policy: log + skip commits until repo in `config/projects.json`
 
 ### Story G1.2: Ingest pipeline
 
-- [ ] Add `ingest/commit-parser.js` — normalize webhook commit shape, insignificant-commit filter
-- [ ] Refactor webhook handler to insert into SQLite via `db/store.js`
+- [x] Add `ingest/commit-parser.js` — normalize webhook commit shape, insignificant-commit filter
+- [x] Refactor webhook handler to insert into SQLite via `db/store.js`
 - [x] Set `NOTION_SYNC=false` in `.env.template`; gate any remaining Notion calls behind env flag during transition
 - [x] Remove `logCommitsToNotion` from webhook hot path (gated behind `NOTION_SYNC=true`)
-- [ ] Keep `updateCommitLog()` call after SQLite insert if frozen heatmap should update (document in README)
+- [x] Keep `updateCommitLog()` call after SQLite insert if frozen heatmap should update (document in README)
 
 ### Story G1.3: Project config
 
-- [ ] Add `config/projects.json` with `id`, `name`, `repo`, `workspacePath` for monitored repos
-- [ ] Seed `projects` table from JSON on startup
-- [ ] Document mapping rules in README (join key for Devra)
+- [x] Add `config/projects.json` with `id`, `name`, `repo`, `workspacePath` for monitored repos
+- [x] Seed `projects` table from JSON on startup
+- [x] Document mapping rules in README (join key for Devra)
 
 ---
 
@@ -258,7 +258,8 @@ Walkthrough for `REWORK_PLAN.md`. Replaces the v1 (GitHub Notion Logger / GNL) p
 
 - [x] Epic R0: Product renamed to **GitHub Activity Logger** in package, README, logs, Switchboard
 - [x] Epic A: v1 archived under `archive/legacy-notion-era/`; hot path starts clean
-- [ ] Epic G1–G3: SQLite ingest, backfill, four Devra endpoints on **3040**
+- [x] Epic G1: SQLite webhook ingest, `config/projects.json`, frozen heatmap side-write
+- [ ] Epic G2–G3: backfill, four Devra endpoints on **3040**
 - [ ] Epic G4: Contract tests green; webhook idempotent
 - [ ] Epic G7: Fly retired; webhooks hit local service
 - [ ] Devra `github-logger-client.js` consuming API (Devra repo)

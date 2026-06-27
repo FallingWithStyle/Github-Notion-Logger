@@ -84,6 +84,19 @@ Projects are upserted into SQLite on every startup. Webhooks for repos **not** i
 
 The frozen heatmap (`commit-log.json`) still updates alongside SQLite ingest for configured repos.
 
+### Historical backfill (G2)
+
+Populate SQLite from the GitHub API for all repos in `config/projects.json`:
+
+```bash
+npm run backfill                    # last 6 months, all configured repos
+npm run backfill -- --since-last    # incremental since newest row in SQLite
+npm run backfill -- --project devra --months 12
+npm run backfill -- --validate      # spot-check counts vs commit-log.json (UTC; heatmap TZ may differ)
+```
+
+Requires `GITHUB_TOKEN`. Expect several minutes for a full multi-repo run (rate-limited). SHA dedup is automatic via SQLite `PRIMARY KEY (sha)`.
+
 ## Project structure (target)
 
 ```
